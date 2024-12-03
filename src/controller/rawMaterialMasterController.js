@@ -30,9 +30,7 @@ const getAllRawMaterials = async (req, res) => {
         if (id && id.trim() !== "") {
             queryObject.rmName = { $regex: `^${id}`, $options: "i" };
         }
-        console.log(queryObject)
         let data = await rawMaterialSchema.find(queryObject).sort("rmName");
-
         res.status(200).json({ Message: "Items fetched successfully", responseContent: data });
     } catch (error) {
         console.log("error in item master controller", error);

@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 const rawMaterialModel = mongoose.Schema({
     rmCode: { type: String, default: '' },
     rmName: { type: String, default: '' },
+    eqTo: { type: String, default: '' },
     specification: { type: String, default: '' },
     specificationNo: { type: Number, default: '' },
     rmUOM: { type: String, default: '' },

@@ -1,4 +1,6 @@
 import packingMaterialSchema from "../model/packingMaterialModel.js";
+import pmCategoryModel from "../model/pmCategoryModel.js";
+import rmCategoryModel from "../model/rmCategoryModel.js";
 
 
 const addEditPackingMaterial = async (req, res) => {
@@ -70,10 +72,88 @@ const deletePackingMaterialById = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+const addEditRMCategory = async (req, res) => {
+    try {
+        let data = req.body.data
+        if (data._id && data._id.trim() !== '') {
+            const response = await rmCategoryModel.findByIdAndUpdate(data._id, data, { new: true });
+            if (response) {
+                res.status(200).json({ Message: "Category updated successfully", data: response });
+            } else {
+                res.status(404).json({ Message: "Category not found" });
+            }
+        } else {
+            const response = new rmCategoryModel(data);
+            await response.save();
+            res.status(200).json({ Message: "Category added successfully", data: response });
+        }
+
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deleteRMCategoryById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let response = {}
+        console.log(id)
+        if (id) {
+            response = await rmCategoryModel.findByIdAndDelete(id, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+        res.status(201).json({ Message: "Item has been deleted", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const addEditPMCategory = async (req, res) => {
+    try {
+        let data = req.body.data
+        console.log(data)
+        if (data._id && data._id.trim() !== '') {
+            const response = await pmCategoryModel.findByIdAndUpdate(data._id, data, { new: true });
+            if (response) {
+                res.status(200).json({ Message: "Category updated successfully", data: response });
+            } else {
+                res.status(404).json({ Message: "Category not found" });
+            }
+        } else {
+            const response = new pmCategoryModel(data);
+            await response.save();
+            res.status(200).json({ Message: "Category added successfully", data: response });
+        }
+
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deletePMCategoryById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let response = {}
+        console.log(id)
+        if (id) {
+            response = await pmCategoryModel.findByIdAndDelete(id, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+        res.status(201).json({ Message: "Item has been deleted", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
 
 export {
     addEditPackingMaterial,
     getAllPackingMaterials,
     getPackingMaterialById,
-    deletePackingMaterialById
+    deletePackingMaterialById,
+    addEditRMCategory,
+    deleteRMCategoryById,
+    addEditPMCategory,
+    deletePMCategoryById
 };
