@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 const packingMaterialSchema = mongoose.Schema({
     packingMaterialSize: { type: String, default: '' },
-    isDeleted: { type: Boolean, default: '' },
+    isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
 
