@@ -6,6 +6,7 @@ import mfgLicModel from "../model/mfgLicMaster.js";
 import packingMaterialSizeModel from "../model/packingMaterialSizeModel.js";
 import pmCategoryModel from "../model/pmCategoryModel.js";
 import productionStageModel from "../model/productionStageModel.js";
+import punchSizeModel from "../model/punchSizeMasterModel.js";
 import rmCategoryModel from "../model/rmCategoryModel.js";
 import stateModel from "../model/stateModel.js";
 import stereoModel from "../model/stereoMasterModel.js";
@@ -131,6 +132,16 @@ const getAllProductionStageMaster = async (req, res) => {
     }
 };
 
+const getAllPunchSizes = async (req, res) => {
+    try {
+        let response = await punchSizeModel.find({});
+        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 
 
 export {
@@ -145,5 +156,6 @@ export {
     getAllLabelClaims,
     getAllColors,
     getAllMfgLicMaster,
-    getAllProductionStageMaster
+    getAllProductionStageMaster,
+    getAllPunchSizes
 };

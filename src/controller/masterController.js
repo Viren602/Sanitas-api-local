@@ -5,6 +5,7 @@ import packingMaterialSchema from "../model/packingMaterialModel.js";
 import packingMaterialSizeModel from "../model/packingMaterialSizeModel.js";
 import pmCategoryModel from "../model/pmCategoryModel.js";
 import productionStageModel from "../model/productionStageModel.js";
+import punchSizeModel from "../model/punchSizeMasterModel.js";
 import rmCategoryModel from "../model/rmCategoryModel.js";
 import stateModel from "../model/stateModel.js";
 import stereoModel from "../model/stereoMasterModel.js";
@@ -451,6 +452,43 @@ const deleteProductionStageById = async (req, res) => {
     }
 };
 
+const addEditPunchSizeMaster = async (req, res) => {
+    try {
+        let data = req.body.data
+        if (data._id && data._id.trim() !== '') {
+            const response = await punchSizeModel.findByIdAndUpdate(data._id, data, { new: true });
+            if (response) {
+                res.status(200).json({ Message: "Details updated successfully", data: response });
+            } else {
+                res.status(404).json({ Message: "Details not found" });
+            }
+        } else {
+            const response = new punchSizeModel(data);
+            await response.save();
+            res.status(200).json({ Message: "Details added successfully", data: response });
+        }
+
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deletePunchSizeById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let response = {}
+        console.log(id)
+        if (id) {
+            response = await punchSizeModel.findByIdAndDelete(id, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+        res.status(201).json({ Message: "Item has been deleted", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 export {
     addEditPackingMaterial,
     getAllPackingMaterials,
@@ -475,5 +513,7 @@ export {
     addMfgLic,
     deleteMfgLicById,
     addProductionStages,
-    deleteProductionStageById
+    deleteProductionStageById,
+    addEditPunchSizeMaster,
+    deletePunchSizeById
 };

@@ -1,5 +1,5 @@
 import express from "express";
-import { addEditColors, addEditLabelClaims, addEditPackingMaterial, addEditPackingMaterialSize, addEditPMCategory, addEditRMCategory, addEditStates, addEditStereo, addEditStorageConditions, addMfgLic, addProductionStages, deleteColorById, deleteLabelClaimById, deleteMfgLicById, deletePackingMaterialById, deletePackingMaterialSizeById, deletePMCategoryById, deleteProductionStageById, deleteRMCategoryById, deleteStateById, deleteStereoById, deleteStorageConditionById, getAllPackingMaterials, getPackingMaterialById } from "../controller/masterController.js";
+import { addEditColors, addEditLabelClaims, addEditPackingMaterial, addEditPackingMaterialSize, addEditPMCategory, addEditPunchSizeMaster, addEditRMCategory, addEditStates, addEditStereo, addEditStorageConditions, addMfgLic, addProductionStages, deleteColorById, deleteLabelClaimById, deleteMfgLicById, deletePackingMaterialById, deletePackingMaterialSizeById, deletePMCategoryById, deleteProductionStageById, deletePunchSizeById, deleteRMCategoryById, deleteStateById, deleteStereoById, deleteStorageConditionById, getAllPackingMaterials, getPackingMaterialById } from "../controller/masterController.js";
 
 const masterRoute = express.Router();
 
@@ -48,5 +48,9 @@ masterRoute.get("/packingMaterial/DeleteMfgLicById", deleteMfgLicById);
 // Production Stage Master
 masterRoute.post("/packingMaterial/AddEditProductionStages", addProductionStages);
 masterRoute.get("/packingMaterial/DeleteProductionStageById", deleteProductionStageById);
+
+// Punch Size Master
+masterRoute.post("/packingMaterial/AddEditPunchSizeMaster", addEditPunchSizeMaster);
+masterRoute.get("/packingMaterial/DeletePunchSizeById", deletePunchSizeById);
 
 export default masterRoute;

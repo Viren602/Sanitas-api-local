@@ -1,5 +1,5 @@
 import express from "express";
-import { getAllColors, getAllHSNCode, getAllItemCategory, getAllLabelClaims, getAllMfgLicMaster, getAllPackingMaterialSize, getAllPMCategory, getAllProductionStageMaster, getAllRMCategory, getAllStates, getAllStereoData, getAllStorageConditions } from "../controller/commonController.js";
+import { getAllColors, getAllHSNCode, getAllItemCategory, getAllLabelClaims, getAllMfgLicMaster, getAllPackingMaterialSize, getAllPMCategory, getAllProductionStageMaster, getAllPunchSizes, getAllRMCategory, getAllStates, getAllStereoData, getAllStorageConditions } from "../controller/commonController.js";
 
 const commonServices = express.Router();
 
@@ -15,5 +15,6 @@ commonServices.get("/common/GetAllStorageConditions", getAllStorageConditions);
 commonServices.get("/common/GetAllColors", getAllColors);
 commonServices.get("/common/GetAllMfgLicMaster", getAllMfgLicMaster);
 commonServices.get("/common/GetAllProductionStageMaster", getAllProductionStageMaster);
+commonServices.get("/common/GetAllPunchSizes", getAllPunchSizes);
 
 export default commonServices;
