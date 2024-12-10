@@ -87,6 +87,7 @@ const deletePackingMaterialById = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
 const addEditRMCategory = async (req, res) => {
     try {
         let data = req.body.data
@@ -495,7 +496,6 @@ const deletePunchSizeById = async (req, res) => {
     }
 };
 
-
 const addEditAccountGroup = async (req, res) => {
     try {
         let data = req.body.data
@@ -532,7 +532,6 @@ const deleteAccountGroupById = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-
 
 const addEditTransportCourier = async (req, res) => {
     try {
@@ -607,7 +606,6 @@ const deleteDaybookById = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-
 
 const getAllParties = async (req, res) => {
     try {
@@ -771,18 +769,23 @@ const deleteProductDetailsById = async (req, res) => {
 const addEditpartyWiseNetRateDetails = async (req, res) => {
     try {
         let data = req.body.data
-        // data = {
-        //     partyId: '6751605847615ce9e38f6fd2',
-        //     itemId: '6747f9a08df68d5650dcf8ed',
-        //     netRate: 0.12,
-        //     freePersantage: 12,
-        //     supply: 'No',
-        // }
-        const response = new partyWiseNetRateDetailsModel(data);
-        await response.save();
-        console.log(response)
-        res.status(200).json({ Message: "Item added successfully", data: response });
-
+        console.log(data)
+        if (data && data._id && data._id.trim() !== '') {
+            const response = await partyWiseNetRateDetailsModel.findByIdAndUpdate(data._id, data, { new: true });
+            if (response) {
+                res.status(200).json({ Message: "Details updated successfully", data: response });
+            } else {
+                res.status(404).json({ Message: "Details not found" });
+            }
+            // const response = new partyWiseNetRateDetailsModel(data);
+            // await response.save();
+            // console.log(response)
+            // res.status(200).json({ Message: "Details added successfully", data: response });
+        } else {
+            const response = new partyWiseNetRateDetailsModel(data);
+            await response.save();
+            res.status(200).json({ Message: "Details added successfully", data: response });
+        }
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -793,13 +796,27 @@ const getPartyWiseNetRateDetailsByPartyId = async (req, res) => {
     try {
 
         const { id } = req.query;
+        let response = {}
+        if (id) {
+            response = await partyWiseNetRateDetailsModel.find({ partyId: id, isDeleted: false });
+        }
+        res.status(201).json({ Message: "Items fetched successfully", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deletePartyWiseNetRateById = async (req, res) => {
+    try {
+
+        const { id } = req.query;
         console.log(id)
         let response = {}
         if (id) {
-            response = await partyWiseNetRateDetailsModel.find({ partyId: id });
+            response = await partyWiseNetRateDetailsModel.findByIdAndUpdate(id, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
-        console.log(response)
-        res.status(201).json({ Message: "Items fetched successfully", responseContent: response });
+        res.status(201).json({ Message: "Item has been deleted", responseContent: response });
     } catch (error) {
         console.log("error in item master controller", error);
         res.status(500).json({ error: error.message });
@@ -848,5 +865,6 @@ export {
     getProductDetailById,
     deleteProductDetailsById,
     addEditpartyWiseNetRateDetails,
-    getPartyWiseNetRateDetailsByPartyId
+    getPartyWiseNetRateDetailsByPartyId,
+    deletePartyWiseNetRateById
 };
