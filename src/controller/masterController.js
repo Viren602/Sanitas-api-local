@@ -1,15 +1,21 @@
+import accountGroupModel from "../model/accountGroupModel.js";
 import colorModel from "../model/colorModel.js";
+import daybookMasterModel from "../model/daybookMasterModel.js";
 import labelClaimModel from "../model/labelClaimMaster.js";
 import mfgLicModel from "../model/mfgLicMaster.js";
 import packingMaterialSchema from "../model/packingMaterialModel.js";
 import packingMaterialSizeModel from "../model/packingMaterialSizeModel.js";
+import partyModel from "../model/partiesModel.js";
+import partyWiseNetRateDetailsModel from "../model/partyWiseNetRateDetailsModel.js";
 import pmCategoryModel from "../model/pmCategoryModel.js";
+import productDetailsModel from "../model/productDetailsModel.js";
 import productionStageModel from "../model/productionStageModel.js";
 import punchSizeModel from "../model/punchSizeMasterModel.js";
 import rmCategoryModel from "../model/rmCategoryModel.js";
 import stateModel from "../model/stateModel.js";
 import stereoModel from "../model/stereoMasterModel.js";
 import storageConditionModel from "../model/storageConditionModel.js";
+import transportCourierModel from "../model/transportCourierModel.js";
 
 
 const addEditPackingMaterial = async (req, res) => {
@@ -489,6 +495,317 @@ const deletePunchSizeById = async (req, res) => {
     }
 };
 
+
+const addEditAccountGroup = async (req, res) => {
+    try {
+        let data = req.body.data
+        if (data._id && data._id.trim() !== '') {
+            const response = await accountGroupModel.findByIdAndUpdate(data._id, data, { new: true });
+            if (response) {
+                res.status(200).json({ Message: "Details updated successfully", data: response });
+            } else {
+                res.status(404).json({ Message: "Details not found" });
+            }
+        } else {
+            const response = new accountGroupModel(data);
+            await response.save();
+            res.status(200).json({ Message: "Details added successfully", data: response });
+        }
+
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deleteAccountGroupById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let response = {}
+        console.log(id)
+        if (id) {
+            response = await accountGroupModel.findByIdAndDelete(id, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+        res.status(201).json({ Message: "Item has been deleted", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+const addEditTransportCourier = async (req, res) => {
+    try {
+        let data = req.body.data
+        if (data._id && data._id.trim() !== '') {
+            const response = await transportCourierModel.findByIdAndUpdate(data._id, data, { new: true });
+            if (response) {
+                res.status(200).json({ Message: "Details updated successfully", data: response });
+            } else {
+                res.status(404).json({ Message: "Details not found" });
+            }
+        } else {
+            const response = new transportCourierModel(data);
+            await response.save();
+            res.status(200).json({ Message: "Details added successfully", data: response });
+        }
+
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deleteTransportCourierById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let response = {}
+        console.log(id)
+        if (id) {
+            response = await transportCourierModel.findByIdAndDelete(id, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+        res.status(201).json({ Message: "Item has been deleted", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const addEditDaybook = async (req, res) => {
+    try {
+        let data = req.body.data
+        if (data._id && data._id.trim() !== '') {
+            const response = await daybookMasterModel.findByIdAndUpdate(data._id, data, { new: true });
+            if (response) {
+                res.status(200).json({ Message: "Details updated successfully", data: response });
+            } else {
+                res.status(404).json({ Message: "Details not found" });
+            }
+        } else {
+            const response = new daybookMasterModel(data);
+            await response.save();
+            res.status(200).json({ Message: "Details added successfully", data: response });
+        }
+
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deleteDaybookById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let response = {}
+        console.log(id)
+        if (id) {
+            response = await daybookMasterModel.findByIdAndDelete(id, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+        res.status(201).json({ Message: "Item has been deleted", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+const getAllParties = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let queryObject = { isDeleted: false }
+        if (id && id.trim() !== "") {
+            queryObject.partyName = { $regex: `^${id}`, $options: "i" };
+        }
+        let response = await partyModel.find(queryObject).sort("partyName");
+
+        // for (let i = 0; i < response.length; i++) {
+        //     const accountCode = response[i].acGroupCode;
+        //     let accountCodeName = '';
+        //     if (accountCode) {
+        //         const accountGroup = await accountGroupModel.findOne({ accountGroupCode: accountCode });
+        //         accountCodeName = accountGroup ? accountGroup.accountGroupname : '';
+        //     }
+        //     response[i] = {
+        //         ...response[i]._doc, 
+        //         accountCodeName,
+        //     };
+        // }
+
+        res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getPartyDetailsById = async (req, res) => {
+    try {
+
+        const { id } = req.query;
+        let response = {}
+        let accountCode = {}
+        if (id) {
+            response = await partyModel.findOne({ _id: id });
+        }
+        if (response) {
+            accountCode = await accountGroupModel.findOne({ accountGroupCode: response.acGroupCode });
+        }
+        response.accountCodeName = accountCode.accountGroupname
+        res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const addEditPartyDetails = async (req, res) => {
+    try {
+        let data = req.body.data
+        let accountCode = {}
+        if (data.accountCodeName) {
+            accountCode = await accountGroupModel.findOne({ accountGroupname: data.accountCodeName });
+        }
+        data.acGroupCode = accountCode.accountGroupCode
+        if (data && data._id && data._id.trim() !== '') {
+            const response = await partyModel.findByIdAndUpdate(data._id, data, { new: true });
+            if (response) {
+                res.status(200).json({ Message: "Item updated successfully", data: response });
+            } else {
+                res.status(404).json({ Message: "Item not found" });
+            }
+        } else {
+            const response = new partyModel(data);
+            await response.save();
+            res.status(200).json({ Message: "Item added successfully", data: response });
+        }
+
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deletePartyDetailsById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let response = {}
+        if (id) {
+            response = await partyModel.findByIdAndUpdate(id, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+        res.status(201).json({ Message: "Item has been deleted", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const addeditProductDetails = async (req, res) => {
+    try {
+        let data = req.body.data
+        if (data && data._id && data._id.trim() !== '') {
+            const response = await productDetailsModel.findByIdAndUpdate(data._id, data, { new: true });
+            if (response) {
+                res.status(200).json({ Message: "Product updated successfully", data: response });
+            } else {
+                res.status(404).json({ Message: "Product not found" });
+            }
+        } else {
+            const response = new productDetailsModel(data);
+            await response.save();
+            res.status(200).json({ Message: "Product added successfully", data: response });
+        }
+
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getAllProductDetails = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let queryObject = { isDeleted: false }
+        if (id && id.trim() !== "") {
+            queryObject.productName = { $regex: `^${id}`, $options: "i" };
+        }
+        let data = await productDetailsModel.find(queryObject).sort("productName");
+
+        res.status(200).json({ Message: "Product fetched successfully", responseContent: data });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getProductDetailById = async (req, res) => {
+    try {
+
+        const { id } = req.query;
+        let response = {}
+        if (id) {
+            response = await productDetailsModel.findOne({ _id: id });
+        }
+
+        res.status(201).json({ Message: "Product fetched successfully", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deleteProductDetailsById = async (req, res) => {
+    try {
+
+        const { id } = req.query;
+        let response = {}
+        if (id) {
+            response = await productDetailsModel.findByIdAndUpdate(id, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+        res.status(201).json({ Message: "Product has been deleted", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const addEditpartyWiseNetRateDetails = async (req, res) => {
+    try {
+        let data = req.body.data
+        // data = {
+        //     partyId: '6751605847615ce9e38f6fd2',
+        //     itemId: '6747f9a08df68d5650dcf8ed',
+        //     netRate: 0.12,
+        //     freePersantage: 12,
+        //     supply: 'No',
+        // }
+        const response = new partyWiseNetRateDetailsModel(data);
+        await response.save();
+        console.log(response)
+        res.status(200).json({ Message: "Item added successfully", data: response });
+
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getPartyWiseNetRateDetailsByPartyId = async (req, res) => {
+    try {
+
+        const { id } = req.query;
+        console.log(id)
+        let response = {}
+        if (id) {
+            response = await partyWiseNetRateDetailsModel.find({ partyId: id });
+        }
+        console.log(response)
+        res.status(201).json({ Message: "Items fetched successfully", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 export {
     addEditPackingMaterial,
     getAllPackingMaterials,
@@ -515,5 +832,21 @@ export {
     addProductionStages,
     deleteProductionStageById,
     addEditPunchSizeMaster,
-    deletePunchSizeById
+    deletePunchSizeById,
+    addEditAccountGroup,
+    deleteAccountGroupById,
+    getAllParties,
+    getPartyDetailsById,
+    addEditTransportCourier,
+    deleteTransportCourierById,
+    addEditPartyDetails,
+    deletePartyDetailsById,
+    addEditDaybook,
+    deleteDaybookById,
+    addeditProductDetails,
+    getAllProductDetails,
+    getProductDetailById,
+    deleteProductDetailsById,
+    addEditpartyWiseNetRateDetails,
+    getPartyWiseNetRateDetailsByPartyId
 };

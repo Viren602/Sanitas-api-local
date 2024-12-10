@@ -1,5 +1,5 @@
 import express from "express";
-import { addEditColors, addEditLabelClaims, addEditPackingMaterial, addEditPackingMaterialSize, addEditPMCategory, addEditPunchSizeMaster, addEditRMCategory, addEditStates, addEditStereo, addEditStorageConditions, addMfgLic, addProductionStages, deleteColorById, deleteLabelClaimById, deleteMfgLicById, deletePackingMaterialById, deletePackingMaterialSizeById, deletePMCategoryById, deleteProductionStageById, deletePunchSizeById, deleteRMCategoryById, deleteStateById, deleteStereoById, deleteStorageConditionById, getAllPackingMaterials, getPackingMaterialById } from "../controller/masterController.js";
+import { addEditAccountGroup, addEditColors, addEditDaybook, addEditLabelClaims, addEditPackingMaterial, addEditPackingMaterialSize, addEditPartyDetails, addEditpartyWiseNetRateDetails, addEditPMCategory, addeditProductDetails, addEditPunchSizeMaster, addEditRMCategory, addEditStates, addEditStereo, addEditStorageConditions, addEditTransportCourier, addMfgLic, addProductionStages, deleteAccountGroupById, deleteColorById, deleteDaybookById, deleteLabelClaimById, deleteMfgLicById, deletePackingMaterialById, deletePackingMaterialSizeById, deletePartyDetailsById, deletePMCategoryById, deleteProductDetailsById, deleteProductionStageById, deletePunchSizeById, deleteRMCategoryById, deleteStateById, deleteStereoById, deleteStorageConditionById, deleteTransportCourierById, getAllPackingMaterials, getAllParties, getAllProductDetails, getPackingMaterialById, getPartyDetailsById, getPartyWiseNetRateDetailsByPartyId, getProductDetailById } from "../controller/masterController.js";
 
 const masterRoute = express.Router();
 
@@ -52,5 +52,33 @@ masterRoute.get("/packingMaterial/DeleteProductionStageById", deleteProductionSt
 // Punch Size Master
 masterRoute.post("/packingMaterial/AddEditPunchSizeMaster", addEditPunchSizeMaster);
 masterRoute.get("/packingMaterial/DeletePunchSizeById", deletePunchSizeById);
+
+// Account Group Master
+masterRoute.post("/packingMaterial/AddEditAccountGroup", addEditAccountGroup);
+masterRoute.get("/packingMaterial/DeleteAccountGroupById", deleteAccountGroupById);
+
+// Transport Courier Master
+masterRoute.post("/packingMaterial/AddEditTransportCourier", addEditTransportCourier);
+masterRoute.get("/packingMaterial/DeleteTransportCourierById", deleteTransportCourierById);
+
+// Daybook Master
+masterRoute.post("/packingMaterial/AddEditDaybook", addEditDaybook);
+masterRoute.get("/packingMaterial/DeleteDaybookById", deleteDaybookById);
+
+// Party Master
+masterRoute.get("/itemMaster/GetAllParties", getAllParties);
+masterRoute.get("/itemMaster/GetPartyDetailsById", getPartyDetailsById);
+masterRoute.post("/packingMaterial/AddEditPartyDetails", addEditPartyDetails);
+masterRoute.get("/packingMaterial/DeletePartyDetailsById", deletePartyDetailsById);
+
+// Product Details Master
+masterRoute.post("/itemMaster/AddEditProductDetails", addeditProductDetails);
+masterRoute.get("/itemMaster/GetAllProductDetails", getAllProductDetails);
+masterRoute.get("/itemMaster/GetProductDetailById", getProductDetailById);
+masterRoute.get("/itemMaster/DeleteProductDetailsById", deleteProductDetailsById);
+
+// Party Wise NetRate Master
+masterRoute.post("/itemMaster/AddEditpartyWiseNetRateDetails", addEditpartyWiseNetRateDetails);
+masterRoute.get("/itemMaster/GetPartyWiseNetRateDetailsByPartyId", getPartyWiseNetRateDetailsByPartyId);
 
 export default masterRoute;
