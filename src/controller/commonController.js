@@ -6,6 +6,7 @@ import HNSCodesScHema from "../model/hnsCode.js";
 import ItemCategory from "../model/itemCategory.js";
 import labelClaimModel from "../model/labelClaimMaster.js";
 import mfgLicModel from "../model/mfgLicMaster.js";
+import packingMaterialSchema from "../model/packingMaterialModel.js";
 import packingMaterialSizeModel from "../model/packingMaterialSizeModel.js";
 import partyModel from "../model/partiesModel.js";
 import pmCategoryModel from "../model/pmCategoryModel.js";
@@ -247,6 +248,18 @@ const getAllRMDropdown = async (req, res) => {
     }
 };
 
+const getAllPackingMaterialDropdown = async (req, res) => {
+    try {
+        let queryObject = { isDeleted: false }
+        let data = await packingMaterialSchema.find(queryObject).select('pmName').sort("pmName");
+
+        res.status(200).json({ Message: "Packing Material fetched successfully", responseContent: data });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 
 export {
     getAllItemCategory,
@@ -268,5 +281,6 @@ export {
     getAllPartyDropdown,
     getAllItem,
     getAllProductDropdown,
-    getAllRMDropdown
+    getAllRMDropdown,
+    getAllPackingMaterialDropdown
 };

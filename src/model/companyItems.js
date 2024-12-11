@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 
 const itemSchema = mongoose.Schema({
     ItemName: { type: String, default: '' },
+    ItemCode: { type: String, default: '' },
     NetRate: { type: Number, default: 0.00 },
     Packing: { type: String, default: '' },
     UnitQuantity: { type: Number, default: 0.0 },

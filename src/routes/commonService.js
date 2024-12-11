@@ -1,5 +1,5 @@
 import express from "express";
-import { getAllAccountGroups, getAllColors, getAllDaybooks, getAllHSNCode, getAllItem, getAllItemCategory, getAllLabelClaims, getAllMfgLicMaster, getAllPackingMaterialSize, getAllPartyDropdown, getAllPMCategory, getAllProductDropdown, getAllProductionStageMaster, getAllPunchSizes, getAllRMCategory, getAllRMDropdown, getAllStates, getAllStereoData, getAllStorageConditions, getAllTransportCourier } from "../controller/commonController.js";
+import { getAllAccountGroups, getAllColors, getAllDaybooks, getAllHSNCode, getAllItem, getAllItemCategory, getAllLabelClaims, getAllMfgLicMaster, getAllPackingMaterialDropdown, getAllPackingMaterialSize, getAllPartyDropdown, getAllPMCategory, getAllProductDropdown, getAllProductionStageMaster, getAllPunchSizes, getAllRMCategory, getAllRMDropdown, getAllStates, getAllStereoData, getAllStorageConditions, getAllTransportCourier } from "../controller/commonController.js";
 
 const commonServices = express.Router();
 
@@ -23,5 +23,6 @@ commonServices.get("/common/GetAllPartyDropdown", getAllPartyDropdown);
 commonServices.get("/common/GetAllItem", getAllItem);
 commonServices.get("/common/GetAllProductDropdown", getAllProductDropdown);
 commonServices.get("/common/GetAllRMDropdown", getAllRMDropdown);
+commonServices.get("/common/GetAllPackingMaterialDropdown", getAllPackingMaterialDropdown);
 
 export default commonServices;

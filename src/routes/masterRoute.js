@@ -1,5 +1,5 @@
 import express from "express";
-import { addEditAccountGroup, addEditColors, addEditDaybook, addEditLabelClaims, addEditPackingMaterial, addEditPackingMaterialSize, addEditPartyDetails, addEditpartyWiseNetRateDetails, addEditPMCategory, addeditProductDetails, addEditPunchSizeMaster, addEditRMCategory, addEditRMFormulaDetails, addEditStates, addEditStereo, addEditStorageConditions, addEditTransportCourier, addMfgLic, addProductionStages, deleteAccountGroupById, deleteColorById, deleteDaybookById, deleteLabelClaimById, deleteMfgLicById, deletePackingMaterialById, deletePackingMaterialSizeById, deletePartyDetailsById, deletePartyWiseNetRateById, deletePMCategoryById, deleteProductDetailsById, deleteProductionStageById, deletePunchSizeById, deleteRMCategoryById, deleteRMFurmulaById, deleteStateById, deleteStereoById, deleteStorageConditionById, deleteTransportCourierById, getAllPackingMaterials, getAllParties, getAllProductDetails, getPackingMaterialById, getPartyDetailsById, getPartyWiseNetRateDetailsByPartyId, getProductDetailById, getRMFormulaByProductId } from "../controller/masterController.js";
+import { addEditAccountGroup, addEditColors, addEditDaybook, addEditLabelClaims, addEditPackingMaterial, addEditPackingMaterialSize, addEditPartyDetails, addEditpartyWiseNetRateDetails, addEditPMCategory, addEditPMFormulaDetails, addeditProductDetails, addEditPunchSizeMaster, addEditRMCategory, addEditRMFormulaDetails, addEditStates, addEditStereo, addEditStorageConditions, addEditTransportCourier, addMfgLic, addProductionStages, deleteAccountGroupById, deleteColorById, deleteDaybookById, deleteLabelClaimById, deleteMfgLicById, deletePackingMaterialById, deletePackingMaterialSizeById, deletePartyDetailsById, deletePartyWiseNetRateById, deletePMCategoryById, deletePMFurmulaById, deleteProductDetailsById, deleteProductionStageById, deletePunchSizeById, deleteRMCategoryById, deleteRMFurmulaById, deleteStateById, deleteStereoById, deleteStorageConditionById, deleteTransportCourierById, getAllPackingMaterials, getAllParties, getAllProductDetails, getPackingMaterialById, getPartyDetailsById, getPartyWiseNetRateDetailsByPartyId, getPMFormulaByItemId, getProductDetailById, getRMFormulaByProductId } from "../controller/masterController.js";
 
 const masterRoute = express.Router();
 
@@ -82,9 +82,14 @@ masterRoute.post("/itemMaster/AddEditpartyWiseNetRateDetails", addEditpartyWiseN
 masterRoute.get("/itemMaster/GetPartyWiseNetRateDetailsByPartyId", getPartyWiseNetRateDetailsByPartyId);
 masterRoute.get("/itemMaster/DeletePartyWiseNetRateById", deletePartyWiseNetRateById);
 
-// Party Wise NetRate Master
+// RM Formula 
 masterRoute.get("/itemMaster/GetRMFormulaByProductId", getRMFormulaByProductId);
 masterRoute.post("/itemMaster/AddEditRMFormulaDetails", addEditRMFormulaDetails);
 masterRoute.get("/itemMaster/DeleteRMFurmulaById", deleteRMFurmulaById);
+
+// PM Formula 
+masterRoute.get("/itemMaster/GetPMFormulaByItemId", getPMFormulaByItemId);
+masterRoute.post("/itemMaster/AddEditPMFormulaDetails", addEditPMFormulaDetails);
+masterRoute.get("/itemMaster/DeletePMFurmulaById", deletePMFurmulaById);
 
 export default masterRoute;
