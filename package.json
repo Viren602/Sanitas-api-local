@@ -12,9 +12,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "^1.20.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
+    "csvtojson": "^2.0.10",
     "ddos": "^0.2.1",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
@@ -26,6 +28,7 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.14",
     "nodemon": "^3.1.4",
+    "path": "^0.12.7",
     "sharp": "^0.33.4",
     "uuid": "^10.0.0"
   },

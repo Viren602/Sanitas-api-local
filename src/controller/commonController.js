@@ -9,8 +9,10 @@ import mfgLicModel from "../model/mfgLicMaster.js";
 import packingMaterialSizeModel from "../model/packingMaterialSizeModel.js";
 import partyModel from "../model/partiesModel.js";
 import pmCategoryModel from "../model/pmCategoryModel.js";
+import productDetailsModel from "../model/productDetailsModel.js";
 import productionStageModel from "../model/productionStageModel.js";
 import punchSizeModel from "../model/punchSizeMasterModel.js";
+import rawMaterialSchema from "../model/rawMaterialModel.js";
 import rmCategoryModel from "../model/rmCategoryModel.js";
 import stateModel from "../model/stateModel.js";
 import stereoModel from "../model/stereoMasterModel.js";
@@ -221,6 +223,30 @@ const getAllItem = async (req, res) => {
     }
 };
 
+const getAllProductDropdown = async (req, res) => {
+    try {
+        let queryObject = { isDeleted: false }
+        let data = await productDetailsModel.find(queryObject).select("productName").sort("productName");
+
+        res.status(200).json({ Message: "Product fetched successfully", responseContent: data });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getAllRMDropdown = async (req, res) => {
+    try {
+        let queryObject = { isDeleted: false }
+        let data = await rawMaterialSchema.find(queryObject).select("rmName").sort("rmName");
+
+        res.status(200).json({ Message: "Raw Material fetched successfully", responseContent: data });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 
 export {
     getAllItemCategory,
@@ -240,5 +266,7 @@ export {
     getAllTransportCourier,
     getAllDaybooks,
     getAllPartyDropdown,
-    getAllItem
+    getAllItem,
+    getAllProductDropdown,
+    getAllRMDropdown
 };

@@ -12,6 +12,7 @@ import productDetailsModel from "../model/productDetailsModel.js";
 import productionStageModel from "../model/productionStageModel.js";
 import punchSizeModel from "../model/punchSizeMasterModel.js";
 import rmCategoryModel from "../model/rmCategoryModel.js";
+import rmFormulaModel from "../model/rmFormulaModel.js";
 import stateModel from "../model/stateModel.js";
 import stereoModel from "../model/stereoMasterModel.js";
 import storageConditionModel from "../model/storageConditionModel.js";
@@ -823,6 +824,60 @@ const deletePartyWiseNetRateById = async (req, res) => {
     }
 };
 
+const getRMFormulaByProductId = async (req, res) => {
+    try {
+
+        const { id } = req.query;
+        let response = {}
+        if (id) {
+            response = await rmFormulaModel.find({ productId: id, isDeleted: false });
+        }
+        res.status(201).json({ Message: "Items fetched successfully", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const addEditRMFormulaDetails = async (req, res) => {
+    try {
+        let data = req.body.data
+        console.log(data)
+        if (data && data._id && data._id.trim() !== '') {
+            const response = await rmFormulaModel.findByIdAndUpdate(data._id, data, { new: true });
+            if (response) {
+                res.status(200).json({ Message: "Details updated successfully", data: response });
+            } else {
+                res.status(404).json({ Message: "Details not found" });
+            }
+        } else {
+            const response = new rmFormulaModel(data);
+            await response.save();
+            res.status(200).json({ Message: "Details added successfully", data: response });
+        }
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deleteRMFurmulaById = async (req, res) => {
+    try {
+
+        const { id } = req.query;
+        console.log(id)
+        let response = {}
+        if (id) {
+            response = await rmFormulaModel.findByIdAndUpdate(id, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+        res.status(201).json({ Message: "Item has been deleted", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
 export {
     addEditPackingMaterial,
     getAllPackingMaterials,
@@ -866,5 +921,8 @@ export {
     deleteProductDetailsById,
     addEditpartyWiseNetRateDetails,
     getPartyWiseNetRateDetailsByPartyId,
-    deletePartyWiseNetRateById
+    deletePartyWiseNetRateById,
+    getRMFormulaByProductId,
+    addEditRMFormulaDetails,
+    deleteRMFurmulaById
 };
