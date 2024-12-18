@@ -6,6 +6,7 @@ import itemCategoryRoute from "../routes/itemCategory.js";
 import rawMaterialMasterRoutes from "../routes/rawMaterialMaster.js";
 import masterRoute from "../routes/masterRoute.js";
 import migration from "../routes/migrationRoute.js";
+import inventoryRoute from "../routes/inventoryRoute.js";
 
 // app.use("/auth",employeeRouter);
 // app.use("/auth",auth);
@@ -17,6 +18,9 @@ app.use("/api", itemMaster);
 app.use("/api", itemCategoryRoute);
 app.use("/api", rawMaterialMasterRoutes);
 app.use("/api", masterRoute);
+
+// Inventory Module
+app.use("/api", inventoryRoute);
 
 app.use("/api", migration);
 
