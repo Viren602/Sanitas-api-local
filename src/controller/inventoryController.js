@@ -1,5 +1,8 @@
+import { encryptionAPI, getRequestData } from "../middleware/encryption.js";
 import grnEntryMaterialDetailsModel from "../model/InventoryModels/grnEntryMaterialDetailsModel.js";
 import grnEntryPartyDetailsModel from "../model/InventoryModels/grnEntryPartyDetailsModel.js";
+import productionRequisitionEntryModel from "../model/InventoryModels/additionalEntryProductionDetails.js";
+import additionalEntryMaterialDetailsModel from "../model/InventoryModels/additionalEntryMaterialDetailsModel.js";
 
 
 const addEditGRNEntryMaterialMapping = async (req, res) => {
@@ -106,15 +109,15 @@ const getAllgrnEntryMaterialDetailsById = async (req, res) => {
         let response = []
         if (id) {
             response = await grnEntryMaterialDetailsModel
-            .find({ grnEntryPartyDetailId: id, isDeleted : false })
-            .populate({
-                path: 'rawMaterialId',
-                select: 'rmName _id',
-            })
-            .populate({
-                path: 'packageMaterialId',
-                select: 'pmName _id',
-            });
+                .find({ grnEntryPartyDetailId: id, isDeleted: false })
+                .populate({
+                    path: 'rawMaterialId',
+                    select: 'rmName _id',
+                })
+                .populate({
+                    path: 'packageMaterialId',
+                    select: 'pmName _id',
+                });
         }
         res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
     } catch (error) {
@@ -141,11 +144,208 @@ const deleteItemforGRNEntryMaterialById = async (req, res) => {
     try {
         const { id } = req.query;
         let response = {}
-        console.log(id)
         if (id) {
             response = await grnEntryMaterialDetailsModel.findByIdAndUpdate(id, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
         res.status(200).json({ Message: "GRN Material Detail deleted successfully", responseContent: response });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const addEditAdditionalEntryMaterialMapping = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+
+
+        let responseData = {};
+        if (reqData.productionRequisitionEntry.productionDetailId && reqData.productionRequisitionEntry.productionDetailId.trim() !== '') {
+            const response = await productionRequisitionEntryModel.findByIdAndUpdate(reqData.productionRequisitionEntry.productionDetailId, reqData.productionRequisitionEntry, { new: true });
+            if (response) {
+                responseData.productionRequisitionDetails = response;
+            } else {
+                responseData.productionRequisitionDetails = 'Additional Production Requisition details not found';
+            }
+        } else {
+
+            let nextSlipno = 'AR001';
+
+            const lastRecord = await productionRequisitionEntryModel
+                .findOne()
+                .sort({ slipNo: -1 })
+                .select('slipNo')
+                .exec();
+
+            if (lastRecord && lastRecord.slipNo) {
+                const lastNumber = parseInt(lastRecord.slipNo.slice(2), 10);  // Remove the "AR" prefix
+                nextSlipno = `AR${String(lastNumber + 1).padStart(3, '0')}`;
+            } else {
+                // If no records exist, start from AR001
+                nextSlipno = 'AR001';
+            }
+
+            reqData.productionRequisitionEntry.slipNo = nextSlipno;
+
+            const response = new productionRequisitionEntryModel(reqData.productionRequisitionEntry);
+            await response.save();
+            responseData.productionRequisitionDetails = response;
+        }
+
+        if (reqData.productionRequisitionMaterialDetails.productionMaterialDetailId && reqData.productionRequisitionMaterialDetails.productionMaterialDetailId.trim() !== '') {
+            reqData.productionRequisitionMaterialDetails.additionalEntryDetailsId = responseData.productionRequisitionDetails._id
+            const response = await additionalEntryMaterialDetailsModel.findByIdAndUpdate(reqData.productionRequisitionMaterialDetails.productionMaterialDetailId, reqData.productionRequisitionMaterialDetails, { new: true });
+            if (response) {
+                responseData.materialDetails = response;
+            } else {
+                responseData.materialDetails = 'Material details not found';
+            }
+        } else {
+            reqData.productionRequisitionMaterialDetails.additionalEntryDetailsId = responseData.productionRequisitionDetails._id
+            const response = new additionalEntryMaterialDetailsModel(reqData.productionRequisitionMaterialDetails);
+            await response.save();
+            responseData.materialDetails = response;
+        }
+
+        responseData = encryptionAPI(responseData, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Additional entry added/updated successfully",
+                responseData: responseData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getAllAdditionalEntryMaterialDetailsById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = []
+        if (reqId) {
+            response = await additionalEntryMaterialDetailsModel
+                .find({ additionalEntryDetailsId: reqId, isDeleted: false })
+                .populate({
+                    path: 'rawMaterialId',
+                    select: 'rmName rmUOM _id',
+                })
+                .populate({
+                    path: 'packageMaterialId',
+                    select: 'pmName pmUOM _id',
+                });
+        }
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Additional entry details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in Inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getAllAdditionalEntryList = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = { isDeleted: false }
+        let filterBy = 'slipNo'
+
+        if (data.filterBy && data.filterBy.trim() !== '') {
+            filterBy = data.filterBy
+        }
+
+        if (data.materialType && data.materialType !== 'Select' && data.materialType.trim() !== '') {
+            queryObject.materialType = data.materialType
+        }
+
+        let response = await productionRequisitionEntryModel
+            .find(queryObject)
+            .sort(filterBy);
+
+        if (data.productName && data.productName.trim() !== '') {
+            response = response.filter(item =>
+                item.productName?.toLowerCase().startsWith(data.productName.toLowerCase())
+            );
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Additional entry details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deleteAdditionalEntryDetailsById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = {}
+        if (reqId) {
+            response = await productionRequisitionEntryModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Additional entry deleted successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deleteAdditionalEntryMaterialDetailsById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = {}
+        if (reqId) {
+            response = await additionalEntryMaterialDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Additional Entry Material Detail deleted successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
     } catch (error) {
         console.log("error in item master controller", error);
         res.status(500).json({ error: error.message });
@@ -157,5 +357,10 @@ export {
     getAllPartyListForGRNEntry,
     getAllgrnEntryMaterialDetailsById,
     deleteGRNEntryMaterialDetailsById,
-    deleteItemforGRNEntryMaterialById
+    deleteItemforGRNEntryMaterialById,
+    addEditAdditionalEntryMaterialMapping,
+    getAllAdditionalEntryMaterialDetailsById,
+    getAllAdditionalEntryList,
+    deleteAdditionalEntryDetailsById,
+    deleteAdditionalEntryMaterialDetailsById
 };

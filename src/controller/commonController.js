@@ -239,7 +239,7 @@ const getAllProductDropdown = async (req, res) => {
 const getAllRMDropdown = async (req, res) => {
     try {
         let queryObject = { isDeleted: false }
-        let data = await rawMaterialSchema.find(queryObject).select("rmName").sort("rmName");
+        let data = await rawMaterialSchema.find(queryObject).select("rmName rmUOM").sort("rmName");
 
         res.status(200).json({ Message: "Raw Material fetched successfully", responseContent: data });
     } catch (error) {
@@ -251,7 +251,7 @@ const getAllRMDropdown = async (req, res) => {
 const getAllPackingMaterialDropdown = async (req, res) => {
     try {
         let queryObject = { isDeleted: false }
-        let data = await packingMaterialSchema.find(queryObject).select('pmName').sort("pmName");
+        let data = await packingMaterialSchema.find(queryObject).select('pmName pmUOM').sort("pmName");
 
         res.status(200).json({ Message: "Packing Material fetched successfully", responseContent: data });
     } catch (error) {
