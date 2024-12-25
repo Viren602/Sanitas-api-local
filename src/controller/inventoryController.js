@@ -3,6 +3,8 @@ import grnEntryMaterialDetailsModel from "../model/InventoryModels/grnEntryMater
 import grnEntryPartyDetailsModel from "../model/InventoryModels/grnEntryPartyDetailsModel.js";
 import productionRequisitionEntryModel from "../model/InventoryModels/additionalEntryProductionDetails.js";
 import additionalEntryMaterialDetailsModel from "../model/InventoryModels/additionalEntryMaterialDetailsModel.js";
+import purchaseOrderDetailsModel from "../model/InventoryModels/PurchaseOrderDetailsModel.js";
+import purchaserOrderMaterialDetailsModel from "../model/InventoryModels/purchaseOrderMaterialDetailsModel.js";
 
 
 const addEditGRNEntryMaterialMapping = async (req, res) => {
@@ -75,8 +77,6 @@ const getAllPartyListForGRNEntry = async (req, res) => {
         if (data.filterBy && data.filterBy.trim() !== '') {
             filterBy = data.filterBy
         }
-
-        console.log(data.materialType)
 
         if (data.materialType && data.materialType !== 'Select' && data.materialType.trim() !== '') {
             queryObject.grnEntryType = data.materialType
@@ -352,6 +352,242 @@ const deleteAdditionalEntryMaterialDetailsById = async (req, res) => {
     }
 };
 
+const addEditPurchaseOrderDetails = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+
+
+        let responseData = {};
+        if (reqData.purchaseOrderId && reqData.purchaseOrderId.trim() !== '') {
+            const response = await purchaseOrderDetailsModel.findByIdAndUpdate(reqData.purchaseOrderId, reqData, { new: true });
+            if (response) {
+                responseData = encryptionAPI(response, 1)
+                res.status(200).json({
+                    data: {
+                        statusCode: 200,
+                        Message: "Purchase Order Details Updated Successully",
+                        responseData: responseData,
+                        isEnType: true
+                    },
+                });
+            }
+        } else {
+
+            let nextOrderNo = 'P0001';
+
+            const lastRecord = await purchaseOrderDetailsModel
+                .findOne()
+                .sort({ purchaseOrderNo: -1 })
+                .select('purchaseOrderNo')
+                .exec();
+
+            if (lastRecord && lastRecord.purchaseOrderNo) {
+                const lastNumber = parseInt(lastRecord.purchaseOrderNo.slice(1), 10);
+                nextOrderNo = `P${String(lastNumber + 1).padStart(4, '0')}`;
+            }
+
+            reqData.purchaseOrderNo = nextOrderNo;
+            reqData.purchaseOrderDate = new Date();
+
+            const response = new purchaseOrderDetailsModel(reqData);
+            await response.save();
+
+            responseData = encryptionAPI(response, 1)
+
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "Purchase Order Added Successully",
+                    responseData: responseData,
+                    isEnType: true
+                },
+            });
+        }
+
+
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getAllPurchaseOrders = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = { isDeleted: false }
+        let filterBy = 'purchaseOrderNo'
+
+        if (data.filterBy && data.filterBy.trim() !== '') {
+            filterBy = data.filterBy
+        }
+
+        if (data.materialType && data.materialType !== 'Select' && data.materialType.trim() !== '') {
+            queryObject.materialType = data.materialType
+        }
+
+        if (data.status && data.status !== 'Select' && data.status.trim() !== '') {
+            queryObject.status = data.status
+        }
+
+        let response = await purchaseOrderDetailsModel
+            .find(queryObject)
+            .sort(filterBy)
+            .populate({
+                path: 'partyId',
+                select: 'partyName _id'
+            });
+
+        if (data.partyName && data.partyName.trim() !== '') {
+            response = response.filter(item =>
+                item.partyId?.partyName?.toLowerCase().startsWith(data.partyName.toLowerCase())
+            );
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Purchase details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const addEditPurchaserOrderMaterialDetails = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+        let responseData = {};
+        if (reqData.purchaseOrderMaterialDetialId && reqData.purchaseOrderMaterialDetialId.trim() !== '') {
+            const response = await purchaserOrderMaterialDetailsModel.findByIdAndUpdate(reqData.purchaseOrderMaterialDetialId, reqData, { new: true });
+            if (response) {
+                responseData = encryptionAPI(response, 1)
+                res.status(200).json({
+                    data: {
+                        statusCode: 200,
+                        Message: "Material Details Updated Successully",
+                        responseData: responseData,
+                        isEnType: true
+                    },
+                });
+            }
+        } else {
+
+            const response = new purchaserOrderMaterialDetailsModel(reqData);
+            await response.save();
+
+            responseData = encryptionAPI(response, 1)
+
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "Material Details Added Successully",
+                    responseData: responseData,
+                    isEnType: true
+                },
+            });
+        }
+
+
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getPurchaseOrderMaterialDetailsByPurchaseOrderId = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = []
+        if (reqId) {
+            response = await purchaserOrderMaterialDetailsModel
+                .find({ purchaseOrderId: reqId, isDeleted: false })
+                .populate({
+                    path: 'rawMaterialId',
+                    select: 'rmName rmUOM _id',
+                })
+                .populate({
+                    path: 'packageMaterialId',
+                    select: 'pmName pmUOM _id',
+                });
+        }
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Material details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in Inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deletePurchaseOrderDetailsById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = {}
+        if (reqId) {
+            response = await purchaseOrderDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Order details deleted successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deletepurchaseOrderMaterialDetialsById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = {}
+        if (reqId) {
+            response = await purchaserOrderMaterialDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Material details deleted successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 export {
     addEditGRNEntryMaterialMapping,
     getAllPartyListForGRNEntry,
@@ -362,5 +598,11 @@ export {
     getAllAdditionalEntryMaterialDetailsById,
     getAllAdditionalEntryList,
     deleteAdditionalEntryDetailsById,
-    deleteAdditionalEntryMaterialDetailsById
+    deleteAdditionalEntryMaterialDetailsById,
+    addEditPurchaseOrderDetails,
+    getAllPurchaseOrders,
+    addEditPurchaserOrderMaterialDetails,
+    getPurchaseOrderMaterialDetailsByPurchaseOrderId,
+    deletePurchaseOrderDetailsById,
+    deletepurchaseOrderMaterialDetialsById
 };

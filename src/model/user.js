@@ -6,6 +6,11 @@ const userSchema = mongoose.Schema({
     isAdmin:  { type: Boolean, default: true },
     companyGroup : { type: String, default: '' },
     financialYear : { type: String, default: ''},
+    addressLine1 : { type: String, default: ''},
+    addressLine2 : { type: String, default: ''},
+    city : { type: String, default: ''},
+    pinCode : { type: String, default: ''},
+    state : { type: String, default: ''},
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 

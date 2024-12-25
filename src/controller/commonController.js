@@ -1,3 +1,4 @@
+import { encryptionAPI } from "../middleware/encryption.js";
 import accountGroupModel from "../model/accountGroupModel.js";
 import colorModel from "../model/colorModel.js";
 import companyItems from "../model/companyItems.js";
@@ -19,6 +20,7 @@ import stateModel from "../model/stateModel.js";
 import stereoModel from "../model/stereoMasterModel.js";
 import storageConditionModel from "../model/storageConditionModel.js";
 import transportCourierModel from "../model/transportCourierModel.js";
+import UsersSCHM from "../model/user.js";
 
 const getAllItemCategory = async (req, res) => {
     try {
@@ -202,7 +204,7 @@ const getAllDaybooks = async (req, res) => {
 const getAllPartyDropdown = async (req, res) => {
     try {
         let queryObject = { isDeleted: false }
-        let response = await partyModel.find(queryObject).select("partyName").sort("partyName");
+        let response = await partyModel.find(queryObject).select("partyName email").sort("partyName");
 
         res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
     } catch (error) {
@@ -260,6 +262,28 @@ const getAllPackingMaterialDropdown = async (req, res) => {
     }
 };
 
+const getCompanyDetails = async (req, res) => {
+    try {
+        let queryObject = { isDeleted: false }
+        let data = await UsersSCHM.find(queryObject);
+
+        let encryptData = encryptionAPI(data, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Address details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in item master controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 
 export {
     getAllItemCategory,
@@ -282,5 +306,6 @@ export {
     getAllItem,
     getAllProductDropdown,
     getAllRMDropdown,
-    getAllPackingMaterialDropdown
+    getAllPackingMaterialDropdown,
+    getCompanyDetails
 };

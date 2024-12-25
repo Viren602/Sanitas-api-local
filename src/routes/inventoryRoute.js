@@ -1,5 +1,5 @@
 import express from "express";
-import { addEditAdditionalEntryMaterialMapping, addEditGRNEntryMaterialMapping, deleteAdditionalEntryDetailsById, deleteAdditionalEntryMaterialDetailsById, deleteGRNEntryMaterialDetailsById, deleteItemforGRNEntryMaterialById, getAllAdditionalEntryList, getAllAdditionalEntryMaterialDetailsById, getAllgrnEntryMaterialDetailsById, getAllPartyListForGRNEntry } from "../controller/inventoryController.js";
+import { addEditAdditionalEntryMaterialMapping, addEditGRNEntryMaterialMapping, addEditPurchaseOrderDetails, addEditPurchaserOrderMaterialDetails, deleteAdditionalEntryDetailsById, deleteAdditionalEntryMaterialDetailsById, deleteGRNEntryMaterialDetailsById, deleteItemforGRNEntryMaterialById, deletePurchaseOrderDetailsById, deletepurchaseOrderMaterialDetialsById, getAllAdditionalEntryList, getAllAdditionalEntryMaterialDetailsById, getAllgrnEntryMaterialDetailsById, getAllPartyListForGRNEntry, getAllPurchaseOrders, getPurchaseOrderMaterialDetailsByPurchaseOrderId } from "../controller/inventoryController.js";
 
 const inventoryRoute = express.Router();
 
@@ -17,5 +17,12 @@ inventoryRoute.post("/Inventory/GetAllAdditionalEntryList", getAllAdditionalEntr
 inventoryRoute.get("/Inventory/DeleteAdditionalEntryDetailsById", deleteAdditionalEntryDetailsById);
 inventoryRoute.get("/Inventory/DeleteAdditionalEntryMaterialDetailsById", deleteAdditionalEntryMaterialDetailsById);
 
+// Inventory - Purchase Order
+inventoryRoute.post("/Inventory/AddEditPurchaseOrderDetails", addEditPurchaseOrderDetails);
+inventoryRoute.post("/Inventory/getAllPurchaseOrders", getAllPurchaseOrders);
+inventoryRoute.post("/Inventory/AddEditPurchaserOrderMaterialDetails", addEditPurchaserOrderMaterialDetails);
+inventoryRoute.get("/Inventory/GetPurchaseOrderMaterialDetailsByPurchaseOrderId", getPurchaseOrderMaterialDetailsByPurchaseOrderId);
+inventoryRoute.get("/Inventory/DeletePurchaseOrderDetailsById", deletePurchaseOrderDetailsById);
+inventoryRoute.get("/Inventory/DeletepurchaseOrderMaterialDetialsById", deletepurchaseOrderMaterialDetialsById);
 
 export default inventoryRoute;
