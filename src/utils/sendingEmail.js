@@ -1,4 +1,3 @@
-// const nodemailer = require("nodemailer");
 import nodemailer from "nodemailer"
 
 
@@ -6,8 +5,8 @@ const mailsender = async ({ toMail, html, subject, fromMail }) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'it@nkp.group',
-      pass: 'mckf woqb ponx ijfc',
+      user: 'zyden.itsolutions@gmail.com',
+      pass: 'fbaf cbzj fpwf yufg',
     },
   });
 

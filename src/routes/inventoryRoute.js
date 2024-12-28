@@ -1,5 +1,5 @@
 import express from "express";
-import { addEditAdditionalEntryMaterialMapping, addEditGRNEntryMaterialMapping, addEditPurchaseOrderDetails, addEditPurchaserOrderMaterialDetails, deleteAdditionalEntryDetailsById, deleteAdditionalEntryMaterialDetailsById, deleteGRNEntryMaterialDetailsById, deleteItemforGRNEntryMaterialById, deletePurchaseOrderDetailsById, deletepurchaseOrderMaterialDetialsById, getAllAdditionalEntryList, getAllAdditionalEntryMaterialDetailsById, getAllgrnEntryMaterialDetailsById, getAllPartyListForGRNEntry, getAllPurchaseOrders, getPurchaseOrderMaterialDetailsByPurchaseOrderId } from "../controller/inventoryController.js";
+import { addEditAdditionalEntryMaterialMapping, addEditGRNEntryMaterialMapping, addEditInquiryDetails, addEditPurchaseOrderDetails, addEditPurchaserOrderMaterialDetails, approvePurchaseOrderByPurchaseId, deleteAdditionalEntryDetailsById, deleteAdditionalEntryMaterialDetailsById, deleteGRNEntryMaterialDetailsById, deleteInquiryDetailsById, deleteInquiryMaterialDetailsById, deleteItemforGRNEntryMaterialById, deletePurchaseOrderDetailsById, deletepurchaseOrderMaterialDetialsById, getAllAdditionalEntryList, getAllAdditionalEntryMaterialDetailsById, getAllgrnEntryMaterialDetailsById, getallInquiryDetails, getAllInquiryMaterialDetailsByInquiryId, getAllPartyListForGRNEntry, getAllPurchaseOrders, getPurchaseOrderMaterialDetailsByPurchaseOrderId, sendInquiryToCompany, sendPurchaseOrderMail } from "../controller/inventoryController.js";
 
 const inventoryRoute = express.Router();
 
@@ -24,5 +24,15 @@ inventoryRoute.post("/Inventory/AddEditPurchaserOrderMaterialDetails", addEditPu
 inventoryRoute.get("/Inventory/GetPurchaseOrderMaterialDetailsByPurchaseOrderId", getPurchaseOrderMaterialDetailsByPurchaseOrderId);
 inventoryRoute.get("/Inventory/DeletePurchaseOrderDetailsById", deletePurchaseOrderDetailsById);
 inventoryRoute.get("/Inventory/DeletepurchaseOrderMaterialDetialsById", deletepurchaseOrderMaterialDetialsById);
+inventoryRoute.post("/Inventory/SendPurchaseOrderMail", sendPurchaseOrderMail);
+inventoryRoute.get("/Inventory/ApprovePurchaseOrderByPurchaseId", approvePurchaseOrderByPurchaseId);
+
+// Inventory - G.R.N Entry
+inventoryRoute.post("/Inventory/AddEditInquiryDetails", addEditInquiryDetails);
+inventoryRoute.post("/Inventory/GetallInquiryDetails", getallInquiryDetails);
+inventoryRoute.get("/Inventory/GetAllInquiryMaterialDetailsByInquiryId", getAllInquiryMaterialDetailsByInquiryId);
+inventoryRoute.get("/Inventory/DeleteInquiryDetailsById", deleteInquiryDetailsById);
+inventoryRoute.get("/Inventory/DeleteInquiryMaterialDetailsById", deleteInquiryMaterialDetailsById);
+inventoryRoute.post("/Inventory/SendInquiryToCompany", sendInquiryToCompany);
 
 export default inventoryRoute;

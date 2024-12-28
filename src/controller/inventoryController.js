@@ -5,7 +5,10 @@ import productionRequisitionEntryModel from "../model/InventoryModels/additional
 import additionalEntryMaterialDetailsModel from "../model/InventoryModels/additionalEntryMaterialDetailsModel.js";
 import purchaseOrderDetailsModel from "../model/InventoryModels/PurchaseOrderDetailsModel.js";
 import purchaserOrderMaterialDetailsModel from "../model/InventoryModels/purchaseOrderMaterialDetailsModel.js";
-
+import mailsender from "../utils/sendingEmail.js";
+import partyModel from "../model/partiesModel.js";
+import inquiryDetailsModel from "../model/InventoryModels/inquiryDetailsModel.js";
+import inquiryMaterialDetailsModel from "../model/InventoryModels/inquiryMaterialDetails.js";
 
 const addEditGRNEntryMaterialMapping = async (req, res) => {
     try {
@@ -98,7 +101,7 @@ const getAllPartyListForGRNEntry = async (req, res) => {
 
         res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
     } catch (error) {
-        console.log("error in item master controller", error);
+        console.log("error in inventory controller", error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -135,7 +138,7 @@ const deleteGRNEntryMaterialDetailsById = async (req, res) => {
         }
         res.status(200).json({ Message: "GRN Party Details deleted successfully", responseContent: response });
     } catch (error) {
-        console.log("error in item master controller", error);
+        console.log("error in inventory controller", error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -149,7 +152,7 @@ const deleteItemforGRNEntryMaterialById = async (req, res) => {
         }
         res.status(200).json({ Message: "GRN Material Detail deleted successfully", responseContent: response });
     } catch (error) {
-        console.log("error in item master controller", error);
+        console.log("error in inventory controller", error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -296,7 +299,7 @@ const getAllAdditionalEntryList = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
+        console.log("error in inventory controller", error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -321,7 +324,7 @@ const deleteAdditionalEntryDetailsById = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("error in item master controller", error);
+        console.log("error in inventory controller", error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -347,7 +350,7 @@ const deleteAdditionalEntryMaterialDetailsById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
+        console.log("error in inventory controller", error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -457,7 +460,7 @@ const getAllPurchaseOrders = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
+        console.log("error in inventory controller", error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -558,7 +561,7 @@ const deletePurchaseOrderDetailsById = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("error in item master controller", error);
+        console.log("error in inventory controller", error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -583,7 +586,755 @@ const deletepurchaseOrderMaterialDetialsById = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("error in item master controller", error);
+        console.log("error in inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const sendPurchaseOrderMail = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+
+        if (reqData.partyId._id) {
+            let id = reqData.partyId._id
+            let partyDetails = await partyModel.findOne({ _id: id }).select("partyName person");
+
+            let purchaseMaterial = await purchaserOrderMaterialDetailsModel
+                .find({ purchaseOrderId: reqData.purchaseOrderId, isDeleted: false })
+                .populate({
+                    path: 'rawMaterialId',
+                    select: 'rmName rmUOM _id',
+                })
+                .populate({
+                    path: 'packageMaterialId',
+                    select: 'pmName pmUOM _id',
+                });
+
+            let subTotalAmount = purchaseMaterial.reduce((sum, item) => sum + item.amount, 0)
+            let gstRate = 0
+            if (reqData.gstApplicable === 'GST 5%') {
+                gstRate = 5
+            } else if (reqData.gstApplicable === 'GST 12%') {
+                gstRate = 12
+            } else if (reqData.gstApplicable === 'GST 18%') {
+                gstRate = 18
+            } else if (reqData.gstApplicable === 'GST 28%') {
+                gstRate = 28
+            }
+            let gstAmount = subTotalAmount * (gstRate / (100 + gstRate))
+            let totalAmount = subTotalAmount + gstAmount
+
+            const tableRows = purchaseMaterial && purchaseMaterial.length > 0
+                ? purchaseMaterial.map(material => `
+                <tr>
+                    <td>${material.packageMaterialId ? material.packageMaterialId.pmName : material.rawMaterialId.rmName}</td>
+                    <td>${material.packageMaterialId ? material.packageMaterialId.pmUOM : material.rawMaterialId.rmUOM}</td>
+                    <td>${material.qty}</td>
+                    <td>${material.rate}</td>
+                    <td>${material.per}</td>
+                    <td>${material.amount}</td>
+                </tr>
+            `).join('')
+                : '';
+
+            let emaildata = {
+                toMail: reqData.email,
+                subject: "Purchase Order Confirmation",
+                fromMail: "zyden.itsolutions@gmail.com",
+                html: `
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <style>
+                            body {
+                                margin: 0;
+                                padding: 0;
+                                background-color: #f4f7f9;
+                                font-family: Nunito Sans, sans-serif;
+                            }
+
+                            p {
+                                margin-top: 6px;
+                                margin-bottom: 2px !important;
+                            }
+
+                            .email-container {
+                                max-width: 800px;
+                                margin: auto;
+                                background-color: #ffffff;
+                                padding: 20px;
+                                border-radius: 8px;
+                                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                            }
+
+                            .header {
+                                background-color: #e0f7fa;
+                                padding: 20px;
+                                border-radius: 8px;
+                                display: flex;
+                                justify-content: space-between !important;
+                                align-items: center !important;
+                            }
+
+                            .header img {
+                                max-width: 150px;
+                                height: auto;
+                            }
+
+                            .header .main-title {
+                                font-size: 24px;
+                                color: #00796b;
+                                font-weight: bold;
+                                text-align: right;
+                                margin: 0;
+                            }
+
+                            .content {
+                                padding: 5px;
+                                background-color: #ffffff;
+                                border-radius: 8px;
+                            }
+
+                            .content h1 {
+                                font-size: 16px;
+                                color: #00796b;
+                                margin-bottom: 10px;
+                                margin-top: 2px !important;
+                            }
+
+                            .content p {
+                                font-size: 16px;
+                                color: #333333;
+                                line-height: 1.5;
+                                margin-bottom: 15px;
+                            }
+
+                            .purchase-table table td {
+                                padding: 5px 10px;
+                                text-align: left;
+                                border: 1px solid #ddd;
+                            }
+
+                            .purchase-table table thead {
+                                background: linear-gradient(135deg, #1e3a8a, #77bfca);
+                            }
+
+                            .purchase-table table thead tr td {
+                                color: #ffffff;
+                                font-weight: 600;
+                            }
+
+                            table tbody tr td, table tbody tr td p {
+                                font-size: 14px !important;
+                                margin: 0;
+                            }
+                            .purchase-table table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                table-layout: auto;
+                            }
+
+                            .footer {
+                                background-color: #b2dfdb;
+                                padding: 20px;
+                                border-radius: 8px;
+                                text-align: center;
+                                margin-top: 20px;
+                            }
+
+                            .footer .social-links a {
+                                margin: 0 10px;
+                                display: inline-block;
+                            }
+
+                            .footer .social-links img {
+                                width: 32px;
+                                height: 32px;
+                                vertical-align: middle;
+                            }
+
+                            .footer .site-link {
+                                font-size: 16px;
+                                font-weight: bold;
+                                color: #00796b;
+                                display: block;
+                                margin: 10px 0;
+                                /* text-decoration: none; */
+                            }
+
+                            .footer .small-print {
+                                font-size: 12px;
+                                color: #004d40;
+                                font-weight: 600;
+                            }
+                        </style>
+                    </head>
+
+                    <body>
+                        <div class="email-container">
+                            <!-- Header -->
+                            <div class="header">
+                                <img src="https://www.sanitashealthcare.in/Sanitash-logo.png" alt="Header Logo">
+                                <div class="main-title"></div>
+                            </div>
+
+                            <!-- Content -->
+                            <div class="content">
+                                <h4>Dear ${partyDetails.person} (${partyDetails.partyName}),</h4>
+                                <p>Please find attached the details of our purchase order for the following products:</p>
+                                <div class="purchase-table">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <td style="width: 40%;">Item Name</td>
+                                                <td style="width: 10%;">Unit</td>
+                                                <td style="width: 15%;">Quantity</td>
+                                                <td style="width: 10%;">Rate</td>
+                                                <td style="width: 10%;">Per</td>
+                                                <td style="width: 15%;">Amount</td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                       ${tableRows}
+                                        </tbody>
+                                    </table>
+                                    <table class="amount-box">
+                                        <tbody>
+                                            <tr>
+                                                <td style="width: 60%; border: none;"> </td>
+                                                <td style="width: 25%; border-right: none; border-top: none; padding: 0;">
+                                                    <p style="padding: 2px 10px;">Sub Total:</p>
+                                                    <p style="padding: 1px 10px;">GST(${gstRate}) :</p>
+                                                    <p style='border-top: 1px solid #ddd; padding: 5px 10px;'>Total Amount :</p>
+                                                </td>
+                                                <td style="width: 15%; border-left: none; border-top: none; padding: 0;">
+                                                    <p style="padding: 2px 10px;">${subTotalAmount.toFixed(2)}</p>
+                                                    <p style="padding: 1px 10px;">${gstAmount.toFixed(2)}</p>
+                                                    <p style='border-top: 1px solid #ddd; padding: 5px 10px;'>${totalAmount.toFixed(2)}</p></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p>If you have any questions about your order or need further assistance, please do not hesitate to contact
+                                    us.</p>
+                                <p class="thank-you"><strong>Thank you!</strong></p>
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="footer">
+                            <div class="social-links">
+                                <a href="https://www.facebook.com/people/Sanitas-Healthcare/100091492130628/" target="_blank"
+                                    rel="noopener">
+                                    <img src="https://www.sanitashealthcare.in/Facebook.png" alt="Facebook">
+                                </a>
+                                <a href="https://www.instagram.com/sanitashealthcare/?igsh=YTBycW5nc2lzd3Rl" target="_blank"
+                                    rel="noopener">
+                                    <img src="https://www.sanitashealthcare.in/instagram.png" alt="Instagram">
+                                </a>
+                            </div>
+                                <a href="https://www.sanitashealthcare.in/" target="_blank" rel="noopener" class="site-link">
+                                    www.sanitashealthcare.in
+                                </a>
+                                <div class="small-print">
+                                    &copy; 2022 Sanitas Healthcare. All rights are reserved.
+                                </div>
+                            </div>
+                        </div>
+                    </body>
+                    </html>`,
+            };
+            mailsender(emaildata)
+
+            if (reqData.purchaseOrderId && reqData.purchaseOrderId.trim() !== '') {
+                let reqeust = {
+                    status: 'Email Sent'
+                }
+                const response = await purchaseOrderDetailsModel.findByIdAndUpdate(reqData.purchaseOrderId, reqeust, { new: true });
+                if (response) {
+                    let responseData = encryptionAPI(response, 1)
+                    res.status(200).json({
+                        data: {
+                            statusCode: 200,
+                            Message: "Email Sent Successfully",
+                            responseData: responseData,
+                            isEnType: true
+                        },
+                    });
+                }
+            }
+        }
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const approvePurchaseOrderByPurchaseId = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = {}
+        if (reqId) {
+            response = await purchaseOrderDetailsModel.findByIdAndUpdate(reqId, { status: 'Order Approved' }, { new: true, useFindAndModify: false });
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Order approved successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+    } catch (error) {
+        console.log("error in inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const addEditInquiryDetails = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+        let responseData = {};
+        if (reqData.inquiryEntryDetails.inquiryId && reqData.inquiryEntryDetails.inquiryId.trim() !== '') {
+            const response = await inquiryDetailsModel.findByIdAndUpdate(reqData.inquiryEntryDetails.inquiryId, reqData.inquiryEntryDetails, { new: true });
+            if (response) {
+                responseData.inquiryEntryDetails = response;
+            } else {
+                responseData.inquiryEntryDetails = 'Party details not found';
+            }
+        } else {
+            let nextInquiryNo = 'IQR0001';
+
+            const lastRecord = await inquiryDetailsModel
+                .findOne()
+                .sort({ inquiryNo: -1 })
+                .select('inquiryNo')
+                .exec();
+
+            if (lastRecord && lastRecord.inquiryNo) {
+                const lastNumber = parseInt(lastRecord.inquiryNo.slice(3), 10);
+                nextInquiryNo = `IQR${String(lastNumber + 1).padStart(4, '0')}`;
+            }
+
+            reqData.inquiryEntryDetails.inquiryNo = nextInquiryNo;
+
+            const response = new inquiryDetailsModel(reqData.inquiryEntryDetails);
+            await response.save();
+            responseData.inquiryEntryDetails = response;
+        }
+
+        if (reqData.inquiryMaterialDetails.inquiryMaterialDetailsId && reqData.inquiryMaterialDetails.inquiryMaterialDetailsId.trim() !== '') {
+            reqData.inquiryMaterialDetails.inquiryId = responseData.inquiryEntryDetails._id
+            const response = await inquiryMaterialDetailsModel.findByIdAndUpdate(reqData.inquiryMaterialDetails.inquiryMaterialDetailsId, reqData.inquiryMaterialDetails, { new: true });
+            if (response) {
+                responseData.materialDetails = response;
+            } else {
+                responseData.materialDetails = 'Material details not found';
+            }
+        } else {
+            reqData.inquiryMaterialDetails.inquiryId = responseData.inquiryEntryDetails._id
+            const response = new inquiryMaterialDetailsModel(reqData.inquiryMaterialDetails);
+            await response.save();
+            responseData.materialDetails = response;
+        }
+
+        let encryptData = encryptionAPI(responseData, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Inquiry Details Updated Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getallInquiryDetails = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+        let queryObject = { isDeleted: false }
+
+        if (reqData.materialType && reqData.materialType !== 'Select' && reqData.materialType.trim() !== '') {
+            queryObject.materialType = reqData.materialType
+        }
+
+        if (reqData.status && reqData.status !== 'Select' && reqData.status.trim() !== '') {
+            queryObject.status = reqData.status
+        }
+
+        if (reqData.inquiryNo && reqData.inquiryNo.trim() !== '') {
+            queryObject.inquiryNo = reqData.inquiryNo
+        }
+
+        if (reqData.inquiryDate && reqData.inquiryDate.trim() !== '') {
+            queryObject.inquiryDate = reqData.inquiryDate
+        }
+        let response = await inquiryDetailsModel
+            .find(queryObject);
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Inquiry Details Fetched Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getAllInquiryMaterialDetailsByInquiryId = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = []
+        if (reqId) {
+            response = await inquiryMaterialDetailsModel
+                .find({ inquiryId: reqId, isDeleted: false })
+                .populate({
+                    path: 'rawMaterialId',
+                    select: 'rmName rmUOM _id',
+                })
+                .populate({
+                    path: 'packageMaterialId',
+                    select: 'pmName pmUOM _id',
+                });
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Inquiry material details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in Inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deleteInquiryDetailsById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = {}
+        if (reqId) {
+            response = await inquiryDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Inquiry details deleted successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const deleteInquiryMaterialDetailsById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = {}
+        if (reqId) {
+            response = await inquiryMaterialDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Inquiry material details deleted successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const sendInquiryToCompany = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+
+        if (reqData.inquiryId) {
+            let inquiryMaterialList = await inquiryMaterialDetailsModel
+                .find({ inquiryId: reqData.inquiryId, isDeleted: false })
+                .populate({
+                    path: 'rawMaterialId',
+                    select: 'rmName rmUOM _id',
+                })
+                .populate({
+                    path: 'packageMaterialId',
+                    select: 'pmName pmUOM _id',
+                });
+
+
+            const tableRows = inquiryMaterialList && inquiryMaterialList.length > 0
+                ? inquiryMaterialList.map(material => `
+                <tr>
+                    <td>${material.packageMaterialId ? material.packageMaterialId.pmName : material.rawMaterialId.rmName}</td>
+                    <td>${material.packageMaterialId ? material.packageMaterialId.pmUOM : material.rawMaterialId.rmUOM}</td>
+                    <td>${material.qty}</td>
+                </tr>
+            `).join('') : '';
+
+            reqData.companies.forEach(async (company) => {
+
+                let emaildata = {
+                    toMail: company.email,
+                    subject: "Purchase Order Confirmation",
+                    fromMail: "zyden.itsolutions@gmail.com",
+                    html: `
+                        <html lang="en">
+                            <head>
+                                <meta charset="UTF-8">
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                <style>
+                                    body {
+                                        margin: 0;
+                                        padding: 0;
+                                        background-color: #f4f7f9;
+                                        font-family: Nunito Sans, sans-serif;
+                                    }
+    
+                                    p {
+                                        margin-top: 6px;
+                                        margin-bottom: 2px !important;
+                                    }
+    
+                                    .email-container {
+                                        max-width: 800px;
+                                        margin: auto;
+                                        background-color: #ffffff;
+                                        padding: 20px;
+                                        border-radius: 8px;
+                                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                                    }
+    
+                                    .header {
+                                        background-color: #e0f7fa;
+                                        padding: 20px;
+                                        border-radius: 8px;
+                                        display: flex;
+                                        justify-content: space-between !important;
+                                        align-items: center !important;
+                                    }
+    
+                                    .header img {
+                                        max-width: 150px;
+                                        height: auto;
+                                    }
+    
+                                    .header .main-title {
+                                        font-size: 24px;
+                                        color: #00796b;
+                                        font-weight: bold;
+                                        text-align: right;
+                                        margin: 0;
+                                    }
+    
+                                    .content {
+                                        padding: 5px;
+                                        background-color: #ffffff;
+                                        border-radius: 8px;
+                                    }
+    
+                                    .content h1 {
+                                        font-size: 16px;
+                                        color: #00796b;
+                                        margin-bottom: 10px;
+                                        margin-top: 2px !important;
+                                    }
+    
+                                    .content p {
+                                        font-size: 16px;
+                                        color: #333333;
+                                        line-height: 1.5;
+                                        margin-bottom: 15px;
+                                    }
+    
+                                    .purchase-table table td {
+                                        padding: 5px 10px;
+                                        text-align: left;
+                                        border: 1px solid #ddd;
+                                    }
+    
+                                    .purchase-table table thead {
+                                        background: linear-gradient(135deg, #1e3a8a, #77bfca);
+                                    }
+    
+                                    .purchase-table table thead tr td {
+                                        color: #ffffff;
+                                        font-weight: 600;
+                                    }
+    
+                                    table tbody tr td,
+                                    table tbody tr td p {
+                                        font-size: 14px !important;
+                                        margin: 0;
+                                    }
+    
+                                    .purchase-table table {
+                                        width: 100%;
+                                        border-collapse: collapse;
+                                        table-layout: auto;
+                                    }
+    
+                                    .footer {
+                                        background-color: #b2dfdb;
+                                        padding: 20px;
+                                        border-radius: 8px;
+                                        text-align: center;
+                                        margin-top: 20px;
+                                    }
+    
+                                    .footer .social-links a {
+                                        margin: 0 10px;
+                                        display: inline-block;
+                                    }
+    
+                                    .footer .social-links img {
+                                        width: 32px;
+                                        height: 32px;
+                                        vertical-align: middle;
+                                    }
+    
+                                    .footer .site-link {
+                                        font-size: 16px;
+                                        font-weight: bold;
+                                        color: #00796b;
+                                        display: block;
+                                        margin: 10px 0;
+                                        /* text-decoration: none; */
+                                    }
+    
+                                    .footer .small-print {
+                                        font-size: 12px;
+                                        color: #004d40;
+                                        font-weight: 600;
+                                    }
+                                </style>
+                            </head>
+    
+                            <body>
+                                <div class="email-container">
+                                    <!-- Header -->
+                                    <div class="header">
+                                        <img src="https://www.sanitashealthcare.in/Sanitash-logo.png" alt="Header Logo">
+                                        <div class="main-title"></div>
+                                    </div>
+    
+                                    <!-- Content -->
+                                    <div class="content">
+                                        <h4>Dear ${company.label},</h4>
+                                        <p>I hope you're doing well. We are planning our next production cycle and would like to discuss the
+                                            availability and pricing of the raw materials for this products :</p>
+                                        <div class="purchase-table">
+                                            <table>
+                                                <thead>
+                                                    <tr>
+                                                        <td style="width: 40%;">Product Name</td>
+                                                        <td style="width: 10%;">Unit</td>
+                                                        <td style="width: 15%;">Quantity</td>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${tableRows}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <p>Looking forward to your response.</p>
+                                        <p class="thank-you"><strong>Thank you!</strong></p>
+                                        <p class="thank-you"><strong>SANITAS HEALTHCARE</strong></p>
+                                    </div>
+    
+                                    <!-- Footer -->
+                                    <div class="footer">
+                                        <div class="social-links">
+                                            <a href="https://www.facebook.com/people/Sanitas-Healthcare/100091492130628/" target="_blank"
+                                                rel="noopener">
+                                                <img src="https://www.sanitashealthcare.in/Facebook.png" alt="Facebook">
+                                            </a>
+                                            <a href="https://www.instagram.com/sanitashealthcare/?igsh=YTBycW5nc2lzd3Rl" target="_blank"
+                                                rel="noopener">
+                                                <img src="https://www.sanitashealthcare.in/instagram.png" alt="Instagram">
+                                            </a>
+                                        </div>
+                                        <a href="https://www.sanitashealthcare.in/" target="_blank" rel="noopener" class="site-link">
+                                            www.sanitashealthcare.in
+                                        </a>
+                                        <div class="small-print">
+                                            &copy; 2022 Sanitas Healthcare. All rights are reserved.
+                                        </div>
+                                    </div>
+                                </div>
+                            </body>
+    
+                            </html>`,
+                };
+                mailsender(emaildata)
+
+            });
+
+            let reqeust = {
+                status: 'Email Sent'
+            }
+            const response = await inquiryDetailsModel.findByIdAndUpdate(reqData.inquiryId, reqeust, { new: true });
+
+            let encryptData = encryptionAPI(response, 1)
+
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "Email sent successfully",
+                    responseData: encryptData,
+                    isEnType: true
+                },
+            });
+        }
+
+
+
+    } catch (error) {
+        console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -604,5 +1355,13 @@ export {
     addEditPurchaserOrderMaterialDetails,
     getPurchaseOrderMaterialDetailsByPurchaseOrderId,
     deletePurchaseOrderDetailsById,
-    deletepurchaseOrderMaterialDetialsById
+    deletepurchaseOrderMaterialDetialsById,
+    sendPurchaseOrderMail,
+    approvePurchaseOrderByPurchaseId,
+    addEditInquiryDetails,
+    getallInquiryDetails,
+    getAllInquiryMaterialDetailsByInquiryId,
+    deleteInquiryDetailsById,
+    deleteInquiryMaterialDetailsById,
+    sendInquiryToCompany
 };

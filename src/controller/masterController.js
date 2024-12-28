@@ -647,7 +647,7 @@ const getPartyDetailsById = async (req, res) => {
         if (id) {
             response = await partyModel.findOne({ _id: id });
         }
-        if (response) {
+        if (response.acGroupCode) {
             accountCode = await accountGroupModel.findOne({ accountGroupCode: response.acGroupCode });
         }
         response.accountCodeName = accountCode.accountGroupname
