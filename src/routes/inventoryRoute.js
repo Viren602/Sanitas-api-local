@@ -1,5 +1,5 @@
 import express from "express";
-import { addEditAdditionalEntryMaterialMapping, addEditGRNEntryMaterialMapping, addEditInquiryDetails, addEditPurchaseOrderDetails, addEditPurchaserOrderMaterialDetails, approvePurchaseOrderByPurchaseId, deleteAdditionalEntryDetailsById, deleteAdditionalEntryMaterialDetailsById, deleteGRNEntryMaterialDetailsById, deleteInquiryDetailsById, deleteInquiryMaterialDetailsById, deleteItemforGRNEntryMaterialById, deletePurchaseOrderDetailsById, deletepurchaseOrderMaterialDetialsById, getAllAdditionalEntryList, getAllAdditionalEntryMaterialDetailsById, getAllgrnEntryMaterialDetailsById, getallInquiryDetails, getAllInquiryMaterialDetailsByInquiryId, getAllPartyListForGRNEntry, getAllPurchaseOrders, getPurchaseOrderMaterialDetailsByPurchaseOrderId, sendInquiryToCompany, sendPurchaseOrderMail } from "../controller/inventoryController.js";
+import { addEditAdditionalEntryMaterialMapping, addEditGRNEntryMaterialMapping, addEditInquiryDetails, addEditPurchaseOrderDetails, addEditPurchaserOrderMaterialDetails, approvePurchaseOrderByPurchaseId, deleteAdditionalEntryDetailsById, deleteAdditionalEntryMaterialDetailsById, deleteGRNEntryMaterialDetailsById, deleteInquiryDetailsById, deleteInquiryMaterialDetailsById, deleteItemforGRNEntryMaterialById, deletePurchaseOrderDetailsById, deletepurchaseOrderMaterialDetialsById, getAllAdditionalEntryList, getAllAdditionalEntryMaterialDetailsById, getAllGoodsRegistered, getAllgrnEntryMaterialDetailsById, getallInquiryDetails, getAllInquiryMaterialDetailsByInquiryId, getAllItemsForStockLedgerReport, getAllMaterialWisePurchaseReport, getAllNearExpiryReport, getAllPartyListForGRNEntry, getAllPurchaseOrderRegister, getAllPurchaseOrders, getAllShourtageReport, getAllStatementForPurchaseItemByItemId, getPurchaseOrderMaterialDetailsByPurchaseOrderId, sendInquiryToCompany, sendPurchaseOrderMail } from "../controller/inventoryController.js";
 
 const inventoryRoute = express.Router();
 
@@ -34,5 +34,14 @@ inventoryRoute.get("/Inventory/GetAllInquiryMaterialDetailsByInquiryId", getAllI
 inventoryRoute.get("/Inventory/DeleteInquiryDetailsById", deleteInquiryDetailsById);
 inventoryRoute.get("/Inventory/DeleteInquiryMaterialDetailsById", deleteInquiryMaterialDetailsById);
 inventoryRoute.post("/Inventory/SendInquiryToCompany", sendInquiryToCompany);
+
+// Reports
+inventoryRoute.post("/Inventory/GetAllGoodsRegistered", getAllGoodsRegistered);
+inventoryRoute.post("/Inventory/GetAllMaterialWisePurchaseReport", getAllMaterialWisePurchaseReport);
+inventoryRoute.post("/Inventory/GetAllItemsForStockLedgerReport", getAllItemsForStockLedgerReport);
+inventoryRoute.post("/Inventory/GetAllStatementForPurchaseItemByItemId", getAllStatementForPurchaseItemByItemId);
+inventoryRoute.post("/Inventory/GetAllShourtageReport", getAllShourtageReport);
+inventoryRoute.post("/Inventory/GetAllNearExpiryReport", getAllNearExpiryReport);
+inventoryRoute.post("/Inventory/GetAllPurchaseOrderRegister", getAllPurchaseOrderRegister);
 
 export default inventoryRoute;

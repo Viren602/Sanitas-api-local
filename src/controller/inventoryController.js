@@ -1339,6 +1339,499 @@ const sendInquiryToCompany = async (req, res) => {
     }
 };
 
+const getAllGoodsRegistered = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+        };
+
+        if (reqData.startDate && reqData.endDate) {
+            queryObject.createdAt = { $gte: new Date(reqData.startDate), $lte: new Date(reqData.endDate) }
+        }
+
+        if (reqData.materialType && reqData.materialType !== 'Both' && reqData.materialType.trim() !== '') {
+            if (reqData.materialType === 'Raw Material') {
+                if (reqData.rawMaterialId && reqData.rawMaterialId.trim() !== '') {
+                    queryObject.rawMaterialId = reqData.rawMaterialId
+                } else {
+                    queryObject.rawMaterialId = { $exists: true, $ne: null };
+                }
+            }
+
+            if (reqData.materialType === 'Packing Material') {
+                if (reqData.packageMaterialId && reqData.packageMaterialId.trim() !== '') {
+                    queryObject.packageMaterialId = reqData.packageMaterialId
+                } else {
+                    queryObject.packageMaterialId = { $exists: true, $ne: null };
+                }
+            }
+
+        }
+        let response = await grnEntryMaterialDetailsModel
+            .find(queryObject)
+            .populate({
+                path: 'rawMaterialId',
+                select: 'rmName _id',
+            })
+            .populate({
+                path: 'packageMaterialId',
+                select: 'pmName _id',
+            })
+            .populate({
+                path: 'grnEntryPartyDetailId',
+                select: 'partyId grnNo grnDate invoiceNo _id',
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });
+
+        if (reqData.partyId && reqData.partyId.trim() !== '') {
+            response = response.filter(item =>
+                item.grnEntryPartyDetailId.partyId._id.toString() === reqData.partyId)
+        }
+        let encryptData = encryptionAPI(response, 1)
+
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getAllMaterialWisePurchaseReport = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+        };
+
+        if (reqData.startDate && reqData.endDate) {
+            queryObject.createdAt = { $gte: new Date(reqData.startDate), $lte: new Date(reqData.endDate) }
+        }
+
+        if (reqData.materialType === 'Raw Material') {
+            if (reqData.rawMaterialId && reqData.rawMaterialId.trim() !== '') {
+                queryObject.rawMaterialId = reqData.rawMaterialId
+            } else {
+                queryObject.rawMaterialId = { $exists: true, $ne: null };
+            }
+        }
+
+        if (reqData.materialType === 'Packing Material') {
+            if (reqData.packageMaterialId && reqData.packageMaterialId.trim() !== '') {
+                queryObject.packageMaterialId = reqData.packageMaterialId
+            } else {
+                queryObject.packageMaterialId = { $exists: true, $ne: null };
+            }
+        }
+
+        let response = await purchaserOrderMaterialDetailsModel
+            .find(queryObject)
+            .populate({
+                path: 'rawMaterialId',
+                select: 'rmName _id',
+            })
+            .populate({
+                path: 'packageMaterialId',
+                select: 'pmName _id',
+            })
+            .populate({
+                path: 'purchaseOrderId',
+                select: 'partyId purchaseOrderNo purchaseOrderDate _id',
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });
+
+        let encryptData = encryptionAPI(response, 1)
+
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getAllItemsForStockLedgerReport = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+        };
+
+        if (reqData.endingDate) {
+            queryObject.createdAt = { $lte: new Date(reqData.endingDate) }
+        }
+
+        if (reqData.materialType === 'Raw Material') {
+            queryObject.rawMaterialId = { $exists: true, $ne: null };
+            queryObject.packageMaterialId = null;
+        }
+
+        if (reqData.materialType === 'Packing Material') {
+            queryObject.packageMaterialId = { $exists: true, $ne: null };
+            queryObject.rawMaterialId = null;
+        }
+        let response = await grnEntryMaterialDetailsModel
+            .find(queryObject)
+            .populate({
+                path: 'rawMaterialId',
+                select: 'rmName rmCategory rmUOM _id',
+            })
+            .populate({
+                path: 'packageMaterialId',
+                select: 'pmName pmCategory pmUOM _id',
+            })
+            .populate({
+                path: 'grnEntryPartyDetailId',
+                select: 'partyId purchaseOrderNo purchaseOrderDate _id',
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });
+
+        if (reqData.materialType === 'Raw Material') {
+            response = response.sort((a, b) => {
+                const nameA = a.rawMaterialId?.rmName?.toLowerCase() || '';
+                const nameB = b.rawMaterialId?.rmName?.toLowerCase() || '';
+                return nameA.localeCompare(nameB);
+            });
+
+            if (reqData.categoryName && reqData.categoryName !== 'Select' && reqData.categoryName.trim() !== '') {
+                response = response.filter((x) => {
+                    return x.rawMaterialId.rmCategory === reqData.categoryName;
+                });
+            }
+
+        } else if (reqData.materialType === 'Packing Material') {
+            response = response.sort((a, b) => {
+                const nameA = a.packageMaterialId?.pmName?.toLowerCase() || '';
+                const nameB = b.packageMaterialId?.pmName?.toLowerCase() || '';
+                return nameA.localeCompare(nameB);
+            });
+
+            if (reqData.categoryName && reqData.categoryName !== 'Select' && reqData.categoryName.trim() !== '') {
+                response = response.filter((x) => {
+                    return x.packageMaterialId.pmCategory === reqData.categoryName;
+                });
+            }
+        }
+
+        console.log("response", response)
+        console.log("reqData.materialType", reqData.categoryName)
+        let encryptData = encryptionAPI(response, 1)
+
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getAllStatementForPurchaseItemByItemId = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+        };
+        if (reqData.materialType === 'Raw Material') {
+            queryObject.rawMaterialId = reqData.item._id
+        }
+
+        if (reqData.materialType === 'Packing Material') {
+            queryObject.packageMaterialId = reqData.item._id
+        }
+
+        let response = await grnEntryMaterialDetailsModel
+            .find(queryObject)
+            .populate({
+                path: 'rawMaterialId',
+                select: 'rmName rmCategory _id',
+            })
+            .populate({
+                path: 'packageMaterialId',
+                select: 'pmName pmCategory _id',
+            })
+            .populate({
+                path: 'grnEntryPartyDetailId',
+                select: 'partyId grnNo grnDate invoiceNo _id',
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });
+
+        let encryptData = encryptionAPI(response, 1)
+
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getAllShourtageReport = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+        };
+
+        if (reqData.materialType === 'Raw Material') {
+            queryObject.rawMaterialId = { $exists: true, $ne: null };
+        }
+
+        if (reqData.materialType === 'Packing Material') {
+            queryObject.packageMaterialId = { $exists: true, $ne: null };
+        }
+
+        let response = await grnEntryMaterialDetailsModel
+            .find(queryObject)
+            .populate({
+                path: 'rawMaterialId',
+                select: 'rmName rmUOM minQty rmCategory _id',
+            })
+            .populate({
+                path: 'packageMaterialId',
+                select: 'pmName pmUOM pmMinQty pmCategory _id',
+            });
+
+        const combinedItems = response.reduce((acc, row) => {
+            const key = reqData.materialType === 'Raw Material'
+                ? row.rawMaterialId?.rmName
+                : row.packageMaterialId?.pmName;
+
+            if (key) {
+                if (!acc[key]) {
+                    acc[key] = {
+                        ...row,
+                        qty: row.qty || 0,
+                    };
+                } else {
+                    acc[key].qty += row.qty || 0;
+                }
+            }
+
+            return acc;
+        }, {});
+
+        const Data = Object.values(combinedItems);
+
+        const processedData = Data.filter(item => {
+            if (reqData.materialType === 'Raw Material') {
+                return item.qty < (item._doc.rawMaterialId?.minQty || 0);
+            } else {
+                return item.qty < (item._doc.packageMaterialId?.pmMinQty || 0);
+            }
+        });
+
+        let encryptData = encryptionAPI(processedData, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getAllNearExpiryReport = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+        };
+
+        if (reqData.materialType === 'Raw Material') {
+            queryObject.rawMaterialId = { $exists: true, $ne: null };
+        }
+
+        if (reqData.materialType === 'Packing Material') {
+            queryObject.packageMaterialId = { $exists: true, $ne: null };
+        }
+
+        let response = await grnEntryMaterialDetailsModel
+            .find(queryObject)
+            .populate({
+                path: 'rawMaterialId',
+                select: 'rmName rmUOM minQty rmCategory _id',
+            })
+            .populate({
+                path: 'packageMaterialId',
+                select: 'pmName pmUOM pmMinQty pmCategory _id',
+            })
+            .populate({
+                path: 'grnEntryPartyDetailId',
+                select: 'partyId grnNo grnDate invoiceNo _id',
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });
+
+        const today = new Date();
+
+        const responseWithDayDifference = response.map(item => {
+            const expDate = item.expDate;
+            const dayDifference = expDate
+                ? Math.ceil((expDate - today) / (1000 * 60 * 60 * 24))
+                : null;
+            return { ...item.toObject(), dayDifference };
+        })
+            .filter(item => item.dayDifference !== null && item.dayDifference >= 0 && item.dayDifference <= reqData.days);
+
+        let encryptData = encryptionAPI(responseWithDayDifference, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getAllPurchaseOrderRegister = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+            purchaseOrderId: { $exists: true, $ne: null },
+        };
+
+        if (reqData.startDate && reqData.endDate) {
+            queryObject.createdAt = { $gte: new Date(reqData.startDate), $lte: new Date(reqData.endDate) }
+        }
+
+        if (reqData.materialType && reqData.materialType !== 'Both' && reqData.materialType.trim() !== '') {
+            if (reqData.materialType === 'Raw Material') {
+                if (reqData.rawMaterialId && reqData.rawMaterialId.trim() !== '') {
+                    queryObject.rawMaterialId = reqData.rawMaterialId
+                } else {
+                    queryObject.rawMaterialId = { $exists: true, $ne: null };
+                }
+            }
+
+            if (reqData.materialType === 'Packing Material') {
+                if (reqData.packageMaterialId && reqData.packageMaterialId.trim() !== '') {
+                    queryObject.packageMaterialId = reqData.packageMaterialId
+                } else {
+                    queryObject.packageMaterialId = { $exists: true, $ne: null };
+                }
+            }
+        }
+
+        let status = [];
+        if (reqData.isPendingPurchseReport) {
+            status.push('Order Approved');
+        } else {
+            status.push('Order Created', 'Email Sent', 'Order Approved');
+        }
+
+        let response = await purchaserOrderMaterialDetailsModel
+            .find(queryObject)
+            .populate({
+                path: 'rawMaterialId',
+                select: 'rmName _id',
+            })
+            .populate({
+                path: 'packageMaterialId',
+                select: 'pmName _id',
+            })
+            .populate({
+                path: 'purchaseOrderId',
+                select: 'partyId purchaseOrderNo purchaseOrderDate gstApplicable deliveryBefore status _id',
+                match: { status: { $in: status } },
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });
+
+        response = response.filter((doc) => doc.purchaseOrderId !== null);
+
+        if (reqData.partyId && reqData.partyId.trim() !== '') {
+            response = response.filter(item =>
+                item.purchaseOrderId.partyId._id.toString() === reqData.partyId)
+        }
+        let encryptData = encryptionAPI(response, 1)
+
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("error in inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 export {
     addEditGRNEntryMaterialMapping,
     getAllPartyListForGRNEntry,
@@ -1363,5 +1856,12 @@ export {
     getAllInquiryMaterialDetailsByInquiryId,
     deleteInquiryDetailsById,
     deleteInquiryMaterialDetailsById,
-    sendInquiryToCompany
+    sendInquiryToCompany,
+    getAllGoodsRegistered,
+    getAllMaterialWisePurchaseReport,
+    getAllItemsForStockLedgerReport,
+    getAllStatementForPurchaseItemByItemId,
+    getAllShourtageReport,
+    getAllNearExpiryReport,
+    getAllPurchaseOrderRegister
 };
