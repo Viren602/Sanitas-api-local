@@ -1,21 +1,42 @@
 import HNSCodesScHema from "../model/hnsCode.js";
 import ItemCategory from "../model/itemCategory.js";
-
+import { encryptionAPI, getRequestData } from "../middleware/encryption.js";
 
 const addEditItemGategory = async (req, res) => {
   try {
-    let data = req.body.data
+    let reqData = req.body.data
+    let data = getRequestData(reqData, 'PostApi')
     if (data._id && data._id.trim() !== '') {
       const response = await ItemCategory.findByIdAndUpdate(data._id, data, { new: true });
       if (response) {
-        res.status(200).json({ Message: "Category updated successfully", data: response });
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+          data: {
+            statusCode: 200,
+            Message: "Category updated successfully",
+            responseData: encryptData,
+            isEnType: true
+          },
+        });
       } else {
         res.status(404).json({ Message: "Category not found" });
       }
     } else {
       const response = new ItemCategory(data);
       await response.save();
-      res.status(200).json({ Message: "Category added successfully", data: response });
+
+      let encryptData = encryptionAPI(response, 1)
+
+      res.status(200).json({
+        data: {
+          statusCode: 200,
+          Message: "Category added successfully",
+          responseData: encryptData,
+          isEnType: true
+        },
+      });
     }
 
   } catch (error) {
@@ -25,56 +46,99 @@ const addEditItemGategory = async (req, res) => {
 };
 
 const deleteCategoryById = async (req, res) => {
-    try {
-      const { id } = req.query;
-      console.log(id)
-      let response = {}
-      if (id) {
-        response = await ItemCategory.findByIdAndDelete(id, { IsDeleted: true }, { new: true, useFindAndModify: false });
-      }
-      res.status(201).json({ Message: "Item has been deleted", responseContent: response });
-    } catch (error) {
-      console.log("error in item master controller", error);
-      res.status(500).json({ error: error.message });
+  try {
+    const { id } = req.query;
+    let reqId = getRequestData(id)
+    let response = {}
+    if (reqId) {
+      response = await ItemCategory.findByIdAndDelete(reqId, { IsDeleted: true }, { new: true, useFindAndModify: false });
     }
-  };
 
-  const addEditHSNCode = async (req, res) => {
-    try {
-      let data = req.body.data
-      if (data._id && data._id.trim() !== '') {
-        const response = await HNSCodesScHema.findByIdAndUpdate(data._id, data, { new: true });
-        if (response) {
-          res.status(200).json({ Message: "HNSCode updated successfully", data: response });
-        } else {
-          res.status(404).json({ Message: "HNSCode not found" });
-        }
+    let encryptData = encryptionAPI(response, 1)
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Item has been deleted",
+        responseData: encryptData,
+        isEnType: true
+      },
+    });
+
+  } catch (error) {
+    console.log("error in item master controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const addEditHSNCode = async (req, res) => {
+  try {
+    let apiData = req.body.data
+    let data = getRequestData(apiData, 'PostApi')
+    if (data._id && data._id.trim() !== '') {
+      const response = await HNSCodesScHema.findByIdAndUpdate(data._id, data, { new: true });
+      if (response) {
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+          data: {
+            statusCode: 200,
+            Message: "HNSCode updated successfully",
+            responseData: encryptData,
+            isEnType: true
+          },
+        });
+
       } else {
-        const response = new HNSCodesScHema(data);
-        await response.save();
-        res.status(200).json({ Message: "HNSCode added successfully", data: response });
+        res.status(404).json({ Message: "HNSCode not found" });
       }
-  
-    } catch (error) {
-      console.log("error in admin addEmployee controller", error);
-      res.status(500).json({ error: error.message });
+    } else {
+      const response = new HNSCodesScHema(data);
+      await response.save();
+
+      let encryptData = encryptionAPI(response, 1)
+
+      res.status(200).json({
+        data: {
+          statusCode: 200,
+          Message: "HNSCode added successfully",
+          responseData: encryptData,
+          isEnType: true
+        },
+      });
     }
-  };
-  
-  const deleteHSNCodeById = async (req, res) => {
-      try {
-        const { id } = req.query;
-        console.log(id)
-        let response = {}
-        if (id) {
-          response = await HNSCodesScHema.findByIdAndDelete(id, { IsDeleted: true }, { new: true, useFindAndModify: false });
-        }
-        res.status(201).json({ Message: "HNSCode has been deleted", responseContent: response });
-      } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
-      }
-    };
+
+  } catch (error) {
+    console.log("error in admin addEmployee controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const deleteHSNCodeById = async (req, res) => {
+  try {
+    const { id } = req.query;
+    let reqId = getRequestData(id)
+    let response = {}
+    if (reqId) {
+      response = await HNSCodesScHema.findByIdAndDelete(reqId, { IsDeleted: true }, { new: true, useFindAndModify: false });
+    }
+
+    let encryptData = encryptionAPI(response, 1)
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "HNSCode has been deleted",
+        responseData: encryptData,
+        isEnType: true
+      },
+    });
+  } catch (error) {
+    console.log("error in item master controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
 
 export {
   addEditItemGategory,

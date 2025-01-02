@@ -1,4 +1,4 @@
-import { encryptionAPI } from "../middleware/encryption.js";
+import { encryptionAPI, getRequestData } from "../middleware/encryption.js";
 import accountGroupModel from "../model/accountGroupModel.js";
 import colorModel from "../model/colorModel.js";
 import companyItems from "../model/companyItems.js";
@@ -25,7 +25,15 @@ import UsersSCHM from "../model/user.js";
 const getAllItemCategory = async (req, res) => {
     try {
         let response = await ItemCategory.find({});
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -35,7 +43,15 @@ const getAllItemCategory = async (req, res) => {
 const getAllHSNCode = async (req, res) => {
     try {
         let response = await HNSCodesScHema.find({});
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -45,7 +61,17 @@ const getAllHSNCode = async (req, res) => {
 const getAllStorageConditions = async (req, res) => {
     try {
         let response = await storageConditionModel.find({});
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -55,7 +81,18 @@ const getAllStorageConditions = async (req, res) => {
 const getAllRMCategory = async (req, res) => {
     try {
         let response = await rmCategoryModel.find({});
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -65,7 +102,18 @@ const getAllRMCategory = async (req, res) => {
 const getAllPMCategory = async (req, res) => {
     try {
         let response = await pmCategoryModel.find({});
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -75,7 +123,18 @@ const getAllPMCategory = async (req, res) => {
 const getAllPackingMaterialSize = async (req, res) => {
     try {
         let response = await packingMaterialSizeModel.find({});
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -85,7 +144,18 @@ const getAllPackingMaterialSize = async (req, res) => {
 const getAllStates = async (req, res) => {
     try {
         let response = await stateModel.find({});
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -95,7 +165,18 @@ const getAllStates = async (req, res) => {
 const getAllStereoData = async (req, res) => {
     try {
         let response = await stereoModel.find({});
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -105,7 +186,17 @@ const getAllStereoData = async (req, res) => {
 const getAllLabelClaims = async (req, res) => {
     try {
         let response = await labelClaimModel.find({});
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -115,7 +206,18 @@ const getAllLabelClaims = async (req, res) => {
 const getAllColors = async (req, res) => {
     try {
         let response = await colorModel.find({});
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -125,7 +227,18 @@ const getAllColors = async (req, res) => {
 const getAllMfgLicMaster = async (req, res) => {
     try {
         let response = await mfgLicModel.find({});
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -135,7 +248,18 @@ const getAllMfgLicMaster = async (req, res) => {
 const getAllProductionStageMaster = async (req, res) => {
     try {
         let response = await productionStageModel.find({});
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -145,7 +269,18 @@ const getAllProductionStageMaster = async (req, res) => {
 const getAllPunchSizes = async (req, res) => {
     try {
         let response = await punchSizeModel.find({});
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -155,7 +290,17 @@ const getAllPunchSizes = async (req, res) => {
 const getAllAccountGroups = async (req, res) => {
     try {
         let response = await accountGroupModel.find({});
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -165,12 +310,25 @@ const getAllAccountGroups = async (req, res) => {
 const getAllTransportCourier = async (req, res) => {
     try {
         const { id } = req.query;
+        let reqId = getRequestData(id)
         let queryObject = { isDeleted: false }
-        if (id && id.trim() !== "") {
-            queryObject.transportName = { $regex: `^${id}`, $options: "i" };
+        if (reqId && reqId.trim() !== "") {
+            queryObject.transportName = { $regex: `^${reqId}`, $options: "i" };
         }
         let response = await transportCourierModel.find(queryObject).sort("transportName");
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+
+        
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -194,7 +352,17 @@ const getAllDaybooks = async (req, res) => {
             };
         }
 
-        res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
         res.status(500).json({ error: error.message });
@@ -206,7 +374,18 @@ const getAllPartyDropdown = async (req, res) => {
         let queryObject = { isDeleted: false }
         let response = await partyModel.find(queryObject).select("partyName email").sort("partyName");
 
-        res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
     } catch (error) {
         console.log("error in item master controller", error);
         res.status(500).json({ error: error.message });
@@ -219,7 +398,18 @@ const getAllItem = async (req, res) => {
         let queryObject = { IsDeleted: false }
         let response = await companyItems.find(queryObject).select("ItemName").sort("ItemName");
 
-        res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
     } catch (error) {
         console.log("error in item master controller", error);
         res.status(500).json({ error: error.message });
@@ -231,7 +421,18 @@ const getAllProductDropdown = async (req, res) => {
         let queryObject = { isDeleted: false }
         let data = await productDetailsModel.find(queryObject).select("productName").sort("productName");
 
-        res.status(200).json({ Message: "Product fetched successfully", responseContent: data });
+        let encryptData = encryptionAPI(data, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(200).json({ Message: "Product fetched successfully", responseContent: data });
     } catch (error) {
         console.log("error in item master controller", error);
         res.status(500).json({ error: error.message });
@@ -243,7 +444,17 @@ const getAllRMDropdown = async (req, res) => {
         let queryObject = { isDeleted: false }
         let data = await rawMaterialSchema.find(queryObject).select("rmName rmUOM").sort("rmName");
 
-        res.status(200).json({ Message: "Raw Material fetched successfully", responseContent: data });
+        let encryptData = encryptionAPI(data, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
     } catch (error) {
         console.log("error in item master controller", error);
         res.status(500).json({ error: error.message });
@@ -255,7 +466,17 @@ const getAllPackingMaterialDropdown = async (req, res) => {
         let queryObject = { isDeleted: false }
         let data = await packingMaterialSchema.find(queryObject).select('pmName pmUOM').sort("pmName");
 
-        res.status(200).json({ Message: "Packing Material fetched successfully", responseContent: data });
+        let encryptData = encryptionAPI(data, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Packing Material fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+        
     } catch (error) {
         console.log("error in item master controller", error);
         res.status(500).json({ error: error.message });

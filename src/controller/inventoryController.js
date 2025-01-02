@@ -12,7 +12,8 @@ import inquiryMaterialDetailsModel from "../model/InventoryModels/inquiryMateria
 
 const addEditGRNEntryMaterialMapping = async (req, res) => {
     try {
-        let data = req.body.data
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
         let responseData = {};
         if (data.grnRawMaterialPartyDetails.partyDetailsId && data.grnRawMaterialPartyDetails.partyDetailsId.trim() !== '') {
             const response = await grnEntryPartyDetailsModel.findByIdAndUpdate(data.grnRawMaterialPartyDetails.partyDetailsId, data.grnRawMaterialPartyDetails, { new: true });
@@ -58,10 +59,21 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
             responseData.materialDetails = response;
         }
 
+        let encryptData = encryptionAPI(responseData, 1)
+
         res.status(200).json({
-            Message: "GRN entry material mapping added/updated successfully",
-            data: responseData
+            data: {
+                statusCode: 200,
+                Message: "GRN entry material mapping added/updated successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
         });
+
+        // res.status(200).json({
+        //     Message: "GRN entry material mapping added/updated successfully",
+        //     data: responseData
+        // });
 
     } catch (error) {
         console.log("error in admin addEmployee controller", error);
@@ -71,8 +83,8 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
 
 const getAllPartyListForGRNEntry = async (req, res) => {
     try {
-        let data = req.body.data
-
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
 
         let filterBy = 'partyName'
@@ -99,7 +111,16 @@ const getAllPartyListForGRNEntry = async (req, res) => {
             );
         }
 
-        res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
     } catch (error) {
         console.log("error in inventory controller", error);
         res.status(500).json({ error: error.message });
@@ -109,10 +130,11 @@ const getAllPartyListForGRNEntry = async (req, res) => {
 const getAllgrnEntryMaterialDetailsById = async (req, res) => {
     try {
         const { id } = req.query;
+        let reqId = getRequestData(id)
         let response = []
-        if (id) {
+        if (reqId) {
             response = await grnEntryMaterialDetailsModel
-                .find({ grnEntryPartyDetailId: id, isDeleted: false })
+                .find({ grnEntryPartyDetailId: reqId, isDeleted: false })
                 .populate({
                     path: 'rawMaterialId',
                     select: 'rmName _id',
@@ -122,7 +144,19 @@ const getAllgrnEntryMaterialDetailsById = async (req, res) => {
                     select: 'pmName _id',
                 });
         }
-        res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
     } catch (error) {
         console.log("error in Inventory controller", error);
         res.status(500).json({ error: error.message });
@@ -132,11 +166,24 @@ const getAllgrnEntryMaterialDetailsById = async (req, res) => {
 const deleteGRNEntryMaterialDetailsById = async (req, res) => {
     try {
         const { id } = req.query;
+        let reqId = getRequestData(id)
         let response = {}
-        if (id) {
-            response = await grnEntryPartyDetailsModel.findByIdAndUpdate(id, { isDeleted: true }, { new: true, useFindAndModify: false });
+        if (reqId) {
+            response = await grnEntryPartyDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
-        res.status(200).json({ Message: "GRN Party Details deleted successfully", responseContent: response });
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "GRN Party Details deleted successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(200).json({ Message: "GRN Party Details deleted successfully", responseContent: response });
     } catch (error) {
         console.log("error in inventory controller", error);
         res.status(500).json({ error: error.message });
@@ -146,11 +193,24 @@ const deleteGRNEntryMaterialDetailsById = async (req, res) => {
 const deleteItemforGRNEntryMaterialById = async (req, res) => {
     try {
         const { id } = req.query;
+        let reqId = getRequestData(id)
         let response = {}
-        if (id) {
-            response = await grnEntryMaterialDetailsModel.findByIdAndUpdate(id, { isDeleted: true }, { new: true, useFindAndModify: false });
+        if (reqId) {
+            response = await grnEntryMaterialDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
-        res.status(200).json({ Message: "GRN Material Detail deleted successfully", responseContent: response });
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "GRN Material Detail deleted successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(200).json({ Message: "GRN Material Detail deleted successfully", responseContent: response });
     } catch (error) {
         console.log("error in inventory controller", error);
         res.status(500).json({ error: error.message });
