@@ -7,6 +7,7 @@ const admins = mongoose.Schema({
     Level: { type: String, default: '' },
     Location: { type: String, default: '' },
     Status: { type: String, default: '' },
+    hashPassword: { type: String, default: '' },
 }, { timestamps: true })
 
 

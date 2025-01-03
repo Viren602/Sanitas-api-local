@@ -7,7 +7,8 @@ const config = {
   URL: process.env.URL,
   PRODUCTION : process.env.PRODUCTION,
   CryptoKey:process.env.CRYPTO_ENCRYPT_KEY,
-  Secret_key:process.env.Secret_key
+  Secret_key:process.env.Secret_key,
+  Session_TimeOut:process.env.Session_TimeOut
 };
 
 export default config;

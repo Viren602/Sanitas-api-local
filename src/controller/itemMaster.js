@@ -69,7 +69,6 @@ const getAllItems = async (req, res) => {
     let response = await companyItems.find(queryObject).select('ItemName ItemCategory BasicRate DiscountRate MinimumQty MaximumQty MrpRs HSNCode').sort("ItemName");
 
     let encryptData = encryptionAPI(response, 1)
-
     res.status(200).json({
       data: {
         statusCode: 200,
