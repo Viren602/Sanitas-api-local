@@ -6,7 +6,7 @@ const masterRoute = express.Router();
 
 // Packing Material Master
 masterRoute.post("/packingMaterialMaster/AddEditPackingMaterial", checkAuth, addEditPackingMaterial);
-masterRoute.get("/packingMaterialMaster/GetAllPackingMaterials", checkAuth, getAllPackingMaterials);
+masterRoute.get("/packingMaterialMaster/GetAllPackingMaterials", getAllPackingMaterials);
 masterRoute.get("/packingMaterialMaster/GetPackingMaterialById", checkAuth, getPackingMaterialById);
 masterRoute.get("/packingMaterialMaster/DeletePackingMaterialById", checkAuth, deletePackingMaterialById);
 
@@ -67,14 +67,14 @@ masterRoute.post("/packingMaterial/AddEditDaybook", checkAuth, addEditDaybook);
 masterRoute.get("/packingMaterial/DeleteDaybookById", checkAuth, deleteDaybookById);
 
 // Party Master
-masterRoute.get("/itemMaster/GetAllParties", checkAuth, getAllParties);
+masterRoute.get("/itemMaster/GetAllParties", getAllParties);
 masterRoute.get("/itemMaster/GetPartyDetailsById", checkAuth, getPartyDetailsById);
 masterRoute.post("/packingMaterial/AddEditPartyDetails", checkAuth, addEditPartyDetails);
 masterRoute.get("/packingMaterial/DeletePartyDetailsById", checkAuth, deletePartyDetailsById);
 
 // Product Details Master
 masterRoute.post("/itemMaster/AddEditProductDetails", checkAuth, addeditProductDetails);
-masterRoute.get("/itemMaster/GetAllProductDetails", checkAuth, getAllProductDetails);
+masterRoute.get("/itemMaster/GetAllProductDetails", getAllProductDetails);
 masterRoute.get("/itemMaster/GetProductDetailById", checkAuth, getProductDetailById);
 masterRoute.get("/itemMaster/DeleteProductDetailsById", checkAuth, deleteProductDetailsById);
 

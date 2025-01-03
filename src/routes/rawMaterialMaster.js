@@ -5,7 +5,7 @@ import checkAuth from "../middleware/checkAuth.js";
 const rawMaterialMasterRoutes = express.Router();
 
 rawMaterialMasterRoutes.post("/rawMaterialMaster/AddEditRawMaterial", checkAuth, addEditRawMaterial);
-rawMaterialMasterRoutes.get("/rawMaterialMaster/GetAllRawMaterials", checkAuth, getAllRawMaterials);
+rawMaterialMasterRoutes.get("/rawMaterialMaster/GetAllRawMaterials", getAllRawMaterials);
 rawMaterialMasterRoutes.get("/rawMaterialMaster/GetRawMaterialById", checkAuth, getRawMaterialById);
 rawMaterialMasterRoutes.get("/rawMaterialMaster/DeleteRawMaterialById", checkAuth, deleteRawMaterialById);
 

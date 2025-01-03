@@ -8,6 +8,8 @@ const admins = mongoose.Schema({
     Location: { type: String, default: '' },
     Status: { type: String, default: '' },
     hashPassword: { type: String, default: '' },
+    email: { type: String, default: '' },
+    roleId: { type: Number, default: '' },
 }, { timestamps: true })
 
 
