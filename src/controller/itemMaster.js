@@ -24,18 +24,31 @@ const addEditItems = async (req, res) => {
         res.status(404).json({ Message: "Item not found" });
       }
     } else {
-      const response = new companyItems(reqData);
-      await response.save();
+      const existingItemByName = await companyItems.findOne({ ItemName: reqData.ItemName.trim() });
+      if (existingItemByName) {
+        let encryptData = encryptionAPI(existingItemByName, 1)
+        res.status(200).json({
+          data: {
+            statusCode: 409,
+            Message: "Item with the same name already exists",
+            responseData: encryptData,
+            isEnType: true
+          },
+        });
+      } else {
+        const response = new companyItems(reqData);
+        await response.save();
 
-      let encryptData = encryptionAPI(response, 1)
-      res.status(200).json({
-        data: {
-          statusCode: 200,
-          Message: "Item added successfully",
-          responseData: encryptData,
-          isEnType: true
-        },
-      });
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+          data: {
+            statusCode: 200,
+            Message: "Item added successfully",
+            responseData: encryptData,
+            isEnType: true
+          },
+        });
+      }
     }
 
   } catch (error) {

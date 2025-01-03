@@ -24,17 +24,30 @@ const addEditRawMaterial = async (req, res) => {
                 res.status(404).json({ Message: "Item not found" });
             }
         } else {
-            const response = new rawMaterialSchema(reqData);
-            await response.save();
-            let encryptData = encryptionAPI(response, 1)
-            res.status(200).json({
-                data: {
-                    statusCode: 200,
-                    Message: "Item added successfully",
-                    responseData: encryptData,
-                    isEnType: true
-                },
-            });
+            const existingItemByName = await rawMaterialSchema.findOne({ rmName: reqData.rmName.trim() });
+            if (existingItemByName) {
+                let encryptData = encryptionAPI(existingItemByName, 1)
+                res.status(200).json({
+                    data: {
+                        statusCode: 409,
+                        Message: "Raw Material with the same name already exists",
+                        responseData: encryptData,
+                        isEnType: true
+                    },
+                });
+            } else {
+                const response = new rawMaterialSchema(reqData);
+                await response.save();
+                let encryptData = encryptionAPI(response, 1)
+                res.status(200).json({
+                    data: {
+                        statusCode: 200,
+                        Message: "Item added successfully",
+                        responseData: encryptData,
+                        isEnType: true
+                    },
+                });
+            }
             // res.status(200).json({ Message: "Item added successfully", reqData: response });
         }
 

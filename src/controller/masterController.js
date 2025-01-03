@@ -43,19 +43,32 @@ const addEditPackingMaterial = async (req, res) => {
                 res.status(404).json({ Message: "Item not found" });
             }
         } else {
-            const response = new packingMaterialSchema(data);
-            await response.save();
+            const existingItemByName = await packingMaterialSchema.findOne({ pmName: data.pmName.trim() });
+            if (existingItemByName) {
+                let encryptData = encryptionAPI(existingItemByName, 1)
+                res.status(200).json({
+                    data: {
+                        statusCode: 409,
+                        Message: "Raw Material with the same name already exists",
+                        responseData: encryptData,
+                        isEnType: true
+                    },
+                });
+            } else {
+                const response = new packingMaterialSchema(data);
+                await response.save();
 
-            let encryptData = encryptionAPI(response, 1)
+                let encryptData = encryptionAPI(response, 1)
 
-            res.status(200).json({
-                data: {
-                    statusCode: 200,
-                    Message: "Item added successfully",
-                    responseData: encryptData,
-                    isEnType: true
-                },
-            });
+                res.status(200).json({
+                    data: {
+                        statusCode: 200,
+                        Message: "Item added successfully",
+                        responseData: encryptData,
+                        isEnType: true
+                    },
+                });
+            }
         }
 
     } catch (error) {
@@ -1191,20 +1204,32 @@ const addEditPartyDetails = async (req, res) => {
                 res.status(404).json({ Message: "Item not found" });
             }
         } else {
-            const response = new partyModel(data);
-            await response.save();
+            const existingItemByName = await partyModel.findOne({ partyName: data.partyName.trim() });
+            if (existingItemByName) {
+                let encryptData = encryptionAPI(existingItemByName, 1)
+                res.status(200).json({
+                    data: {
+                        statusCode: 409,
+                        Message: "Company with the same name already exists",
+                        responseData: encryptData,
+                        isEnType: true
+                    },
+                });
+            } else {
+                const response = new partyModel(data);
+                await response.save();
 
-            let encryptData = encryptionAPI(response, 1)
+                let encryptData = encryptionAPI(response, 1)
 
-            res.status(200).json({
-                data: {
-                    statusCode: 200,
-                    Message: "Item added successfully",
-                    responseData: encryptData,
-                    isEnType: true
-                },
-            });
-
+                res.status(200).json({
+                    data: {
+                        statusCode: 200,
+                        Message: "Item added successfully",
+                        responseData: encryptData,
+                        isEnType: true
+                    },
+                });
+            }
             // res.status(200).json({ Message: "Item added successfully", data: response });
         }
 
@@ -1263,18 +1288,31 @@ const addeditProductDetails = async (req, res) => {
                 res.status(404).json({ Message: "Product not found" });
             }
         } else {
-            const response = new productDetailsModel(data);
-            await response.save();
-            let encryptData = encryptionAPI(response, 1)
+            const existingItemByName = await productDetailsModel.findOne({ productName: data.productName.trim() });
+            if (existingItemByName) {
+                let encryptData = encryptionAPI(existingItemByName, 1)
+                res.status(200).json({
+                    data: {
+                        statusCode: 409,
+                        Message: "Product with the same name already exists",
+                        responseData: encryptData,
+                        isEnType: true
+                    },
+                });
+            } else {
+                const response = new productDetailsModel(data);
+                await response.save();
+                let encryptData = encryptionAPI(response, 1)
 
-            res.status(200).json({
-                data: {
-                    statusCode: 200,
-                    Message: "Product added successfully",
-                    responseData: encryptData,
-                    isEnType: true
-                },
-            });
+                res.status(200).json({
+                    data: {
+                        statusCode: 200,
+                        Message: "Product added successfully",
+                        responseData: encryptData,
+                        isEnType: true
+                    },
+                });
+            }
         }
 
     } catch (error) {
