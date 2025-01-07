@@ -7,6 +7,7 @@ import rawMaterialMasterRoutes from "../routes/rawMaterialMaster.js";
 import masterRoute from "../routes/masterRoute.js";
 import migration from "../routes/migrationRoute.js";
 import inventoryRoute from "../routes/inventoryRoute.js";
+import productionRoute from "../routes/productionRoute.js";
 
 // app.use("/auth",employeeRouter);
 // app.use("/auth",auth);
@@ -21,6 +22,9 @@ app.use("/api", masterRoute);
 
 // Inventory Module
 app.use("/api", inventoryRoute);
+
+// production Module
+app.use("/api", productionRoute);
 
 app.use("/api", migration);
 
