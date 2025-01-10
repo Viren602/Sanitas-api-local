@@ -9,6 +9,7 @@ import mailsender from "../utils/sendingEmail.js";
 import partyModel from "../model/partiesModel.js";
 import inquiryDetailsModel from "../model/InventoryModels/inquiryDetailsModel.js";
 import inquiryMaterialDetailsModel from "../model/InventoryModels/inquiryMaterialDetails.js";
+import ProductionRequisitionRMFormulaModel from "../model/InventoryModels/productionRequisitionRMFormulaModel.js";
 
 const addEditGRNEntryMaterialMapping = async (req, res) => {
     try {
@@ -1602,8 +1603,6 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
             }
         }
 
-        console.log("response", response)
-        console.log("reqData.materialType", reqData.categoryName)
         let encryptData = encryptionAPI(response, 1)
 
 
@@ -1656,7 +1655,43 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
                 },
             });
 
-        let encryptData = encryptionAPI(response, 1)
+        let queryObject1 = {
+            isDeleted: false,
+        };
+        if (reqData.materialType === 'Raw Material') {
+            queryObject1.rmName = reqData.item.rmName
+        }
+
+        if (reqData.materialType === 'Packing Material') {
+            // queryObject1.pmName = reqData.pmName
+        }
+
+        let responseFromUsedQty = await ProductionRequisitionRMFormulaModel
+            .find(queryObject1)
+            .populate({
+                path: 'productDetialsId',
+                select: 'partyId productionNo productionPlanningDate batchNo _id',
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });
+
+        console.log(responseFromUsedQty)
+
+        responseFromUsedQty = responseFromUsedQty.map(x => {
+            return {
+                ...x._doc, // Ensure you're working with the document data
+                issueQty: x.netQty,
+                isIssuedRecord: true,
+            };
+        });
+
+        console.log(responseFromUsedQty)
+
+        let combinedResponse = [...response, ...responseFromUsedQty];
+
+        let encryptData = encryptionAPI(combinedResponse, 1)
 
 
         res.status(200).json({
