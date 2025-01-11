@@ -7,8 +7,8 @@ const productionPlanningEntrySchema = mongoose.Schema(
       ref: "AccountMasters",
       default: null,
     },
-    productionNo : { type: String, default: "" },
-    productionPlanningDate : { type: Date, default: "" },
+    productionNo: { type: String, default: "" },
+    productionPlanningDate: { type: Date, default: "" },
     productId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ProductMasters",
@@ -42,6 +42,14 @@ const productionPlanningEntrySchema = mongoose.Schema(
     expDate: { type: Date, default: "" },
     stdBatchSize: { type: String, default: "" },
     productionStageStatusId: { type: Number, default: "" },
+    packingRequisitionReqDate: { type: Date, default: "" },
+    productionRequisitionReqDate: { type: Date, default: "" },
+    packingItemId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CompanyItem",
+      default: null,
+    },
+    packQty: { type: Number, default: "" },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

@@ -1,6 +1,8 @@
 import { encryptionAPI, getRequestData } from "../middleware/encryption.js";
 import grnEntryMaterialDetailsModel from "../model/InventoryModels/grnEntryMaterialDetailsModel.js";
+import PackingRequisitionPMFormulaModel from "../model/InventoryModels/packingRequisitionPMFormulaModel.js";
 import ProductionRequisitionRMFormulaModel from "../model/InventoryModels/productionRequisitionRMFormulaModel.js";
+import pmFormulaModel from "../model/pmFormulaModel.js";
 import productionPlanningEntryModel from "../model/ProductionModels/productionPlanningEntryModel.js";
 import rmFormulaModel from "../model/rmFormulaModel.js";
 
@@ -304,7 +306,6 @@ const productionRequisitionRMFormulaListing = async (req, res) => {
     let apiData = req.body.data;
     let reqData = getRequestData(apiData, "PostApi");
     let responseData = {};
-    console.log(reqData.productId)
 
     const existingRecords = await ProductionRequisitionRMFormulaModel.find({
       productId: reqData.productId,
@@ -366,6 +367,140 @@ const getProductionRMFOrmulaByProductionDetailsId = async (req, res) => {
   }
 };
 
+const getPMFormulaByPackingItemId = async (req, res) => {
+  try {
+
+    const { id } = req.query;
+    let reqId = getRequestData(id)
+
+    let queryObject = {
+      isDeleted: false,
+      packageMaterialId: { $ne: null },
+    };
+
+    const formulaResponse = await pmFormulaModel
+      .find({ itemId: reqId, isDeleted: false })
+      .select('qty netQty pmName uom stageName');
+
+    const grnEntryForStock = await grnEntryMaterialDetailsModel
+      .find(queryObject)
+      .populate({
+        path: 'packageMaterialId',
+        select: 'pmName pmUOM pmMinQty pmCategory _id',
+      });
+
+    const stockData = grnEntryForStock.reduce((acc, entry) => {
+      const pmName = entry.packageMaterialId.pmName;
+      const pmUOM = entry.packageMaterialId.pmUOM;
+      const quantity = entry.qty || 0;
+
+      if (!acc[pmName]) {
+        acc[pmName] = {
+          pmName,
+          totalQuantity: 0,
+          pmUOM,
+        };
+      }
+
+      acc[pmName].totalQuantity += quantity;
+      return acc;
+    }, {});
+
+    const enrichedFormulaResponse = formulaResponse.map((item) => {
+      const stock = stockData[item.pmName] || { totalQuantity: 0, pmUOM: null };
+      return {
+        ...item.toObject(),
+        pmUOM: stock.pmUOM,
+        totalStock: stock.totalQuantity,
+      };
+    });
+
+
+
+    let encryptData = encryptionAPI(enrichedFormulaResponse, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Stock Wise Raw material formula fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+
+  } catch (error) {
+    console.log("error in item master controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const packingRequisitionPMFormulaListing = async (req, res) => {
+  try {
+    let apiData = req.body.data;
+    let reqData = getRequestData(apiData, "PostApi");
+    let responseData = {};
+
+    const existingRecords = await PackingRequisitionPMFormulaModel.find({
+      packingItemId: reqData.packingItemId,
+    });
+
+    if (existingRecords && existingRecords.length > 0) {
+      await PackingRequisitionPMFormulaModel.deleteMany({
+        packingItemId: reqData.packingItemId,
+      });
+      console.log(`Deleted existing records for packingItemId: ${reqData.packingItemId}`);
+    }
+
+    const newRecords = reqData.pmFormulaArray.map((item) => ({
+      ...item,
+      packingItemId: reqData.packingItemId,
+    }));
+
+    const result = await PackingRequisitionPMFormulaModel.insertMany(newRecords);
+
+    responseData = encryptionAPI(result, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Formula Updated Successfully",
+        responseData: responseData,
+        isEnType: true,
+      },
+    });
+
+  } catch (error) {
+    console.log("error in production controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getProductionPMFOrmulaByProductionDetailsId = async (req, res) => {
+  try {
+
+    const { id } = req.query;
+    let reqId = getRequestData(id)
+
+    const response = await PackingRequisitionPMFormulaModel
+      .find({ productDetialsId: reqId, isDeleted: false });
+
+    let encryptData = encryptionAPI(response, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Stock Wise Raw material formula fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+
+  } catch (error) {
+    console.log("error in item master controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export {
   addEditProductionPlanningEntry,
   getAllProductionPlanningEntry,
@@ -373,5 +508,8 @@ export {
   deleteProductionPlanningEntryById,
   getRMFormulaForProductionById,
   productionRequisitionRMFormulaListing,
-  getProductionRMFOrmulaByProductionDetailsId
+  getProductionRMFOrmulaByProductionDetailsId,
+  getPMFormulaByPackingItemId,
+  packingRequisitionPMFormulaListing,
+  getProductionPMFOrmulaByProductionDetailsId
 };

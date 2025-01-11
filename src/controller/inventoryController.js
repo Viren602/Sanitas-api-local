@@ -10,6 +10,7 @@ import partyModel from "../model/partiesModel.js";
 import inquiryDetailsModel from "../model/InventoryModels/inquiryDetailsModel.js";
 import inquiryMaterialDetailsModel from "../model/InventoryModels/inquiryMaterialDetails.js";
 import ProductionRequisitionRMFormulaModel from "../model/InventoryModels/productionRequisitionRMFormulaModel.js";
+import PackingRequisitionPMFormulaModel from "../model/InventoryModels/packingRequisitionPMFormulaModel.js";
 
 const addEditGRNEntryMaterialMapping = async (req, res) => {
     try {
@@ -1658,41 +1659,50 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         let queryObject1 = {
             isDeleted: false,
         };
+
+        let responseFromUsedQty = [];
+
         if (reqData.materialType === 'Raw Material') {
             queryObject1.rmName = reqData.item.rmName
+
+            responseFromUsedQty = await ProductionRequisitionRMFormulaModel
+                .find(queryObject1)
+                .populate({
+                    path: 'productDetialsId',
+                    select: 'partyId productionNo productionPlanningDate batchNo _id',
+                    populate: {
+                        path: 'partyId',
+                        select: 'partyName _id',
+                    },
+                });
         }
 
         if (reqData.materialType === 'Packing Material') {
-            // queryObject1.pmName = reqData.pmName
+            queryObject1.pmName = reqData.item.pmName
+
+            responseFromUsedQty = await PackingRequisitionPMFormulaModel
+                .find(queryObject1)
+                .populate({
+                    path: 'productDetialsId',
+                    select: 'partyId productionNo productionPlanningDate batchNo _id',
+                    populate: {
+                        path: 'partyId',
+                        select: 'partyName _id',
+                    },
+                });
         }
 
-        let responseFromUsedQty = await ProductionRequisitionRMFormulaModel
-            .find(queryObject1)
-            .populate({
-                path: 'productDetialsId',
-                select: 'partyId productionNo productionPlanningDate batchNo _id',
-                populate: {
-                    path: 'partyId',
-                    select: 'partyName _id',
-                },
-            });
-
         console.log(responseFromUsedQty)
-
         responseFromUsedQty = responseFromUsedQty.map(x => {
             return {
-                ...x._doc, // Ensure you're working with the document data
+                ...x._doc,
                 issueQty: x.netQty,
                 isIssuedRecord: true,
             };
         });
 
-        console.log(responseFromUsedQty)
-
         let combinedResponse = [...response, ...responseFromUsedQty];
-
         let encryptData = encryptionAPI(combinedResponse, 1)
-
 
         res.status(200).json({
             data: {
