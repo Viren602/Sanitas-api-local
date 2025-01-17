@@ -1,6 +1,6 @@
 import express from "express";
 import checkAuth from "../middleware/checkAuth.js";
-import { addEditProductionPlanningEntry, deleteProductionPlanningEntryById, getAllProductionPlanningEntry, getPMFormulaByPackingItemId, getProductionPlanningEntryById, getProductionPMFOrmulaByProductionDetailsId, getProductionRMFOrmulaByProductionDetailsId, getRMFormulaForProductionById, packingRequisitionPMFormulaListing, productionRequisitionRMFormulaListing } from "../controller/productionController.js";
+import { addEditBatchClearingEntry, addEditProductionPlanningEntry, deleteProductionPlanningEntryById, getAllBatchClearedRecords, getAllProductionPlanningEntry, getBatchClearingEntryByProductId, getPMFormulaByPackingItemId, getProductionPlanningEntryById, getProductionPMFOrmulaByProductionDetailsId, getProductionRMFOrmulaByProductionDetailsId, getRMFormulaForProductionById, packingRequisitionPMFormulaListing, productionRequisitionRMFormulaListing } from "../controller/productionController.js";
 
 const productionRoute = express.Router();
 
@@ -17,6 +17,12 @@ productionRoute.get("/Production/GetProductionRMFOrmulaByProductionDetailsId", c
 productionRoute.get("/Production/GetPMFormulaByPackingItemId", checkAuth, getPMFormulaByPackingItemId);
 productionRoute.post("/Production/PackingRequisitionPMFormulaListing", checkAuth, packingRequisitionPMFormulaListing);
 productionRoute.get("/Production/GetProductionPMFOrmulaByProductionDetailsId", checkAuth, getProductionPMFOrmulaByProductionDetailsId);
+
+// Production - Batch Clearing
+productionRoute.post("/Production/AddEditBatchClearingEntry", checkAuth, addEditBatchClearingEntry);
+productionRoute.get("/Production/GetBatchClearingEntryByProductId", checkAuth, getBatchClearingEntryByProductId);
+productionRoute.post("/Production/GetAllBatchClearedRecords", checkAuth, getAllBatchClearedRecords);
+
 
 
 export default productionRoute;

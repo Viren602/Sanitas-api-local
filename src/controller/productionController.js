@@ -3,8 +3,11 @@ import grnEntryMaterialDetailsModel from "../model/InventoryModels/grnEntryMater
 import PackingRequisitionPMFormulaModel from "../model/InventoryModels/packingRequisitionPMFormulaModel.js";
 import ProductionRequisitionRMFormulaModel from "../model/InventoryModels/productionRequisitionRMFormulaModel.js";
 import pmFormulaModel from "../model/pmFormulaModel.js";
+import batchClearingEntryModel from "../model/ProductionModels/batchClearingEntryModel.js";
 import productionPlanningEntryModel from "../model/ProductionModels/productionPlanningEntryModel.js";
+import ProductionStagesModel from "../model/ProductionModels/productionStagesModel.js";
 import rmFormulaModel from "../model/rmFormulaModel.js";
+import mongoose from "mongoose";
 
 const addEditProductionPlanningEntry = async (req, res) => {
   try {
@@ -12,7 +15,12 @@ const addEditProductionPlanningEntry = async (req, res) => {
     let reqData = getRequestData(apiData, "PostApi");
     let responseData = {};
 
-    reqData.productionStageStatusId = reqData.productionStageId;
+    const stage = await ProductionStagesModel.findOne({
+      productionStageId: reqData.productionStageId,
+      isDeleted: false,
+    });
+
+    reqData.productionStageStatusId = stage._id;
 
     if (reqData.productDetialsId && reqData.productDetialsId.trim() !== "") {
       const response = await productionPlanningEntryModel.findByIdAndUpdate(
@@ -77,14 +85,26 @@ const getAllProductionPlanningEntry = async (req, res) => {
       isDeleted: false,
     };
 
-    if (data.productionStageId > 0) {
-      queryObject.productionStageStatusId = data.productionStageId
-    }
-
     let filterBy = "productionNo";
 
     if (data.filterBy && data.filterBy.trim() !== "") {
       filterBy = data.filterBy;
+    }
+
+    if (Array.isArray(data.productionStageId) && data.productionStageId.length > 0) {
+      const stages = await ProductionStagesModel.find({
+        productionStageId: { $in: data.productionStageId },
+        isDeleted: false,
+      });
+      const requiredStatusIDs = stages.map(stage => new mongoose.Types.ObjectId(stage._id));
+
+      if (stages && stages.length > 0) {
+        queryObject.productionStageStatusId = { $in: requiredStatusIDs };
+      } else {
+        queryObject.productionStageStatusId = { $in: [] };
+      }
+    } else {
+      queryObject.productionStageStatusId = { $in: [] };
     }
 
     let response = await productionPlanningEntryModel
@@ -97,6 +117,10 @@ const getAllProductionPlanningEntry = async (req, res) => {
       .populate({
         path: "productId",
         select: "productName _id",
+      })
+      .populate({
+        path: "productionStageStatusId",
+        select: "productionStageName productionStageId _id",
       });
 
     if (data.partyName && data.partyName.trim() !== "") {
@@ -145,6 +169,10 @@ const getProductionPlanningEntryById = async (req, res) => {
         .populate({
           path: "productId",
           select: "productName color sizeName _id",
+        })
+        .populate({
+          path: "productionStageStatusId",
+          select: "productionStageName productionStageId _id",
         });
     }
     let encryptData = encryptionAPI(response, 1);
@@ -175,6 +203,14 @@ const deleteProductionPlanningEntryById = async (req, res) => {
         { new: true, useFindAndModify: false }
       );
     }
+
+    await PackingRequisitionPMFormulaModel.deleteMany({
+      _id: reqId,
+    });
+
+    await ProductionRequisitionRMFormulaModel.deleteMany({
+      _id: reqId,
+    });
 
     let encryptData = encryptionAPI(response, 1);
 
@@ -501,6 +537,145 @@ const getProductionPMFOrmulaByProductionDetailsId = async (req, res) => {
   }
 };
 
+const addEditBatchClearingEntry = async (req, res) => {
+  try {
+    let apiData = req.body.data;
+    let reqData = getRequestData(apiData, "PostApi");
+    let responseData = {};
+
+    if (reqData.batchClearingId && reqData.batchClearingId.trim() !== "") {
+      const response = await batchClearingEntryModel.findByIdAndUpdate(
+        reqData.batchClearingId,
+        reqData,
+        { new: true }
+      );
+      if (response) {
+        responseData = encryptionAPI(response, 1);
+        res.status(200).json({
+          data: {
+            statusCode: 200,
+            Message: "Batch Clearing Entry Updated Successfully",
+            responseData: responseData,
+            isEnType: true,
+          },
+        });
+      }
+    } else {
+
+      const response = new batchClearingEntryModel(reqData);
+      await response.save();
+
+      responseData = encryptionAPI(response, 1);
+
+      res.status(200).json({
+        data: {
+          statusCode: 200,
+          Message: "Batch Clearing Entry Added Successfully",
+          responseData: responseData,
+          isEnType: true,
+        },
+      });
+    }
+  } catch (error) {
+    console.log("error in production controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getBatchClearingEntryByProductId = async (req, res) => {
+  try {
+    const { id } = req.query;
+    let reqId = getRequestData(id);
+    let response = [];
+    if (reqId) {
+      response = await batchClearingEntryModel
+        .find({
+          productDetialsId: reqId,
+          isDeleted: false,
+        })
+        .populate({
+          path: "productDetialsId",
+          select: "productionNo productionPlanningDate despDate",
+        });
+    }
+    let encryptData = encryptionAPI(response, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Items fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+  } catch (error) {
+    console.log("error in Inventory controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getAllBatchClearedRecords = async (req, res) => {
+  try {
+    let apiData = req.body.data;
+    let data = getRequestData(apiData, "PostApi");
+    let queryObject = {
+      isDeleted: false,
+    };
+
+    // let filterBy = "productionNo";
+
+    // if (data.filterBy && data.filterBy.trim() !== "") {
+    //   filterBy = data.filterBy;
+    // }
+
+    let response = await batchClearingEntryModel
+      .find(queryObject)
+      // .sort(filterBy)
+      .populate({
+        path: "productDetialsId",
+        select: "productionNo productionPlanningDate despDate partyId productId batchNo",
+        populate: {
+          path: 'partyId',
+          select: 'partyName _id',
+        },
+        populate: {
+          path: 'productId',
+          select: 'productName _id',
+        },
+      });
+
+    if (data.partyName && data.partyName.trim() !== "") {
+      response = response.filter((item) =>
+        item.partyId?.partyName
+          ?.toLowerCase()
+          .startsWith(data.partyName.toLowerCase())
+      );
+    }
+
+    if (data.productName && data.productName.trim() !== "") {
+      response = response.filter((item) =>
+        item.productId?.productName
+          ?.toLowerCase()
+          .startsWith(data.productName.toLowerCase())
+      );
+    }
+
+    let encryptData = encryptionAPI(response, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Production Planning Details fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+  } catch (error) {
+    console.log("error in inventory controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export {
   addEditProductionPlanningEntry,
   getAllProductionPlanningEntry,
@@ -511,5 +686,8 @@ export {
   getProductionRMFOrmulaByProductionDetailsId,
   getPMFormulaByPackingItemId,
   packingRequisitionPMFormulaListing,
-  getProductionPMFOrmulaByProductionDetailsId
+  getProductionPMFOrmulaByProductionDetailsId,
+  addEditBatchClearingEntry,
+  getBatchClearingEntryByProductId,
+  getAllBatchClearedRecords
 };
