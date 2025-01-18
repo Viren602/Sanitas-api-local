@@ -1,6 +1,6 @@
 import express from "express";
 import checkAuth from "../middleware/checkAuth.js";
-import { addEditBatchClearingEntry, addEditProductionPlanningEntry, deleteProductionPlanningEntryById, getAllBatchClearedRecords, getAllProductionPlanningEntry, getBatchClearingEntryByProductId, getPMFormulaByPackingItemId, getProductionPlanningEntryById, getProductionPMFOrmulaByProductionDetailsId, getProductionRMFOrmulaByProductionDetailsId, getRMFormulaForProductionById, packingRequisitionPMFormulaListing, productionRequisitionRMFormulaListing } from "../controller/productionController.js";
+import { addEditBatchClearingEntry, addEditProductionPlanningEntry, deleteProductionPlanningEntryById, getAllBatchClearedRecords, getAllJobChargeRecords, getAllPendingProductionPlanningReport, getAllProductionBatchRegister, getAllProductionPlanningEntry, getBatchClearingEntryByProductId, getPMFormulaByPackingItemId, getProductionPlanningEntryById, getProductionPMFOrmulaByProductionDetailsId, getProductionRMFOrmulaByProductionDetailsId, getRMFormulaForProductionById, packingRequisitionPMFormulaListing, productionRequisitionRMFormulaListing } from "../controller/productionController.js";
 
 const productionRoute = express.Router();
 
@@ -23,6 +23,9 @@ productionRoute.post("/Production/AddEditBatchClearingEntry", checkAuth, addEdit
 productionRoute.get("/Production/GetBatchClearingEntryByProductId", checkAuth, getBatchClearingEntryByProductId);
 productionRoute.post("/Production/GetAllBatchClearedRecords", checkAuth, getAllBatchClearedRecords);
 
-
+// Production - Reports
+productionRoute.post("/Production/GetAllPendingProductionPlanningReport", checkAuth, getAllPendingProductionPlanningReport);
+productionRoute.post("/Production/GetAllProductionBatchRegister", checkAuth, getAllProductionBatchRegister);
+productionRoute.post("/Production/GetAllJobChargeRecords", checkAuth, getAllJobChargeRecords);
 
 export default productionRoute;

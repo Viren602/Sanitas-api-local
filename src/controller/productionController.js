@@ -116,7 +116,7 @@ const getAllProductionPlanningEntry = async (req, res) => {
       })
       .populate({
         path: "productId",
-        select: "productName _id",
+        select: "productName color weight sizeName _id",
       })
       .populate({
         path: "productionStageStatusId",
@@ -136,6 +136,14 @@ const getAllProductionPlanningEntry = async (req, res) => {
         item.productId?.productName
           ?.toLowerCase()
           .startsWith(data.productName.toLowerCase())
+      );
+    }
+
+    if (data.orderNumber && data.orderNumber.trim() !== "") {
+      response = response.filter((item) =>
+        item.productionNo
+          ?.toLowerCase()
+          .startsWith(data.orderNumber.toLowerCase())
       );
     }
 
@@ -622,18 +630,12 @@ const getAllBatchClearedRecords = async (req, res) => {
       isDeleted: false,
     };
 
-    // let filterBy = "productionNo";
-
-    // if (data.filterBy && data.filterBy.trim() !== "") {
-    //   filterBy = data.filterBy;
-    // }
-
     let response = await batchClearingEntryModel
       .find(queryObject)
       // .sort(filterBy)
       .populate({
         path: "productDetialsId",
-        select: "productionNo productionPlanningDate despDate partyId productId batchNo",
+        select: "productionNo productionPlanningDate despDate partyId productId batchNo packing",
         populate: {
           path: 'partyId',
           select: 'partyName _id',
@@ -642,7 +644,11 @@ const getAllBatchClearedRecords = async (req, res) => {
           path: 'productId',
           select: 'productName _id',
         },
-      });
+      })
+      .populate({
+        path: "packingItemId",
+        select: "JobCharge ItemName",
+      });;
 
     if (data.partyName && data.partyName.trim() !== "") {
       response = response.filter((item) =>
@@ -676,6 +682,240 @@ const getAllBatchClearedRecords = async (req, res) => {
   }
 };
 
+const getAllPendingProductionPlanningReport = async (req, res) => {
+  try {
+    let apiData = req.body.data;
+    let data = getRequestData(apiData, "PostApi");
+    let queryObject = {
+      isDeleted: false,
+    };
+
+    if (Array.isArray(data.productionStageId) && data.productionStageId.length > 0) {
+      const stages = await ProductionStagesModel.find({
+        productionStageId: { $in: data.productionStageId },
+        isDeleted: false,
+      });
+      const requiredStatusIDs = stages.map(stage => new mongoose.Types.ObjectId(stage._id));
+
+      if (stages && stages.length > 0) {
+        queryObject.productionStageStatusId = { $in: requiredStatusIDs };
+      } else {
+        queryObject.productionStageStatusId = { $in: [] };
+      }
+    } else {
+      queryObject.productionStageStatusId = { $in: [] };
+    }
+
+    let response = await productionPlanningEntryModel
+      .find(queryObject)
+      .populate({
+        path: "partyId",
+        select: "partyName _id",
+      })
+      .populate({
+        path: "productId",
+        select: "productName color weight sizeName productCategory _id",
+      })
+      .populate({
+        path: "productionStageStatusId",
+        select: "productionStageName productionStageId _id",
+      });
+
+    if (data.searchBy && data.searchBy !== 'Select' && data.searchBy.trim() !== "") {
+      response = response.filter((item) =>
+        item.productId?.productCategory === data.searchBy
+      );
+    }
+
+    let encryptData = encryptionAPI(response, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Production Planning Details fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+  } catch (error) {
+    console.log("error in inventory controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getAllProductionBatchRegister = async (req, res) => {
+  try {
+    let apiData = req.body.data;
+    let data = getRequestData(apiData, "PostApi");
+    let queryObject = {
+      isDeleted: false,
+      mfgDate: {
+        $gte: new Date(data.startDate),
+        $lte: new Date(data.endDate),
+      }
+    };
+
+    let filterBy = "productionNo";
+
+    if (data.filterBy && data.filterBy.trim() !== "") {
+      filterBy = data.filterBy;
+    }
+
+    if (Array.isArray(data.productionStageId) && data.productionStageId.length > 0) {
+      const stages = await ProductionStagesModel.find({
+        productionStageId: { $in: data.productionStageId },
+        isDeleted: false,
+      });
+      const requiredStatusIDs = stages.map(stage => new mongoose.Types.ObjectId(stage._id));
+
+      if (stages && stages.length > 0) {
+        queryObject.productionStageStatusId = { $in: requiredStatusIDs };
+      } else {
+        queryObject.productionStageStatusId = { $in: [] };
+      }
+    } else {
+      queryObject.productionStageStatusId = { $in: [] };
+    }
+
+    let response = await productionPlanningEntryModel
+      .find(queryObject)
+      .sort(filterBy)
+      .populate({
+        path: "partyId",
+        select: "partyName _id",
+      })
+      .populate({
+        path: "productId",
+        select: "productName productCategory color weight sizeName _id",
+      })
+      .populate({
+        path: "productionStageStatusId",
+        select: "productionStageName productionStageId _id",
+      });
+
+    response = await Promise.all(
+      response.map(async (item) => {
+        let itemObject = item.toObject();
+        let batchClearDetails = await batchClearingEntryModel
+          .find({ productDetialsId: itemObject._id })
+          .populate({ path: "packingItemId", select: "UnitQuantity" });
+
+        if (batchClearDetails && batchClearDetails.length > 0) {
+          const totalYield = batchClearDetails.reduce((total, detail) => {
+            const unitQuantity = detail.packingItemId?.UnitQuantity || 0;
+            return total + (detail.quantity + detail.retainSample) * unitQuantity;
+          }, 0);
+
+          const batchSize = itemObject.batchSize || 1;
+
+          itemObject.yieldValue = (totalYield / batchSize) * 100;
+        } else {
+          itemObject.yieldValue = 0;
+        }
+        return itemObject;
+      })
+    );
+
+    if (data.productName && data.productName.trim() !== "") {
+      response = response.filter((item) =>
+        item.productId?.productName
+          ?.toLowerCase()
+          .startsWith(data.productName.toLowerCase())
+      );
+    }
+
+    if (data.orderNumber && data.orderNumber.trim() !== "") {
+      response = response.filter((item) =>
+        item.productionNo
+          ?.toLowerCase()
+          .startsWith(data.orderNumber.toLowerCase())
+      );
+    }
+    if (data.itemCategory && data.itemCategory !== 'Select' && data.itemCategory.trim() !== "") {
+      response = response.filter((item) =>
+        item.productId?.productCategory === data.itemCategory
+      );
+    }
+
+    let encryptData = encryptionAPI(response, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Production Planning Details fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+  } catch (error) {
+    console.log("error in inventory controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getAllJobChargeRecords = async (req, res) => {
+  try {
+    let apiData = req.body.data;
+    let data = getRequestData(apiData, "PostApi");
+    let queryObject = {
+      isDeleted: false,
+    };
+
+    let response = await batchClearingEntryModel
+      .find(queryObject)
+      // .sort(filterBy)
+      .populate({
+        path: "productDetialsId",
+        select: "productionNo productionPlanningDate despDate partyId productId batchNo packing",
+        match: {
+          despDate: {
+            $gte: new Date(data.startDate),
+            $lte: new Date(data.endDate),
+          },
+        },
+        populate: [
+          {
+            path: "partyId",
+            select: "partyName _id",
+          },
+          {
+            path: "productId",
+            select: "productName _id",
+          },
+        ],
+      })
+      .populate({
+        path: "packingItemId",
+        select: "JobCharge ItemCategory ItemName _id",
+      });
+
+    if (data.itemCategory && data.itemCategory !== 'Select' && data.itemCategory.trim() !== "") {
+      response = response.filter((item) =>
+        item.packingItemId?.ItemCategory === data.itemCategory
+      );
+    }
+
+    if (data.itemId && data.itemId.trim() !== "") {
+      response = response.filter((item) =>
+        item.packingItemId?._id?.toString() === data.itemId?.toString())
+    }
+
+    let encryptData = encryptionAPI(response, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Production Planning Details fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+  } catch (error) {
+    console.log("error in inventory controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export {
   addEditProductionPlanningEntry,
   getAllProductionPlanningEntry,
@@ -689,5 +929,8 @@ export {
   getProductionPMFOrmulaByProductionDetailsId,
   addEditBatchClearingEntry,
   getBatchClearingEntryByProductId,
-  getAllBatchClearedRecords
+  getAllBatchClearedRecords,
+  getAllPendingProductionPlanningReport,
+  getAllProductionBatchRegister,
+  getAllJobChargeRecords
 };
