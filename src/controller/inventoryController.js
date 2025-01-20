@@ -1691,8 +1691,6 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
                     },
                 });
         }
-
-        console.log(responseFromUsedQty)
         responseFromUsedQty = responseFromUsedQty.map(x => {
             return {
                 ...x._doc,

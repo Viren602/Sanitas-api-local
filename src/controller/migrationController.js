@@ -3,6 +3,8 @@ import rmFormulaModel from '../model/rmFormulaModel.js'
 import productDetailsModel from '../model/productDetailsModel.js';
 import companyItems from '../model/companyItems.js';
 import pmFormulaModel from '../model/pmFormulaModel.js';
+import rawMaterialSchema from '../model/rawMaterialModel.js';
+import packingMaterialSchema from '../model/packingMaterialModel.js';
 
 const importRMFormula = async (req, res) => {
     try {
@@ -93,7 +95,79 @@ const importPMFormula = async (req, res) => {
     }
 }
 
+const importRMFormulaWithRMId = async (req, res) => {
+    try {
+        let queryObject = {
+            isDeleted: false,
+        };
+
+        const rawMaterials = await rawMaterialSchema.find(queryObject);
+
+        await Promise.all(
+            rawMaterials.map(async (rawMaterial) => {
+                const updateResult = await rmFormulaModel.updateMany(
+                    { itemCode: rawMaterial.rmCode },
+                    { $set: { rmId: rawMaterial._id } }
+                );
+
+                if (updateResult.matchedCount > 0) {
+                    console.log(`Updated ${updateResult.modifiedCount} records in rmFormulaModel for rmName: ${rawMaterial.rmName}`);
+                } else {
+                    console.log(`No matching records found in rmFormulaModel for rmName: ${rawMaterial.rmName}`);
+                }
+            })
+        );
+
+        res.json({
+            message: "All updates completed",
+        });
+
+    } catch (error) {
+        console.log("error in inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const importPMFormulaWithRMId = async (req, res) => {
+    try {
+        let queryObject = {
+            isDeleted: false,
+        };
+
+        const packingMaterials = await packingMaterialSchema.find(queryObject);
+        let totalUpdatedRecords = 0;
+
+        await Promise.all(
+            packingMaterials.map(async (packingMaterial) => {
+                const updateResult = await pmFormulaModel.updateMany(
+                    { pmCode: packingMaterial.pmCode },
+                    { $set: { packageMaterialId: packingMaterial._id } }
+                );
+
+                if (updateResult.matchedCount > 0) {
+                    totalUpdatedRecords += updateResult.modifiedCount; 
+                    console.log(`Updated ${updateResult.modifiedCount} records in pmFormulaModel for pmName: ${packingMaterial.pmName}`);
+                } else {
+                    console.log(`No matching records found in pmFormulaModel for pmName: ${packingMaterial.pmName}`);
+                }
+            })
+        );
+
+        console.log(`Total updated records with packingMaterialId: ${totalUpdatedRecords}`);
+
+        res.json({
+            message: "All updates completed",
+        });
+
+    } catch (error) {
+        console.log("error in inventory controller", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 export {
     importRMFormula,
-    importPMFormula
+    importPMFormula,
+    importRMFormulaWithRMId,
+    importPMFormulaWithRMId
 };

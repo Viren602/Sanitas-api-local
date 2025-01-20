@@ -1,6 +1,6 @@
 import express from "express";
 import checkAuth from "../middleware/checkAuth.js";
-import { addEditBatchClearingEntry, addEditProductionPlanningEntry, deleteProductionPlanningEntryById, getAllBatchClearedRecords, getAllJobChargeRecords, getAllPendingProductionPlanningReport, getAllProductionBatchRegister, getAllProductionPlanningEntry, getBatchClearingEntryByProductId, getPMFormulaByPackingItemId, getProductionPlanningEntryById, getProductionPMFOrmulaByProductionDetailsId, getProductionRMFOrmulaByProductionDetailsId, getRMFormulaForProductionById, packingRequisitionPMFormulaListing, productionRequisitionRMFormulaListing } from "../controller/productionController.js";
+import { addEditBatchClearingEntry, addEditProductionPlanningEntry, deleteProductionPlanningEntryById, getAllBatchClearedRecords, getAllJobChargeRecords, getAllPendingProductionPlanningReport, getAllProductionBatchRegister, getAllProductionPlanningEntry, getBatchClearingEntryByProductId, getPMFormulaByPackingItemId, getProductCostingReport, getProductionPlanningEntryById, getProductionPMFOrmulaByProductionDetailsId, getProductionRMFOrmulaByProductionDetailsId, getRMFormulaForProductionById, packingRequisitionPMFormulaListing, productionRequisitionRMFormulaListing } from "../controller/productionController.js";
 
 const productionRoute = express.Router();
 
@@ -27,5 +27,6 @@ productionRoute.post("/Production/GetAllBatchClearedRecords", checkAuth, getAllB
 productionRoute.post("/Production/GetAllPendingProductionPlanningReport", checkAuth, getAllPendingProductionPlanningReport);
 productionRoute.post("/Production/GetAllProductionBatchRegister", checkAuth, getAllProductionBatchRegister);
 productionRoute.post("/Production/GetAllJobChargeRecords", checkAuth, getAllJobChargeRecords);
+productionRoute.post("/Production/GetProductCostingReport", checkAuth, getProductCostingReport);
 
 export default productionRoute;

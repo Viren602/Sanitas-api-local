@@ -396,7 +396,7 @@ const getAllPartyDropdown = async (req, res) => {
 const getAllItem = async (req, res) => {
     try {
         let queryObject = { IsDeleted: false }
-        let response = await companyItems.find(queryObject).select("ItemName Packing UnitQuantity").sort("ItemName");
+        let response = await companyItems.find(queryObject).select("ItemName Packing UnitQuantity JobCharge TestingCharge ProdLoss BasicRate").sort("ItemName");
 
         let encryptData = encryptionAPI(response, 1)
 

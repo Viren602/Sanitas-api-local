@@ -17,6 +17,7 @@ const pmFormulaSchema = mongoose.Schema({
     pmName : { type: String, default: '' },
     stageName : { type: String, default: '' },
     stat : { type: Number, default: 0 },
+    packageMaterialId: { type: mongoose.Schema.Types.ObjectId, ref: "PackingMaterialMaster" },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 

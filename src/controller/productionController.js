@@ -292,6 +292,18 @@ const getRMFormulaForProductionById = async (req, res) => {
         return netQty;
       }
 
+      if (uom === 'MCG') {
+        if (rmUOM === 'KGS') {
+          return netQty / 1000000000;
+        }
+        if (rmUOM === 'GM') {
+          return netQty / 1000000;
+        }
+        if (rmUOM === 'MG') {
+          return netQty / 1000;
+        }
+      }
+
       if (uom === 'GM') {
         if (rmUOM === 'KGS') {
           return netQty / 1000;
@@ -916,6 +928,90 @@ const getAllJobChargeRecords = async (req, res) => {
   }
 };
 
+const getProductCostingReport = async (req, res) => {
+  try {
+    let apiData = req.body.data;
+    let data = getRequestData(apiData, "PostApi");
+
+    let response = {}
+
+    let rmFormulaList = []
+    if (data.productId) {
+      rmFormulaList = await rmFormulaModel
+        .find({ productId: data.productId, isDeleted: false })
+        .select("netQty rmName uom")
+        .populate({
+          path: "rmId",
+          select: "rmName rmUOM testingCharge rmPurchaseRate _id",
+        });
+
+      rmFormulaList = await Promise.all(
+        rmFormulaList.map(async (item) => {
+          let itemObject = item.toObject();
+          const grnEntryForMaterial = await grnEntryMaterialDetailsModel.find({ rawMaterialId: itemObject.rmId });
+          const lastRecord = grnEntryForMaterial.at(-1);
+          if (lastRecord) {
+            itemObject.grnRate = lastRecord.rate;
+            itemObject.lastPurchaseDate = lastRecord.createdAt;
+            itemObject.isGrnRecord = true;
+          } else {
+            itemObject.grnRate = 0;
+            itemObject.lastPurchaseDate = '';
+            itemObject.isGrnRecord = false;
+          }
+          return itemObject;
+        })
+      );
+    }
+
+    let pmFormulaList = []
+    if (data.packingId) {
+      pmFormulaList = await pmFormulaModel
+        .find({ itemId: data.packingId, isDeleted: false })
+        .select("netQty pmName uom batchSize")
+        .populate({
+          path: "packageMaterialId",
+          select: "pmName pmUOM pmTestingCharge pmPurchaseRate _id",
+        });
+
+      pmFormulaList = await Promise.all(
+        pmFormulaList.map(async (item) => {
+          let itemObject = item.toObject();
+          const grnEntryForMaterial = await grnEntryMaterialDetailsModel.find({ packageMaterialId: itemObject.packageMaterialId });
+          const lastRecord = grnEntryForMaterial.at(-1);
+          if (lastRecord) {
+            itemObject.grnRate = lastRecord.rate;
+            itemObject.lastPurchaseDate = lastRecord.createdAt;
+            itemObject.isGrnRecord = true;
+          } else {
+            itemObject.grnRate = 0;
+            itemObject.lastPurchaseDate = '';
+            itemObject.isGrnRecord = false;
+          }
+          return itemObject;
+        })
+      );
+    }
+
+    response.rmFormulaList = rmFormulaList;
+    response.pmFormulaList = pmFormulaList;
+
+    let encryptData = encryptionAPI(response, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Production Planning Details fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+  } catch (error) {
+    console.log("error in inventory controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export {
   addEditProductionPlanningEntry,
   getAllProductionPlanningEntry,
@@ -932,5 +1028,6 @@ export {
   getAllBatchClearedRecords,
   getAllPendingProductionPlanningReport,
   getAllProductionBatchRegister,
-  getAllJobChargeRecords
+  getAllJobChargeRecords,
+  getProductCostingReport
 };
