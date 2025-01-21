@@ -1,6 +1,6 @@
 import express from "express";
 import checkAuth from "../middleware/checkAuth.js";
-import { addEditBatchClearingEntry, addEditProductionPlanningEntry, deleteProductionPlanningEntryById, getAllBatchClearedRecords, getAllJobChargeRecords, getAllPendingProductionPlanningReport, getAllProductionBatchRegister, getAllProductionPlanningEntry, getBatchClearingEntryByProductId, getPMFormulaByPackingItemId, getProductCostingReport, getProductionPlanningEntryById, getProductionPMFOrmulaByProductionDetailsId, getProductionRMFOrmulaByProductionDetailsId, getRMFormulaForProductionById, packingRequisitionPMFormulaListing, productionRequisitionRMFormulaListing } from "../controller/productionController.js";
+import { addEditBatchClearingEntry, addEditProductionPlanningEntry, deleteProductionPlanningEntryById, getAllBatchClearedRecords, getAllJobChargeRecords, getAllMaterialRequirementReportForPM, getAllMaterialRequirementReportForRM, getAllPendingProductionPlanningReport, getAllProductionBatchRegister, getAllProductionPlanningEntry, getBatchClearingEntryByProductId, getBatchCostingReportPMFormulaById, getBatchCostingReportRMFormulaId, getPMFormulaByPackingItemId, getProductCostingReport, getProductDetailsForBatchClearedByProductId, getProductionPlanningEntryById, getProductionPMFOrmulaByProductionDetailsId, getProductionRMFOrmulaByProductionDetailsId, getRMFormulaForProductionById, packingRequisitionPMFormulaListing, productionRequisitionRMFormulaListing } from "../controller/productionController.js";
 
 const productionRoute = express.Router();
 
@@ -28,5 +28,10 @@ productionRoute.post("/Production/GetAllPendingProductionPlanningReport", checkA
 productionRoute.post("/Production/GetAllProductionBatchRegister", checkAuth, getAllProductionBatchRegister);
 productionRoute.post("/Production/GetAllJobChargeRecords", checkAuth, getAllJobChargeRecords);
 productionRoute.post("/Production/GetProductCostingReport", checkAuth, getProductCostingReport);
+productionRoute.get("/Production/GetProductDetailsForBatchClearedByProductId", checkAuth, getProductDetailsForBatchClearedByProductId);
+productionRoute.get("/Production/GetBatchCostingReportRMFormulaId", checkAuth, getBatchCostingReportRMFormulaId);
+productionRoute.get("/Production/GetBatchCostingReportPMFormulaById", checkAuth, getBatchCostingReportPMFormulaById);
+productionRoute.post("/Production/GetAllMaterialRequirementReportForRM", checkAuth, getAllMaterialRequirementReportForRM);
+productionRoute.post("/Production/GetAllMaterialRequirementReportForPM", checkAuth, getAllMaterialRequirementReportForPM);
 
 export default productionRoute;

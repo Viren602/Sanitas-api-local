@@ -647,7 +647,7 @@ const getAllBatchClearedRecords = async (req, res) => {
       // .sort(filterBy)
       .populate({
         path: "productDetialsId",
-        select: "productionNo productionPlanningDate despDate partyId productId batchNo packing",
+        select: "productionNo productionPlanningDate despDate partyId productId batchNo packing batchSize  mfgDate",
         populate: {
           path: 'partyId',
           select: 'partyName _id',
@@ -659,7 +659,7 @@ const getAllBatchClearedRecords = async (req, res) => {
       })
       .populate({
         path: "packingItemId",
-        select: "JobCharge ItemName",
+        select: "JobCharge ItemName UnitQuantity",
       });;
 
     if (data.partyName && data.partyName.trim() !== "") {
@@ -1012,6 +1012,387 @@ const getProductCostingReport = async (req, res) => {
   }
 };
 
+const getProductDetailsForBatchClearedByProductId = async (req, res) => {
+  try {
+    const { id } = req.query;
+    let reqId = getRequestData(id);
+    let response = [];
+    if (reqId) {
+      response = await batchClearingEntryModel
+        .find({
+          productDetialsId: reqId,
+          isDeleted: false,
+        })
+        .populate({
+          path: "productDetialsId",
+          select: "productionNo productionPlanningDate despDate",
+        })
+        .populate({
+          path: "packingItemId",
+          select: "UnitQuantity Packing JobCharge",
+        });
+    }
+    let encryptData = encryptionAPI(response, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Items fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+  } catch (error) {
+    console.log("error in Inventory controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getBatchCostingReportRMFormulaId = async (req, res) => {
+  try {
+
+    const { id } = req.query;
+    let reqId = getRequestData(id)
+
+    let response = await ProductionRequisitionRMFormulaModel.find({ productDetialsId: reqId, isDeleted: false });
+
+    response = await Promise.all(
+      response.map(async (item) => {
+        let itemObject = item.toObject();
+
+        const rmId = await rmFormulaModel.findOne({ rmName: item.rmName, isDeleted: false })
+
+        const grnEntryForMaterial = await grnEntryMaterialDetailsModel
+          .find({ rawMaterialId: rmId.rmId })
+          .populate({
+            path: "grnEntryPartyDetailId",
+            select: "grnNo _id",
+          });
+
+        const lastRecord = grnEntryForMaterial.at(-1);
+        if (lastRecord) {
+          itemObject.grnRate = lastRecord.rate;
+          itemObject.lastPurchaseDate = lastRecord.createdAt;
+          itemObject.grnNo = lastRecord.grnEntryPartyDetailId.grnNo;
+          itemObject.isGrnRecord = true;
+        } else {
+          itemObject.grnRate = 0;
+          itemObject.lastPurchaseDate = '';
+          itemObject.grnNo = '-';
+          itemObject.isGrnRecord = false;
+        }
+        return itemObject;
+      })
+    );
+
+    let encryptData = encryptionAPI(response, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Stock Wise Raw material formula fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+
+  } catch (error) {
+    console.log("error in item master controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getBatchCostingReportPMFormulaById = async (req, res) => {
+  try {
+
+    const { id } = req.query;
+    let reqId = getRequestData(id)
+
+    let response = await PackingRequisitionPMFormulaModel.find({ productDetialsId: reqId, isDeleted: false });
+
+    response = await Promise.all(
+      response.map(async (item) => {
+        let itemObject = item.toObject();
+
+        const pmId = await pmFormulaModel.findOne({ pmName: item.pmName, isDeleted: false })
+
+        const grnEntryForMaterial = await grnEntryMaterialDetailsModel
+          .find({ packageMaterialId: pmId.packageMaterialId })
+          .populate({
+            path: "grnEntryPartyDetailId",
+            select: "grnNo _id",
+          });
+
+        const lastRecord = grnEntryForMaterial.at(-1);
+        if (lastRecord) {
+          itemObject.grnRate = lastRecord.rate;
+          itemObject.lastPurchaseDate = lastRecord.createdAt;
+          itemObject.grnNo = lastRecord.grnEntryPartyDetailId.grnNo;
+          itemObject.isGrnRecord = true;
+        } else {
+          itemObject.grnRate = 0;
+          itemObject.lastPurchaseDate = '';
+          itemObject.grnNo = '-';
+          itemObject.isGrnRecord = false;
+        }
+        return itemObject;
+      })
+    );
+
+    let encryptData = encryptionAPI(response, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Stock Wise Raw material formula fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+
+  } catch (error) {
+    console.log("error in item master controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getAllMaterialRequirementReportForRM = async (req, res) => {
+  try {
+    let apiData = req.body.data;
+    let data = getRequestData(apiData, "PostApi");
+
+    let queryObject = {
+      isDeleted: false,
+      rawMaterialId: { $ne: null },
+    };
+
+    let responseData = await Promise.all(
+      data.map(async (item) => {
+        const formulas = await rmFormulaModel
+          .find({ productId: item.productId, isDeleted: false })
+          .select('qty netQty rmName uom stageName');
+
+        // return formulas
+        return formulas.map((formula) => ({
+          ...formula._doc,
+          netQty: formula.netQty * Number(item.batchSize),
+        }));
+      })
+    );
+
+    responseData = responseData.flat();
+
+    const aggregatedData = responseData.reduce((acc, curr) => {
+      const existingItem = acc.find(
+        (item) => item.rmName === curr.rmName && item.uom === curr.uom
+      );
+      if (existingItem) {
+        existingItem.qty += curr.qty;
+        existingItem.netQty += curr.netQty;
+      } else {
+        acc.push({ ...curr });
+      }
+
+      return acc;
+    }, []);
+
+    const grnEntryForStock = await grnEntryMaterialDetailsModel
+      .find(queryObject)
+      .populate({
+        path: 'rawMaterialId',
+        select: 'rmName rmUOM minQty rmCategory _id',
+      });
+
+
+    const stockData = grnEntryForStock.reduce((acc, entry) => {
+      const rmName = entry.rawMaterialId.rmName;
+      const rmUOM = entry.rawMaterialId.rmUOM;
+      const quantity = entry.qty || 0;
+
+      if (!acc[rmName]) {
+        acc[rmName] = {
+          rmName,
+          totalQuantity: 0,
+          rmUOM,
+        };
+      }
+
+      acc[rmName].totalQuantity += quantity;
+      return acc;
+    }, {});
+
+
+    const enrichedFormulaResponse = aggregatedData.map((item) => {
+      const stock = stockData[item.rmName] || { totalQuantity: 0, rmUOM: null };
+      const convertedNetQty = convertNetQty(item.netQty, item.uom, stock.rmUOM);
+      return {
+        ...item,
+        rmUOM: stock.rmUOM,
+        netQty: convertedNetQty,
+        totalStock: stock.totalQuantity,
+      };
+    });
+
+    function convertNetQty(netQty, uom, rmUOM) {
+      if (uom === rmUOM) {
+        return netQty;
+      }
+
+      if (uom === 'MCG') {
+        if (rmUOM === 'KGS') {
+          return netQty / 1000000000;
+        }
+        if (rmUOM === 'GM') {
+          return netQty / 1000000;
+        }
+        if (rmUOM === 'MG') {
+          return netQty / 1000;
+        }
+      }
+
+      if (uom === 'GM') {
+        if (rmUOM === 'KGS') {
+          return netQty / 1000;
+        }
+        if (rmUOM === 'MG') {
+          return netQty * 1000;
+        }
+      }
+
+      if (uom === 'MG') {
+        if (rmUOM === 'KGS') {
+          return netQty / 1000000;
+        }
+        if (rmUOM === 'GM') {
+          return netQty / 1000;
+        }
+      }
+
+      if (uom === 'KGS') {
+        if (rmUOM === 'MG') {
+          return netQty * 1000000;
+        }
+        if (rmUOM === 'GM') {
+          return netQty * 1000;
+        }
+      }
+      if (uom === 'LTR') {
+        return netQty * 1000
+      }
+
+      if (uom === 'ML') {
+        return netQty / 1000
+      }
+      return netQty;
+    }
+
+    let encryptData = encryptionAPI(enrichedFormulaResponse, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Production Planning Details fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+
+  } catch (error) {
+    console.log("error in inventory controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getAllMaterialRequirementReportForPM = async (req, res) => {
+  try {
+    let apiData = req.body.data;
+    let data = getRequestData(apiData, "PostApi");
+
+    let queryObject = {
+      isDeleted: false,
+      packageMaterialId: { $ne: null },
+    };
+
+    let responseData = await Promise.all(
+      data.map(async (item) => {
+        const formulas = await pmFormulaModel
+          .find({ itemId: item.packingId, isDeleted: false })
+          .select('qty netQty pmName uom stageName batchSize');
+
+        return formulas.map((formula) => ({
+          ...formula._doc,
+          netQty: (formula.netQty / formula.batchSize) * Number(item.batchSize),
+        }));
+      })
+    );
+
+    responseData = responseData.flat();
+
+    const aggregatedData = responseData.reduce((acc, curr) => {
+      const existingItem = acc.find(
+        (item) => item.pmName === curr.pmName && item.uom === curr.uom
+      );
+      if (existingItem) {
+        existingItem.qty += curr.qty;
+        existingItem.netQty += curr.netQty;
+      } else {
+        acc.push({ ...curr });
+      }
+
+      return acc;
+    }, []);
+
+    const grnEntryForStock = await grnEntryMaterialDetailsModel
+      .find(queryObject)
+      .populate({
+        path: 'packageMaterialId',
+        select: 'pmName pmUOM pmMinQty pmCategory _id',
+      });
+
+    const stockData = grnEntryForStock.reduce((acc, entry) => {
+      const pmName = entry.packageMaterialId.pmName;
+      const pmUOM = entry.packageMaterialId.pmUOM;
+      const quantity = entry.qty || 0;
+
+      if (!acc[pmName]) {
+        acc[pmName] = {
+          pmName,
+          totalQuantity: 0,
+          pmUOM,
+        };
+      }
+
+      acc[pmName].totalQuantity += quantity;
+      return acc;
+    }, {});
+
+    const enrichedFormulaResponse = aggregatedData.map((item) => {
+      const stock = stockData[item.pmName] || { totalQuantity: 0, pmUOM: null };
+      return {
+        ...item,
+        pmUOM: stock.pmUOM,
+        totalStock: stock.totalQuantity,
+      };
+    });
+
+    let encryptData = encryptionAPI(enrichedFormulaResponse, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Production Planning Details fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+
+  } catch (error) {
+    console.log("error in inventory controller", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
 export {
   addEditProductionPlanningEntry,
   getAllProductionPlanningEntry,
@@ -1029,5 +1410,10 @@ export {
   getAllPendingProductionPlanningReport,
   getAllProductionBatchRegister,
   getAllJobChargeRecords,
-  getProductCostingReport
+  getProductCostingReport,
+  getProductDetailsForBatchClearedByProductId,
+  getBatchCostingReportRMFormulaId,
+  getBatchCostingReportPMFormulaById,
+  getAllMaterialRequirementReportForRM,
+  getAllMaterialRequirementReportForPM
 };
