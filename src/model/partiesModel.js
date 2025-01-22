@@ -44,6 +44,7 @@ const partySchema = mongoose.Schema({
     telephone: { type: String, default: '' },
     partyType: { type: String, default: '' },
     fax: { type: String, default: '' },
+    fssaiNo: { type: String, default: '' },
     bankName: { type: String, default: '' },
     bankAddress1: { type: String, default: '' },
     bankAddress2: { type: String, default: '' },
