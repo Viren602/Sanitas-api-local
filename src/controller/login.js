@@ -1,4 +1,5 @@
 import config from "../config/config.js";
+import errorHandler from "../server/errorHandle.js";
 
 import mailsender from "../utils/sendingEmail.js";
 import crypto from "crypto-js"
@@ -103,8 +104,8 @@ let store = new Map();
         .json({ Message: "Email  is not Found  Register  Your Company" });
     }
   } catch (error) {
-    console.log("error in logo controller", error);
-    res.status(500).json({ err: error.Message });
+    console.log("Error in Login controller", error);
+    errorHandler(error, req, res, "Error in Login controller")
   }
 };
 

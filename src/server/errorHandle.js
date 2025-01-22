@@ -1,21 +1,41 @@
-function errorHandler(err, req, res, next) {
-    if (typeof (err) === 'string') {
-        // custom application error
-        return res.status(400).json({ message: err });
-    }
+import { ENV, ErrorMessage, ErrorSubject, FromMail } from "../middleware/appSetting.js";
+import { getRequestData } from "../middleware/encryption.js";
+import mailsender from "../utils/sendingEmail.js";
 
-    if (err.name === 'ValidationError') {
-        // mongoose validation error
-        return res.status(400).json({ message: err.message });
-    }
+function errorHandler(err, req, res, message) {
 
-    if (err.name === 'UnauthorizedError') {
-        // jwt authentication error
-        return res.status(401).json({ message: 'Invalid Token' });
-    }
+    let html = `<html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    </head>
+                    <body>
+                        <h1>${message || 'Error Occurred'}</h1>
+                        <p><strong>Message:</strong> ${err?.message || 'N/A'}</p>
+                        <p><strong>Environment:</strong> ${ENV}</p>
+                        <p><strong>Endpoint:</strong> ${req?.originalUrl || 'N/A'}</p>
+                        <p><strong>Method:</strong> ${req?.method || 'N/A'}</p>
+                        <p><strong>Request Body:</strong> ${JSON.stringify(req?.body || {}, null, 2)}</p>
+                    </body>
+                    </html>`
 
-    // default to 500 server error
-    return res.status(500).json({ message: err.message });
+    let emaildata = {
+        toMail: FromMail,
+        subject: ErrorSubject,
+        fromMail: FromMail,
+        html: html,
+    };
+
+    mailsender(emaildata)
+
+    return res.status(200).json({
+        data: {
+            statusCode: 500,
+            Message: ErrorMessage,
+            responseData: err.message,
+            isEnType: true
+        },
+    });;
 };
 
 export default errorHandler

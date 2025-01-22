@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import companyItems from "../model/companyItems.js";
 import { encryptionAPI, getRequestData } from "../middleware/encryption.js";
+import errorHandler from "../server/errorHandle.js";
 
 
 const addEditItems = async (req, res) => {
@@ -52,8 +53,8 @@ const addEditItems = async (req, res) => {
     }
 
   } catch (error) {
-    console.log("error in admin addEmployee controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Item Master controller", error);
+    errorHandler(error, req, res, "Error in Item Master controller")
   }
 };
 
@@ -80,8 +81,8 @@ const getAllItems = async (req, res) => {
 
     // res.status(201).json({ Message: "Items fetched successfully", responseContent: response });
   } catch (error) {
-    console.log("error in item master controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Item Master controller", error);
+    errorHandler(error, req, res, "Error in Item Master controller")
   }
 };
 
@@ -108,8 +109,8 @@ const getItemById = async (req, res) => {
 
     // res.status(201).json({ Message: "Items fetched successfully", responseContent: response });
   } catch (error) {
-    console.log("error in item master controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Item Master controller", error);
+    errorHandler(error, req, res, "Error in Item Master controller")
   }
 };
 
@@ -136,8 +137,8 @@ const deleteItemById = async (req, res) => {
 
     // res.status(201).json({ Message: "Item has been deleted", responseContent: response });
   } catch (error) {
-    console.log("error in item master controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Item Master controller", error);
+    errorHandler(error, req, res, "Error in Item Master controller")
   }
 };
 

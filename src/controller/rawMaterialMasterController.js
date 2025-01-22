@@ -1,5 +1,6 @@
 import rawMaterialSchema from "../model/rawMaterialModel.js";
 import { encryptionAPI, getRequestData } from "../middleware/encryption.js";
+import errorHandler from "../server/errorHandle.js";
 
 
 const addEditRawMaterial = async (req, res) => {
@@ -52,8 +53,8 @@ const addEditRawMaterial = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Raw Material Master controller", error);
+        errorHandler(error, req, res, "Error in Raw Material Master controller")
     }
 };
 
@@ -68,8 +69,8 @@ const getAllRawMaterials = async (req, res) => {
         res.status(200).json({ Message: "Items fetched successfully", responseContent: data });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Raw Material Master controller", error);
+        errorHandler(error, req, res, "Error in Raw Material Master controller")
     }
 };
 
@@ -96,8 +97,8 @@ const getRawMaterialById = async (req, res) => {
         // res.status(201).json({ Message: "Items fetched successfully", responseContent: response });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Raw Material Master controller", error);
+        errorHandler(error, req, res, "Error in Raw Material Master controller")
     }
 };
 
@@ -123,8 +124,8 @@ const deleteRawMaterialById = async (req, res) => {
 
         // res.status(201).json({ Message: "Item has been deleted", responseContent: response });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Raw Material Master controller", error);
+        errorHandler(error, req, res, "Error in Raw Material Master controller")
     }
 };
 

@@ -13,6 +13,7 @@ import ProductionRequisitionRMFormulaModel from "../model/InventoryModels/produc
 import PackingRequisitionPMFormulaModel from "../model/InventoryModels/packingRequisitionPMFormulaModel.js";
 import emailTemplateModel from "../model/emailTemplateModel.js";
 import { FromMail } from "../middleware/appSetting.js";
+import errorHandler from "../server/errorHandle.js";
 
 const addEditGRNEntryMaterialMapping = async (req, res) => {
     try {
@@ -80,8 +81,8 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
         // });
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -126,8 +127,8 @@ const getAllPartyListForGRNEntry = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -162,8 +163,8 @@ const getAllgrnEntryMaterialDetailsById = async (req, res) => {
 
         // res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
     } catch (error) {
-        console.log("error in Inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -189,8 +190,8 @@ const deleteGRNEntryMaterialDetailsById = async (req, res) => {
 
         // res.status(200).json({ Message: "GRN Party Details deleted successfully", responseContent: response });
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -216,8 +217,8 @@ const deleteItemforGRNEntryMaterialById = async (req, res) => {
 
         // res.status(200).json({ Message: "GRN Material Detail deleted successfully", responseContent: response });
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -287,8 +288,8 @@ const addEditAdditionalEntryMaterialMapping = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -321,8 +322,8 @@ const getAllAdditionalEntryMaterialDetailsById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in Inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -363,8 +364,8 @@ const getAllAdditionalEntryList = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -388,8 +389,8 @@ const deleteAdditionalEntryDetailsById = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -414,8 +415,8 @@ const deleteAdditionalEntryMaterialDetailsById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -474,8 +475,8 @@ const addEditPurchaseOrderDetails = async (req, res) => {
 
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -524,8 +525,8 @@ const getAllPurchaseOrders = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -566,8 +567,8 @@ const addEditPurchaserOrderMaterialDetails = async (req, res) => {
 
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -600,8 +601,8 @@ const getPurchaseOrderMaterialDetailsByPurchaseOrderId = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in Inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -625,8 +626,8 @@ const deletePurchaseOrderDetailsById = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -650,8 +651,8 @@ const deletepurchaseOrderMaterialDetialsById = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -948,8 +949,8 @@ const sendPurchaseOrderMail = async (req, res) => {
             }
         }
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -973,8 +974,8 @@ const approvePurchaseOrderByPurchaseId = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -1038,8 +1039,8 @@ const addEditInquiryDetails = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -1079,8 +1080,8 @@ const getallInquiryDetails = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -1114,8 +1115,8 @@ const getAllInquiryMaterialDetailsByInquiryId = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in Inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -1140,8 +1141,8 @@ const deleteInquiryDetailsById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -1166,8 +1167,8 @@ const deleteInquiryMaterialDetailsById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -1235,8 +1236,8 @@ const sendInquiryToCompany = async (req, res) => {
 
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -1306,8 +1307,8 @@ const getAllGoodsRegistered = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -1371,8 +1372,8 @@ const getAllMaterialWisePurchaseReport = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -1456,8 +1457,8 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -1551,8 +1552,8 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -1624,8 +1625,8 @@ const getAllShourtageReport = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -1687,8 +1688,8 @@ const getAllNearExpiryReport = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -1769,8 +1770,8 @@ const getAllPurchaseOrderRegister = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 

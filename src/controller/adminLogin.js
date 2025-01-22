@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import config from "../config/config.js";
 import userLogModel from "../model/userLogModel.js";
+import errorHandler from "../server/errorHandle.js";
 
 const getCompanyInfo = async (req, res) => {
     try {
@@ -29,8 +30,8 @@ const getCompanyInfo = async (req, res) => {
 
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Admin Login controller", error);
+        errorHandler(error, req, res, "Error in Admin Login controller")
     }
 };
 
@@ -67,7 +68,7 @@ const userAuthentication = async (req, res) => {
                     status: user.Status,
                     sessionTimeout: config.Session_TimeOut,
                     expires: expiry,
-                    roleId : user.roleId
+                    roleId: user.roleId
                 }
 
                 const currentDevice = req?.headers['user-agent'];
@@ -75,10 +76,10 @@ const userAuthentication = async (req, res) => {
                 let reqData = {
                     userName: user.UserName,
                     token: token,
-                    email : user.email,
+                    email: user.email,
                     sessionTimeout: config.Session_TimeOut,
                     expires: expiry,
-                    device : currentDevice ? currentDevice : 'Unknown'
+                    device: currentDevice ? currentDevice : 'Unknown'
                 }
                 const userLogData = new userLogModel(reqData);
                 await userLogData.save();
@@ -108,8 +109,8 @@ const userAuthentication = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Admin Login controller", error);
+        errorHandler(error, req, res, "Error in Admin Login controller")
     }
 };
 

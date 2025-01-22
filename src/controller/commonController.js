@@ -21,6 +21,7 @@ import stereoModel from "../model/stereoMasterModel.js";
 import storageConditionModel from "../model/storageConditionModel.js";
 import transportCourierModel from "../model/transportCourierModel.js";
 import UsersSCHM from "../model/user.js";
+import errorHandler from "../server/errorHandle.js";
 
 const getAllItemCategory = async (req, res) => {
     try {
@@ -35,8 +36,8 @@ const getAllItemCategory = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -53,8 +54,8 @@ const getAllHSNCode = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -73,8 +74,8 @@ const getAllStorageConditions = async (req, res) => {
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -94,8 +95,8 @@ const getAllRMCategory = async (req, res) => {
 
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -115,8 +116,8 @@ const getAllPMCategory = async (req, res) => {
 
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -136,8 +137,8 @@ const getAllPackingMaterialSize = async (req, res) => {
 
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -157,8 +158,8 @@ const getAllStates = async (req, res) => {
 
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -178,8 +179,8 @@ const getAllStereoData = async (req, res) => {
 
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -198,8 +199,8 @@ const getAllLabelClaims = async (req, res) => {
         });
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -219,8 +220,8 @@ const getAllColors = async (req, res) => {
 
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -240,8 +241,8 @@ const getAllMfgLicMaster = async (req, res) => {
 
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -261,8 +262,8 @@ const getAllProductionStageMaster = async (req, res) => {
 
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -282,8 +283,8 @@ const getAllPunchSizes = async (req, res) => {
 
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -302,8 +303,8 @@ const getAllAccountGroups = async (req, res) => {
         });
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -330,8 +331,8 @@ const getAllTransportCourier = async (req, res) => {
         });
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -364,8 +365,8 @@ const getAllDaybooks = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -387,8 +388,8 @@ const getAllPartyDropdown = async (req, res) => {
 
         // res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -411,8 +412,8 @@ const getAllItem = async (req, res) => {
 
         // res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -434,8 +435,8 @@ const getAllProductDropdown = async (req, res) => {
 
         // res.status(200).json({ Message: "Product fetched successfully", responseContent: data });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -456,8 +457,8 @@ const getAllRMDropdown = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -478,8 +479,8 @@ const getAllPackingMaterialDropdown = async (req, res) => {
         });
         
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 
@@ -500,8 +501,8 @@ const getCompanyDetails = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
     }
 };
 

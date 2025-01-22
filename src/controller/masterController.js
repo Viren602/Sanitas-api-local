@@ -19,6 +19,7 @@ import stateModel from "../model/stateModel.js";
 import stereoModel from "../model/stereoMasterModel.js";
 import storageConditionModel from "../model/storageConditionModel.js";
 import transportCourierModel from "../model/transportCourierModel.js";
+import errorHandler from "../server/errorHandle.js";
 
 
 const addEditPackingMaterial = async (req, res) => {
@@ -70,10 +71,10 @@ const addEditPackingMaterial = async (req, res) => {
                 });
             }
         }
-
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
+
     }
 };
 
@@ -88,8 +89,8 @@ const getAllPackingMaterials = async (req, res) => {
 
         res.status(200).json({ Message: "Items fetched successfully", responseContent: data });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -116,8 +117,8 @@ const getPackingMaterialById = async (req, res) => {
         // res.status(201).json({ Message: "Items fetched successfully", responseContent: response });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -144,8 +145,8 @@ const deletePackingMaterialById = async (req, res) => {
 
         // res.status(201).json({ Message: "Item has been deleted", responseContent: response });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -188,8 +189,8 @@ const addEditRMCategory = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -214,8 +215,8 @@ const deleteRMCategoryById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -255,8 +256,8 @@ const addEditPMCategory = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -281,8 +282,8 @@ const deletePMCategoryById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -324,8 +325,8 @@ const addEditPackingMaterialSize = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -349,8 +350,8 @@ const deletePackingMaterialSizeById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -392,8 +393,8 @@ const addEditStates = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -418,8 +419,8 @@ const deleteStateById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -460,8 +461,8 @@ const addEditStereo = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -486,8 +487,8 @@ const deleteStereoById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -527,8 +528,8 @@ const addEditLabelClaims = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -553,8 +554,8 @@ const deleteLabelClaimById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -597,8 +598,8 @@ const addEditStorageConditions = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -623,8 +624,8 @@ const deleteStorageConditionById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -665,8 +666,8 @@ const addEditColors = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -690,8 +691,8 @@ const deleteColorById = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -732,8 +733,8 @@ const addMfgLic = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -758,8 +759,8 @@ const deleteMfgLicById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -803,8 +804,8 @@ const addProductionStages = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -829,8 +830,8 @@ const deleteProductionStageById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -872,8 +873,8 @@ const addEditPunchSizeMaster = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -897,8 +898,8 @@ const deletePunchSizeById = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -942,8 +943,8 @@ const addEditAccountGroup = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -967,8 +968,8 @@ const deleteAccountGroupById = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1010,8 +1011,8 @@ const addEditTransportCourier = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1036,8 +1037,8 @@ const deleteTransportCourierById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1082,8 +1083,8 @@ const addEditDaybook = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1108,8 +1109,8 @@ const deleteDaybookById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1137,8 +1138,8 @@ const getAllParties = async (req, res) => {
 
         res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1170,8 +1171,8 @@ const getPartyDetailsById = async (req, res) => {
 
         // res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1234,8 +1235,8 @@ const addEditPartyDetails = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1261,8 +1262,8 @@ const deletePartyDetailsById = async (req, res) => {
 
         // res.status(201).json({ Message: "Item has been deleted", responseContent: response });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1316,8 +1317,8 @@ const addeditProductDetails = async (req, res) => {
         }
 
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1332,8 +1333,8 @@ const getAllProductDetails = async (req, res) => {
 
         res.status(200).json({ Message: "Product fetched successfully", responseContent: data });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1360,8 +1361,8 @@ const getProductDetailById = async (req, res) => {
 
         // res.status(201).json({ Message: "Product fetched successfully", responseContent: response });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1389,8 +1390,8 @@ const deleteProductDetailsById = async (req, res) => {
 
         // res.status(201).json({ Message: "Product has been deleted", responseContent: response });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1438,8 +1439,8 @@ const addEditpartyWiseNetRateDetails = async (req, res) => {
             // res.status(200).json({ Message: "Details added successfully", data: response });
         }
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1465,8 +1466,8 @@ const getPartyWiseNetRateDetailsByPartyId = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1493,8 +1494,8 @@ const deletePartyWiseNetRateById = async (req, res) => {
 
         // res.status(201).json({ Message: "Item has been deleted", responseContent: response });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1520,8 +1521,8 @@ const getRMFormulaByProductId = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1566,8 +1567,8 @@ const addEditRMFormulaDetails = async (req, res) => {
             // res.status(200).json({ Message: "Details added successfully", data: response });
         }
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1594,8 +1595,8 @@ const deleteRMFurmulaById = async (req, res) => {
 
         // res.status(201).json({ Message: "Item has been deleted", responseContent: response });
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1622,8 +1623,8 @@ const getPMFormulaByItemId = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1665,8 +1666,8 @@ const addEditPMFormulaDetails = async (req, res) => {
             });
         }
     } catch (error) {
-        console.log("error in admin addEmployee controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 
@@ -1693,8 +1694,8 @@ const deletePMFurmulaById = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in item master controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
     }
 };
 

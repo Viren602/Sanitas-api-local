@@ -8,6 +8,7 @@ import productionPlanningEntryModel from "../model/ProductionModels/productionPl
 import ProductionStagesModel from "../model/ProductionModels/productionStagesModel.js";
 import rmFormulaModel from "../model/rmFormulaModel.js";
 import mongoose from "mongoose";
+import errorHandler from "../server/errorHandle.js";
 
 const addEditProductionPlanningEntry = async (req, res) => {
   try {
@@ -72,8 +73,8 @@ const addEditProductionPlanningEntry = async (req, res) => {
       });
     }
   } catch (error) {
-    console.log("error in production controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -158,8 +159,8 @@ const getAllProductionPlanningEntry = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log("error in inventory controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -194,8 +195,8 @@ const getProductionPlanningEntryById = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log("error in Inventory controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -231,8 +232,8 @@ const deleteProductionPlanningEntryById = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log("error in inventory controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -352,8 +353,8 @@ const getRMFormulaForProductionById = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("error in item master controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -392,8 +393,8 @@ const productionRequisitionRMFormulaListing = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("error in production controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -418,8 +419,8 @@ const getProductionRMFOrmulaByProductionDetailsId = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("error in item master controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -485,8 +486,8 @@ const getPMFormulaByPackingItemId = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("error in item master controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -526,8 +527,8 @@ const packingRequisitionPMFormulaListing = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("error in production controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -552,8 +553,8 @@ const getProductionPMFOrmulaByProductionDetailsId = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("error in item master controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -597,8 +598,8 @@ const addEditBatchClearingEntry = async (req, res) => {
       });
     }
   } catch (error) {
-    console.log("error in production controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -629,8 +630,8 @@ const getBatchClearingEntryByProductId = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log("error in Inventory controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -689,8 +690,8 @@ const getAllBatchClearedRecords = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log("error in inventory controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -750,8 +751,8 @@ const getAllPendingProductionPlanningReport = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log("error in inventory controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -860,8 +861,8 @@ const getAllProductionBatchRegister = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log("error in inventory controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -923,8 +924,8 @@ const getAllJobChargeRecords = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log("error in inventory controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -1007,8 +1008,8 @@ const getProductCostingReport = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log("error in inventory controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -1043,8 +1044,8 @@ const getProductDetailsForBatchClearedByProductId = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log("error in Inventory controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -1097,8 +1098,8 @@ const getBatchCostingReportRMFormulaId = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("error in item master controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -1151,8 +1152,8 @@ const getBatchCostingReportPMFormulaById = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("error in item master controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -1298,8 +1299,8 @@ const getAllMaterialRequirementReportForRM = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("error in inventory controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 
@@ -1387,8 +1388,8 @@ const getAllMaterialRequirementReportForPM = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("error in inventory controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
   }
 };
 

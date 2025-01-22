@@ -5,6 +5,7 @@ import companyItems from '../model/companyItems.js';
 import pmFormulaModel from '../model/pmFormulaModel.js';
 import rawMaterialSchema from '../model/rawMaterialModel.js';
 import packingMaterialSchema from '../model/packingMaterialModel.js';
+import errorHandler from '../server/errorHandle.js';
 
 const importRMFormula = async (req, res) => {
     try {
@@ -145,7 +146,7 @@ const importPMFormulaWithRMId = async (req, res) => {
                 );
 
                 if (updateResult.matchedCount > 0) {
-                    totalUpdatedRecords += updateResult.modifiedCount; 
+                    totalUpdatedRecords += updateResult.modifiedCount;
                     console.log(`Updated ${updateResult.modifiedCount} records in pmFormulaModel for pmName: ${packingMaterial.pmName}`);
                 } else {
                     console.log(`No matching records found in pmFormulaModel for pmName: ${packingMaterial.pmName}`);
@@ -160,8 +161,8 @@ const importPMFormulaWithRMId = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("error in inventory controller", error);
-        res.status(500).json({ error: error.message });
+        console.log("Error in Migration controller", error);
+        errorHandler(error, req, res, "Error in Migration controller")
     }
 };
 

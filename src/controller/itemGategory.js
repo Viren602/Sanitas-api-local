@@ -1,6 +1,7 @@
 import HNSCodesScHema from "../model/hnsCode.js";
 import ItemCategory from "../model/itemCategory.js";
 import { encryptionAPI, getRequestData } from "../middleware/encryption.js";
+import errorHandler from "../server/errorHandle.js";
 
 const addEditItemGategory = async (req, res) => {
   try {
@@ -40,8 +41,8 @@ const addEditItemGategory = async (req, res) => {
     }
 
   } catch (error) {
-    console.log("error in admin addEmployee controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Item Category controller", error);
+    errorHandler(error, req, res, "Error in Item Category controller")
   }
 };
 
@@ -66,8 +67,8 @@ const deleteCategoryById = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("error in item master controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Item Category controller", error);
+    errorHandler(error, req, res, "Error in Item Category controller")
   }
 };
 
@@ -110,8 +111,8 @@ const addEditHSNCode = async (req, res) => {
     }
 
   } catch (error) {
-    console.log("error in admin addEmployee controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Item Category controller", error);
+    errorHandler(error, req, res, "Error in Item Category controller")
   }
 };
 
@@ -135,8 +136,8 @@ const deleteHSNCodeById = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log("error in item master controller", error);
-    res.status(500).json({ error: error.message });
+    console.log("Error in Item Category controller", error);
+    errorHandler(error, req, res, "Error in Item Category controller")
   }
 };
 
