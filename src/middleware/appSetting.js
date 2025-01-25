@@ -14,3 +14,5 @@ export const ErrorMessage = "Oops! Something went wrong. Please reach out at zyd
 
 export const ENV = "Local";
 
+export const CompanyGroup = "SANITAS GROUP";
+

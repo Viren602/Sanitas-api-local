@@ -60,13 +60,44 @@ const addEditRawMaterial = async (req, res) => {
 
 const getAllRawMaterials = async (req, res) => {
     try {
-        const { id } = req.query;
+        const { id, page = 1, limit = 100 } = req.query;
+
+        const itemName = getRequestData(id)
+        const pageNo = getRequestData(page)
+        const pageLimit = getRequestData(limit)
         let queryObject = { isDeleted: false }
-        if (id && id.trim() !== "") {
-            queryObject.rmName = { $regex: `^${id}`, $options: "i" };
+
+        if (itemName && itemName.trim() !== "") {
+            queryObject.rmName = { $regex: `^${itemName}`, $options: "i" };
+        } else {
+            delete queryObject.rmName;
         }
-        let data = await rawMaterialSchema.find(queryObject).sort("rmName");
-        res.status(200).json({ Message: "Items fetched successfully", responseContent: data });
+        console.log(queryObject)
+        const skip = (pageNo - 1) * pageLimit;
+
+        const totalCount = await rawMaterialSchema.countDocuments(queryObject);
+
+        let data = await rawMaterialSchema
+            .find(queryObject)
+            .sort("rmName")
+            .skip(skip)
+            .limit(parseInt(pageLimit));
+
+        let response = {
+            totalCount: totalCount,
+            responseData: data,
+            currentPage: parseInt(pageNo)
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
 
     } catch (error) {
         console.log("Error in Raw Material Master controller", error);

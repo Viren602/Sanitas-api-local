@@ -7,13 +7,19 @@ import bcrypt from "bcryptjs";
 import config from "../config/config.js";
 import userLogModel from "../model/userLogModel.js";
 import errorHandler from "../server/errorHandle.js";
+import { CompanyGroup } from "../middleware/appSetting.js";
+import mongoose from "mongoose";
+
+const connections = {};
 
 const getCompanyInfo = async (req, res) => {
     try {
         let response = [];
         const companyFinancialYear = await companyFinancialYearModel.find({});
         const companyGroup = await companyGroupModel.find({});
+        const companyGroupName = CompanyGroup;
         response = {
+            companyGroupName,
             companyGroup,
             companyFinancialYear
         }
@@ -29,6 +35,39 @@ const getCompanyInfo = async (req, res) => {
         });
 
         // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+    } catch (error) {
+        console.log("Error in Admin Login controller", error);
+        errorHandler(error, req, res, "Error in Admin Login controller")
+    }
+};
+
+const getCompanyDataWithCompanyNameAndYear = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        const dbDetails = await companyFinancialYearModel.findOne({
+            CompanyName: data.companyName,
+            CompanyYear: data.financialYear
+        });
+
+        const databaseName = dbDetails.databaseName;
+        await mongoose.disconnect();
+        const dbURI = `mongodb+srv://fenil2502:KRMHA7bwog8xnGso@fenilapi.de2pm.mongodb.net/${databaseName}?retryWrites=true&w=majority&appName=FenilApi`;
+
+        const connection = await mongoose.connect(dbURI);
+        const dbName = connection.connections[0].name;
+        console.log(`Connected to MongoDB: ${dbName}`);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Databases are switched",
+                responseData: null,
+                isEnType: true
+            },
+        });
+
     } catch (error) {
         console.log("Error in Admin Login controller", error);
         errorHandler(error, req, res, "Error in Admin Login controller")
@@ -117,5 +156,6 @@ const userAuthentication = async (req, res) => {
 
 export {
     getCompanyInfo,
-    userAuthentication
+    userAuthentication,
+    getCompanyDataWithCompanyNameAndYear
 };

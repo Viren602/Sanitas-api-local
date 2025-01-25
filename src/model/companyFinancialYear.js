@@ -6,6 +6,7 @@ const financialYears = mongoose.Schema({
     CompanyYear: { type: String, default: '' },
     Path: { type: String, default: '' },
     Type: { type: String, default: '' },
+    databaseName: { type: String, default: '' },
 }, { timestamps: true })
 
 

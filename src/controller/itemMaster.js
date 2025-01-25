@@ -25,7 +25,7 @@ const addEditItems = async (req, res) => {
         res.status(404).json({ Message: "Item not found" });
       }
     } else {
-      const existingItemByName = await companyItems.findOne({ ItemName: reqData.ItemName.trim() });
+      const existingItemByName = await companyItems.findOne({ ItemName: reqData.ItemName.trim(), IsDeleted: false });
       if (existingItemByName) {
         let encryptData = encryptionAPI(existingItemByName, 1)
         res.status(200).json({
