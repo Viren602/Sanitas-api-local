@@ -80,14 +80,46 @@ const addEditPackingMaterial = async (req, res) => {
 
 const getAllPackingMaterials = async (req, res) => {
     try {
-        const { id } = req.query;
-        let queryObject = { isDeleted: false }
-        if (id && id.trim() !== "") {
-            queryObject.pmName = { $regex: `^${id}`, $options: "i" };
-        }
-        let data = await packingMaterialSchema.find(queryObject).sort("pmName");
+        const { id, page = 1, limit = 50 } = req.query;
 
-        res.status(200).json({ Message: "Items fetched successfully", responseContent: data });
+        const itemName = getRequestData(id)
+        const pageNo = getRequestData(page)
+        const pageLimit = getRequestData(limit)
+        let queryObject = { isDeleted: false }
+
+        if (itemName && itemName.trim() !== "") {
+            queryObject.pmName = { $regex: `^${itemName}`, $options: "i" };
+        } else {
+            delete queryObject.pmName;
+        }
+
+        const skip = (pageNo - 1) * pageLimit;
+
+        const totalCount = await packingMaterialSchema.countDocuments(queryObject);
+
+        let data = await packingMaterialSchema
+            .find(queryObject)
+            .sort("pmName")
+            .skip(skip)
+            .limit(parseInt(pageLimit));
+
+        let response = {
+            totalCount: totalCount,
+            responseData: data,
+            currentPage: parseInt(pageNo)
+        };
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(200).json({ Message: "Items fetched successfully", responseContent: data });
     } catch (error) {
         console.log("Error in item master controller", error);
         errorHandler(error, req, res, "Error in Master controller")
@@ -1117,11 +1149,16 @@ const deleteDaybookById = async (req, res) => {
 const getAllParties = async (req, res) => {
     try {
         const { id } = req.query;
+        let reqId = getRequestData(id)
+
         let queryObject = { isDeleted: false }
-        if (id && id.trim() !== "") {
-            queryObject.partyName = { $regex: `^${id}`, $options: "i" };
+        if (reqId && reqId.trim() !== "") {
+            queryObject.partyName = { $regex: `^${reqId}`, $options: "i" };
         }
-        let response = await partyModel.find(queryObject).sort("partyName");
+        let response = await partyModel
+            .find(queryObject)
+            .select('partyName city email mobileNo1 transporterName gstnNo')
+            .sort("partyName");
 
         // for (let i = 0; i < response.length; i++) {
         //     const accountCode = response[i].acGroupCode;
@@ -1135,8 +1172,17 @@ const getAllParties = async (req, res) => {
         //         accountCodeName,
         //     };
         // }
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Item has been deleted",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
 
-        res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
+        // res.status(200).json({ Message: "Items fetched successfully", responseContent: response });
     } catch (error) {
         console.log("Error in item master controller", error);
         errorHandler(error, req, res, "Error in Master controller")
@@ -1324,14 +1370,45 @@ const addeditProductDetails = async (req, res) => {
 
 const getAllProductDetails = async (req, res) => {
     try {
-        const { id } = req.query;
-        let queryObject = { isDeleted: false }
-        if (id && id.trim() !== "") {
-            queryObject.productName = { $regex: `^${id}`, $options: "i" };
-        }
-        let data = await productDetailsModel.find(queryObject).sort("productName");
+        const { id, page = 1, limit = 50 } = req.query;
 
-        res.status(200).json({ Message: "Product fetched successfully", responseContent: data });
+        const itemName = getRequestData(id)
+        const pageNo = getRequestData(page)
+        const pageLimit = getRequestData(limit)
+        let queryObject = { isDeleted: false }
+
+        if (itemName && itemName.trim() !== "") {
+            queryObject.productName = { $regex: `^${itemName}`, $options: "i" };
+        } else {
+            delete queryObject.productName;
+        }
+        const skip = (pageNo - 1) * pageLimit;
+
+        const totalCount = await productDetailsModel.countDocuments(queryObject);
+
+        let data = await productDetailsModel
+            .find(queryObject)
+            .sort("productName")
+            .skip(skip)
+            .limit(parseInt(pageLimit));
+
+        let response = {
+            totalCount: totalCount,
+            responseData: data,
+            currentPage: parseInt(pageNo)
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(200).json({ Message: "Product fetched successfully", responseContent: data });
     } catch (error) {
         console.log("Error in item master controller", error);
         errorHandler(error, req, res, "Error in Master controller")

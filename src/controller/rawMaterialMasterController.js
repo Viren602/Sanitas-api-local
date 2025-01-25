@@ -25,7 +25,7 @@ const addEditRawMaterial = async (req, res) => {
                 res.status(404).json({ Message: "Item not found" });
             }
         } else {
-            const existingItemByName = await rawMaterialSchema.findOne({ rmName: reqData.rmName.trim() });
+            const existingItemByName = await rawMaterialSchema.findOne({ rmName: reqData.rmName.trim(), isDeleted: false });
             if (existingItemByName) {
                 let encryptData = encryptionAPI(existingItemByName, 1)
                 res.status(200).json({
@@ -72,7 +72,6 @@ const getAllRawMaterials = async (req, res) => {
         } else {
             delete queryObject.rmName;
         }
-        console.log(queryObject)
         const skip = (pageNo - 1) * pageLimit;
 
         const totalCount = await rawMaterialSchema.countDocuments(queryObject);

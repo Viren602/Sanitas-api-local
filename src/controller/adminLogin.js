@@ -7,10 +7,17 @@ import bcrypt from "bcryptjs";
 import config from "../config/config.js";
 import userLogModel from "../model/userLogModel.js";
 import errorHandler from "../server/errorHandle.js";
-import { CompanyGroup } from "../middleware/appSetting.js";
+import { CompanyGroup, FromMail } from "../middleware/appSetting.js";
 import mongoose from "mongoose";
+import mailsender from "../utils/sendingEmail.js";
 
-const connections = {};
+const getClientIp = (req) => {
+    return (
+        req.headers['x-forwarded-for'] ||
+        req.socket.remoteAddress ||
+        'Unknown'
+    );
+};
 
 const getCompanyInfo = async (req, res) => {
     try {
@@ -79,7 +86,7 @@ const userAuthentication = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let user = await companyAdminModel.findOne({ UserName: data.userName });
-        console.log(user)
+        console.log(data)
         if (user !== null) {
             const isPasswordValid = await bcrypt.compare(data.password, user.hashPassword);
             if (!isPasswordValid) {
@@ -92,8 +99,6 @@ const userAuthentication = async (req, res) => {
                         isEnType: true
                     },
                 });
-
-                // return res.status(401).json({ message: 'Invalid credentials' });
             } else {
                 const token = jwt.sign({ userId: user._id }, config.Secret_key, { expiresIn: `${config.Session_TimeOut}m` });
                 let expiryMinutes = config.Session_TimeOut;
@@ -111,6 +116,7 @@ const userAuthentication = async (req, res) => {
                 }
 
                 const currentDevice = req?.headers['user-agent'];
+                const ipAddress = getClientIp(req);
 
                 let reqData = {
                     userName: user.UserName,
@@ -123,6 +129,29 @@ const userAuthentication = async (req, res) => {
                 const userLogData = new userLogModel(reqData);
                 await userLogData.save();
 
+                let html = `<html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                </head>
+                <body>
+                    <h1><strong>Someone Logged in</strong></h1>
+                    <p><strong>UserName:</strong> ${user.UserName || ''}</p>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <p><strong>Time:</strong> ${data.currentDateTimeFromUserSystem}</p>
+                    <p><strong>IP Address:</strong> ${ipAddress}</p>
+                    <p><strong>Device:</strong> ${currentDevice ? currentDevice : 'NA'}</p>
+                </body>
+                </html>`
+
+                let emaildata = {
+                    toMail: FromMail,
+                    subject: '"User Login Alert!!!',
+                    fromMail: FromMail,
+                    html: html,
+                };
+
+                // mailsender(emaildata)
 
                 let responseData = encryptionAPI(response, 1)
                 res.status(200).json({
