@@ -63,6 +63,10 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
             await response.save();
             responseData.materialDetails = response;
         }
+        console.log(data.grnMaterialDetails.purchaseOrdermaterialId)
+        if (data.grnMaterialDetails.isPurchaseOrderEntry && data.grnMaterialDetails.purchaseOrderId !== '' && data.grnMaterialDetails.purchaseOrdermaterialId !== '') {
+            await purchaserOrderMaterialDetailsModel.findByIdAndUpdate(data.grnMaterialDetails.purchaseOrdermaterialId, { isGRNEntryDone: true }, { new: true, useFindAndModify: false });
+        }
 
         let encryptData = encryptionAPI(responseData, 1)
 
@@ -92,7 +96,7 @@ const getAllPartyListForGRNEntry = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
 
-        let filterBy = 'partyName'
+        let filterBy = 'grnNo'
 
         if (data.filterBy && data.filterBy.trim() !== '') {
             filterBy = data.filterBy
@@ -168,6 +172,78 @@ const getAllgrnEntryMaterialDetailsById = async (req, res) => {
     }
 };
 
+
+const getPurchaseOrderMaterialByPartyId = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        let purchaseOrder = [];
+        if (data.partyId) {
+            purchaseOrder = await purchaseOrderDetailsModel
+                .find({ partyId: data.partyId })
+                .populate({
+                    path: 'partyId',
+                    select: 'partyName _id'
+                });
+        }
+
+        let materialDetails = [];
+        if (purchaseOrder.length > 0) {
+            let response = await Promise.all(
+                purchaseOrder.map(async (item) => {
+                    let materials = []
+                    if (data.materialType === 'Raw') {
+                        materials = await purchaserOrderMaterialDetailsModel
+                            .find({ purchaseOrderId: item._id, rawMaterialId: data.materialId, isDeleted: false, isGRNEntryDone: false })
+                            .populate({
+                                path: 'rawMaterialId',
+                                select: 'rmName rmUOM _id',
+                            });
+                    } else {
+                        materials = await purchaserOrderMaterialDetailsModel
+                            .find({ purchaseOrderId: item._id, packageMaterialId: data.materialId, isDeleted: false, isGRNEntryDone: false })
+                            .populate({
+                                path: 'packageMaterialId',
+                                select: 'pmName pmUOM _id',
+                            });
+                    }
+
+                    return materials.map((material) => ({
+                        purchaseOrderNo: item.purchaseOrderNo,
+                        partyName: item.partyId.partyName,
+                        materialName: data.materialType === 'Raw' ? material.rawMaterialId.rmName : material.packageMaterialId.pmName,
+                        materialUOM: data.materialType === 'Raw' ? material.rawMaterialId.rmUOM : material.packageMaterialId.pmUOM,
+                        materialQty: material.qty,
+                        materialRate: material.rate,
+                        materialAmount: material.amount,
+                        isPurchaseOrderEntry: true,
+                        purchaseOrderId: item._id,
+                        purchaseOrdermaterialId: material._id
+                    }));
+                })
+            );
+
+            materialDetails = response.flat();
+        }
+
+        let encryptData = encryptionAPI(materialDetails, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
+    }
+};
+
 const deleteGRNEntryMaterialDetailsById = async (req, res) => {
     try {
         const { id } = req.query;
@@ -199,9 +275,14 @@ const deleteItemforGRNEntryMaterialById = async (req, res) => {
     try {
         const { id } = req.query;
         let reqId = getRequestData(id)
+        console.log(reqId)
         let response = {}
         if (reqId) {
             response = await grnEntryMaterialDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+
+        if (response.purchaseOrdermaterialId) {
+            response = await purchaserOrderMaterialDetailsModel.findByIdAndUpdate(response.purchaseOrdermaterialId, { isGRNEntryDone: false }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -1806,5 +1887,6 @@ export {
     getAllStatementForPurchaseItemByItemId,
     getAllShourtageReport,
     getAllNearExpiryReport,
-    getAllPurchaseOrderRegister
+    getAllPurchaseOrderRegister,
+    getPurchaseOrderMaterialByPartyId
 };

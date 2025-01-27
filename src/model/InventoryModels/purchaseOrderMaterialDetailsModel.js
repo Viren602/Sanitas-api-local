@@ -12,6 +12,7 @@ const purchaserOrderMaterialDetailsSchema = mongoose.Schema({
     amount: { type: Number, default: '' },
     make: { type: String, default: '' },
     remarks: { type: String, default: '' },
+    isGRNEntryDone: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
