@@ -661,7 +661,7 @@ const getAllBatchClearedRecords = async (req, res) => {
       .populate({
         path: "packingItemId",
         select: "JobCharge ItemName UnitQuantity",
-      });;
+      });
 
     if (data.partyName && data.partyName.trim() !== "") {
       response = response.filter((item) =>
