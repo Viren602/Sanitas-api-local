@@ -142,37 +142,58 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
                 });
             }
 
-            // Add Edit For Invoice Item Details
-            await gstInvoiceFinishGoodsItemsModel.deleteMany({ gstInvoiceFinishGoodsId: response._id });
-
-            const items = data.itemListing.map(item => ({
-                ...item,
-                gstInvoiceFinishGoodsId: response._id
-            }));
-
-            await gstInvoiceFinishGoodsItemsModel.insertMany(items);
 
             // Stock Updating
-            for (let item of data.itemListing) {
-                let totalReduceQty = (Number(item.qty) || 0) + (Number(item.free) || 0)
-                await batchWiseProductStockModel.findByIdAndUpdate(
-                    item.stockId,
-                    { $inc: { quantity: -totalReduceQty } },
-                    { new: true });
+            try {
+                await Promise.all(data.itemListing.map(async (item) => {
+                    const totalReduceQty = (Number(item.qty) || 0) + (Number(item.free) || 0);
+
+                    const existingItemDetails = await gstInvoiceFinishGoodsItemsModel.findOne({ _id: item._id, isDeleted: false });
+
+                    if (existingItemDetails) {
+                        const existingQty = (Number(existingItemDetails.qty) || 0) + (Number(existingItemDetails.free) || 0);
+                        const updatedQty = existingQty - totalReduceQty;
+
+                        await batchWiseProductStockModel.findByIdAndUpdate(
+                            item.stockId,
+                            { $inc: { quantity: updatedQty } },
+                            { new: true }
+                        );
+                    } else {
+                        await batchWiseProductStockModel.findByIdAndUpdate(
+                            item.stockId,
+                            { $inc: { quantity: -totalReduceQty } },
+                            { new: true }
+                        );
+                    }
+                }));
+
+                // After Stock Updating, proceed with Invoice Item Details
+                await gstInvoiceFinishGoodsItemsModel.deleteMany({ gstInvoiceFinishGoodsId: response._id });
+
+                const items = data.itemListing.map(item => ({
+                    ...item,
+                    gstInvoiceFinishGoodsId: response._id
+                }));
+
+                await gstInvoiceFinishGoodsItemsModel.insertMany(items);
+
+                responseData.invoiceDetails = response;
+                let encryptData = encryptionAPI(responseData, 1);
+
+                res.status(200).json({
+                    data: {
+                        statusCode: 200,
+                        Message: "Invoice Details Updated Successfully",
+                        responseData: encryptData,
+                        isEnType: true,
+                    },
+                });
+
+            } catch (error) {
+                console.log("Error in Despatch controller", error);
+                errorHandler(error, req, res, "Error in Despatch controller")
             }
-
-            responseData.invoiceDetails = response;
-
-            let encryptData = encryptionAPI(responseData, 1);
-
-            res.status(200).json({
-                data: {
-                    statusCode: 200,
-                    Message: "Invoice Details Updated Successfully",
-                    responseData: encryptData,
-                    isEnType: true,
-                },
-            });
 
         } else {
             // Add Edit For Invoice Details
@@ -193,7 +214,7 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
 
             res.status(200).json({
                 data: {
-                    
+
                     statusCode: 200,
                     Message: "Invoice Details Inserted Successfully",
                     responseData: encryptData,
@@ -528,7 +549,7 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
                 .replace('#TotalGSTCalculation', hsnCodeTotalCalculation.totalAmount)
         }
 
-            htmlTemplate = `
+        htmlTemplate = `
             <div class="empty-page">${generatePage("Original for Recipient")}</div>
             <div class="page-break"></div>
             <div class="empty-page">${generatePage("Duplicate for Transporter")}</div>
