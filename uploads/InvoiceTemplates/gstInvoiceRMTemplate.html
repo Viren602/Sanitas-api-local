@@ -1,0 +1,257 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Invoice</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+</head>
+
+<body>
+    <div class="invoice h-[275mm] px-[20px] pt-[20px]">
+        <div class="invoice-inner h-full flex flex-col relative">
+            <p class="invoice-mark absolute text-[12px] right-[0] top-[5px]">#CopyType</p>
+            <div class="invoice-top shrink-0">
+                <p class="text-center font-medium">TAX INVOICE</p>
+                <div class="invoice-top-inner h-fit ">
+                    <div class="company-details border p-[5px] text-center text-[12px] font-medium">
+                        <h1 class="text-[18px] leading-4 font-bold">SANITASH HEALTHCARE</h1>
+                        <p>753, Nidhi Ind. Estate, Rakanpur, Ta. Kalol, Dist. Gandhinagar - 382721 (Gujarat)</p>
+                        <p>Email : sanitas19@gmail.com</p>
+                        <p>Mobile : 9426829676</p>
+                        <p>Mfg Lic. No. : 10719009000332</p>
+                        <div class="extra-details flex justify-between">
+                            <p>GSTN no : 24ADYFS6837Q1ZS</p>
+                            <p>FSSAI no : 10020021005766</p>
+                            <p>PAN No. : ADYFS6837Q</p>
+                        </div>
+                    </div>
+                    <div class="invoice-details flex border border-t-0 text-[12px]">
+                        <div class="left w-[35%] border-r-[1px] px-[5px]">
+                            <p class="font-semibold">Reciptient's name:</p>
+                            <p class="text-[12px] font-bold">#CompanyName</p>
+                            <p class="font-medium">#RecipientAddress</p>
+                            <p class="font-medium">State : #RecipientState</p>
+                            <p><span class="font-medium">Mobile :</span> #MobielNo</p>
+                        </div>
+                        <div class="middle w-[35%] border-r-[1px] px-[5px]">
+                            <p class="font-semibold">Consignee/Shipped to:</p>
+                            <p class="text-[12px] font-bold">#ConCompanyName</p>
+                            <p class="font-medium">#ShippedToAddress</p>
+                            <p class="font-medium">State : #ConRecipientState</p>
+                            <p><span class="font-medium">Mobile :</span> #ConMobielNo</p>
+                        </div>
+                        <div class="right w-[30%] px-[5px]">
+                            <p class="font-semibold">Transport:</p>
+                            <p class="text-[12px] font-bold">#TransportName</p>
+                            <p><span class="font-medium">Destination :</span> #Destination</p>
+                            <p><span class="font-medium">No. of case :</span> #Cases</p>
+                            <p><span class="font-medium">Weight(kg) :</span> #Weight</p>
+                            <p><span class="font-medium">L.R. No. :</span> #LRNo</p>
+                            <p><span class="font-medium">L.R. date :</span> #LRDate</p>
+                            <p><span class="font-medium">Rd. permit no. :</span> #RDPermitNo</p>
+                        </div>
+                    </div>
+                    <div class="invoice-details flex border border-t-0">
+                        <div class="left flex w-[50%] border-r-[1px] px-[5px] text-[12px]">
+                            <p class="w-[50%]"><span class="font-semibold">Invoice no :</span> #InvoiceNo</p>
+                            <p class="w-[50%]"><span class="font-semibold">Date:</span> #InvoiceDate</p>
+                        </div>
+                        <div class="right px-[5px] text-[12px]">
+                            <p><span class="font-semibold">Due date :</span> #DueDate</p>
+                        </div>
+                    </div>
+                    <div class="invoice-details flex border border-t-0">
+                        <div class="left flex w-[50%] border-r-[1px] px-[5px] text-[12px]">
+                            <p><span class="font-semibold">Recp's GSTN No :</span> #RecpGSTNNo</p>
+                        </div>
+                        <div class="right px-[5px] text-[12px]">
+                            <p><span class="font-semibold">Recp's D.L. No :</span> #RecpDLNo</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="invoice-middle grow">
+                <div class="invoice-table-container h-full flex flex-col justify-between border border-t-[0px]">
+                    <table class="invoice-table w-full table-auto border-collapse">
+                        <thead class="border border-x-[0px] border-t-[0px] border-gray-400 text-[10px] font-semibold">
+                            <tr class="bg-gray-300">
+                                <th class="w-[15%] border border-x-[0px] border-t-[0px] px-[4px] text-start">Item name
+                                </th>
+                                <!-- <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Packing</th> -->
+                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">HSN code</th>
+                                <th class="w-[7%] border border-t-[0px] px-[4px] text-start">Batch no</th>
+                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">Mfg. date</th>
+                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">Exp. date</th>
+                                <!-- <th class="w-[6%] border border-t-[0px] px-[4px] text-start">MRP</th> -->
+                                <th class="w-[6%] border border-t-[0px] px-[4px] text-start">Qty.</th>
+                                <!-- <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Free</th> -->
+                                <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Rate</th>
+                                <th class="w-[10%] border border-t-[0px] px-[4px] text-start">Sales amount</th>
+                                <!-- <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Dis amount</th> -->
+                                <!-- <th class="w-[12%] border border-l-[0px] border-t-[0px] px-[4px] text-right">Taxable
+                                    amount</th> -->
+                            </tr>
+                        </thead>
+                        <tbody class="align-top text-[10px]">
+                            #ItemListingRows
+                        </tbody>
+                    </table>
+                    <table class="invoice-table-total w-full">
+                        <thead
+                            class="collapse border border-x-[0px] border-t-[0px] border-gray-400 text-[10px] font-semibold">
+                            <tr class="bg-gray-300">
+                                <th class="w-[15%] border border-x-[0px] border-t-[0px] px-[4px] text-start">Item name
+                                </th>
+                                <!-- <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Packing</th> -->
+                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">HSN code</th>
+                                <th class="w-[7%] border border-t-[0px] px-[4px] text-start">Batch no</th>
+                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">Mfg. date</th>
+                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">Exp. date</th>
+                                <!-- <th class="w-[6%] border border-t-[0px] px-[4px] text-start">MRP</th> -->
+                                <th class="w-[6%] border border-t-[0px] px-[4px] text-start">Qty.</th>
+                                <!-- <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Free</th> -->
+                                <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Rate</th>
+                                <th class="w-[10%] border border-t-[0px] px-[4px] text-start">Sales amount</th>
+                                <!-- <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Dis amount</th> -->
+                                <!-- <th class="w-[12%] border border-x-[0px] border-t-[0px] px-[4px] text-right">Taxable
+                                    amount</th> -->
+                            </tr>
+                        </thead>
+                        <tbody class="border border-x-[0px] text-[10px]">
+                            <tr>
+                                <td
+                                    class="w-[15%] border border-t-[0px] border-l-[0px] px-[4px] text-start font-medium">
+                                    Total</td>
+                                <td class="w-[5%] border border-t-[0px] px-[4px] text-start"></td>
+                                <td class="w-[8%] border border-t-[0px] px-[4px] text-start"></td>
+                                <td class="w-[7%] border border-t-[0px] px-[4px] text-start"></td>
+                                <td class="w-[8%] border border-t-[0px] px-[4px] text-start"></td>
+                                <td class="w-[8%] border border-t-[0px] px-[4px] text-start"></td>
+                                <td class="w-[6%] border border-t-[0px] px-[4px] text-start"></td>
+                                <td class="w-[6%] border border-t-[0px] px-[4px] text-start"></td>
+                                <td class="w-[5%] border border-t-[0px] px-[4px] text-start"></td>
+                                <td class="w-[5%] border border-t-[0px] px-[4px] text-start"></td>
+                                <td class="w-[10%] border border-t-[0px] px-[4px] text-start">#TotalSalesAmount</td>
+                                <!-- <td class="w-[5%] border border-t-[0px] px-[4px] text-start">#TotalDisAmount</td> -->
+                                <!-- <td class="w-[12%] border border-t-[0px] border-r-[0px] px-[4px] text-right">#TotalTaxableAmount -->
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="invoice-bottom shrink-0">
+                <div class="gst-price-table flex h-fit w-full">
+                    <div class="gst-details flex w-[65%] flex-col justify-between border border-t-[0px] border-r-[0px]">
+                        <table class="gst-table w-full">
+                            <thead class="border border-x-[0px] border-t-[0px] text-[12px]">
+                                <tr>
+                                    <td class="w-[15%] px-[5px] font-medium">Class</td>
+                                    <td class="w-[20%] px-[5px] font-medium">Total</td>
+                                    <td class="w-[15%] px-[5px] font-medium">SGST</td>
+                                    <td class="w-[15%] px-[5px] font-medium">CGST</td>
+                                    <td class="w-[20%] px-[5px] font-medium">Total GST</td>
+                                </tr>
+                            </thead>
+                            <tbody class="border border-x-[0px] border-t-[0px] border-gray-400 text-[12px]">
+                                #HSNCodeTableRows
+                            </tbody>
+                        </table>
+                        <table class="gst-total w-full">
+                            <tbody
+                                class="border border-x-[0px] border-t-[1px] border-b-[0px] border-gray-400 text-[12px]">
+                                <tr>
+                                    <td class="w-[15%] px-[5px] font-medium">Total</td>
+                                    <td class="w-[20%] px-[5px]">#TaxableAmountTotal</td>
+                                    <td class="w-[15%] px-[5px]">#SGSTTotalAmount</td>
+                                    <td class="w-[15%] px-[5px]">#CGSTTotalAmount</td>
+                                    <td class="w-[20%] px-[5px]">#TotalGSTCalculation</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="price-details h-fit w-[35%]">
+                        <table class="price-table w-full border-collapse border border-t-[0px]">
+                            <tbody class="text-[12px]">
+                                <tr>
+                                    <td class="px-[5px]">Sub total</td>
+                                    <td class="px-[5px] text-right">#SubTotalAmount</td>
+                                </tr>
+                                <!-- <tr>
+                                    <td class="px-[5px]">Discount</td>
+                                    <td class="px-[5px] text-right">#DisCountAmount</td>
+                                </tr> -->
+                                <tr>
+                                    <td class="px-[5px]">SGST payable</td>
+                                    <td class="px-[5px] text-right">#SGSTAmount</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-[5px]">CGST payable</td>
+                                    <td class="px-[5px] text-right">#CGSTAmount</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-[5px]">Cr/Dr note</td>
+                                    <td class="px-[5px] text-right">#CRDRNote</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-[5px]">Freight</td>
+                                    <td class="px-[5px] text-right">#Freight</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-[5px]">Others</td>
+                                    <td class="px-[5px] text-right">#OtherCharges</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-[5px]">Round off</td>
+                                    <td class="px-[5px] text-right">#RoundOffAmount</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="price-words flex h-fit justify-between border">
+                    <p class="w-[65%] px-[5px] text-[12px] font-bold"><span></span> </p>
+                    <div class="flex w-[35%] justify-between px-[5px] text-[12px]">
+                        <p class="font-bold">Grand Total</p>
+                        <p class="font-bold">#GrandTotal</p>
+                    </div>
+                </div>
+                <div class="invoice-bottom-inner flex border p-[5px]">
+                    <div class="terms-condition w-[65%]">
+                        <p class="text-[11px] font-medium underline">Terms and condition :</p>
+                        <p class="text-[11px] leading-4">1. Subject to Ahmedabad Jurisdiction.</p>
+                        <p class="text-[11px] leading-4">2. Payment by cheque is subject to realisation.</p>
+                        <p class="text-[11px] leading-4">3. Interest @24% per annum would be charged on all unpaid due
+                            date.</p>
+                        <p class="text-[11px] leading-4">4. Once the consignment leaves our premises our responsibility
+                            ceases.</p>
+                        <div class="bank-details mt-[5px]">
+                            <p class="mb-[2px] text-[11px] font-medium underline">Bank details:</p>
+                            <div class="bank-info grid grid-cols-2">
+                                <p class="text-[12px] leading-4"><span class="font-medium">Bank name :</span> Gujarat
+                                    Ambuja Co-op Bank</p>
+                                <p class="text-[12px] leading-4"><span class="font-medium">IFSC code :</span>
+                                    GSCB0UGACBL</p>
+                                <p class="text-[12px] leading-4"><span class="font-medium">A/c No. :</span>
+                                    380020200001598</p>
+                                <p class="text-[12px] leading-4"><span class="font-medium">Branch :</span> Sola road Br.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="company-stamp flex w-[35%] flex-col justify-between p-[10px]">
+                        <p class="text-[12px] font-semibold">FOR SANITAS HEALTHCARE</p>
+                        <div class="signature grid h-fit w-full grid-cols-2">
+                            <p class="text-[10px]">Checked by</p>
+                            <p class="text-right text-[10px]">Auhtorised signature</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

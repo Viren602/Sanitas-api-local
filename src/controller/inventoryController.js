@@ -14,6 +14,7 @@ import PackingRequisitionPMFormulaModel from "../model/InventoryModels/packingRe
 import emailTemplateModel from "../model/emailTemplateModel.js";
 import { FromMail } from "../middleware/appSetting.js";
 import errorHandler from "../server/errorHandle.js";
+import gstinvoiceRMItemModel from "../model/Despatch/gstInvoiceRMItemsModel.js";
 
 const addEditGRNEntryMaterialMapping = async (req, res) => {
     try {
@@ -1581,8 +1582,8 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
             isDeleted: false,
         };
 
+        //Production Usage
         let responseFromUsedQty = [];
-
         if (reqData.materialType === 'Raw Material') {
             queryObject1.rmName = reqData.item.rmName
 
@@ -1620,7 +1621,40 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
             };
         });
 
-        let combinedResponse = [...response, ...responseFromUsedQty];
+
+        // GST Invoice 
+        let responseFromUsedGSTInvoice = [];
+        if (reqData.materialType === 'Raw Material') {
+            queryObject1.rmName = reqData.item.rmName
+
+            responseFromUsedGSTInvoice = await gstinvoiceRMItemModel
+                .find({ itemId: reqData.item._id, isDeleted: false })
+                .populate({
+                    path: 'gstInvoiceRMID',
+                    select: 'invoiceNo invoiceDate partyId',
+                    populate: {
+                        path: 'partyId',
+                        select: 'partyName _id',
+                    },
+                });
+        }
+
+        if (reqData.materialType === 'Packing Material') {
+            queryObject1.pmName = reqData.item.pmName
+
+            // Remaining
+        }
+        responseFromUsedGSTInvoice = responseFromUsedGSTInvoice.map(x => {
+            return {
+                ...x._doc,
+                issueQty: x.qty,
+                isGSTInvoiceRecord: true,
+            };
+        });
+        console.log(responseFromUsedQty)
+        console.log(responseFromUsedGSTInvoice)
+
+        let combinedResponse = [...response, ...responseFromUsedQty, ...responseFromUsedGSTInvoice];
         let encryptData = encryptionAPI(combinedResponse, 1)
 
         res.status(200).json({
