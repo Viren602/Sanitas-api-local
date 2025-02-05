@@ -64,7 +64,7 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
             await response.save();
             responseData.materialDetails = response;
         }
-        console.log(data.grnMaterialDetails.purchaseOrdermaterialId)
+
         if (data.grnMaterialDetails.isPurchaseOrderEntry && data.grnMaterialDetails.purchaseOrderId !== '' && data.grnMaterialDetails.purchaseOrdermaterialId !== '') {
             await purchaserOrderMaterialDetailsModel.findByIdAndUpdate(data.grnMaterialDetails.purchaseOrdermaterialId, { isGRNEntryDone: true }, { new: true, useFindAndModify: false });
         }

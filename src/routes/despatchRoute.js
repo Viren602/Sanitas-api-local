@@ -1,6 +1,6 @@
 import express from "express";
 import checkAuth from "../middleware/checkAuth.js";
-import { addEditGSTInvoiceFinishGoods, addEditInvoiceRM, deleteInvoiceById, deleteItemFromDBById, deleteRMInvoiceById, deleteRMItemFromDBById, generateGSTInvoiceForFinishGoodsById, generateGSTInvoiceForRMById, getAllGSTInvoiceFinishGoodsRecords, getAllGSTInvoiceRMRecords, getGSTInvoiceFinishGoodsById, getGSTInvoiceFinishGoodsInvoiceNo, getGSTInvoiceRMById, getGSTInvoiceRMInvoice, getProductionStockByProductId, getrawMaterialStockByRMId } from "../controller/despatchController.js";
+import { addEditGSTInvoiceFinishGoods, addEditInvoicePM, addEditInvoiceRM, addEditSalesOrderEntry, deleteInvoiceById, deleteItemFromDBById, deletePMInvoiceById, deletePMItemFromDBById, deleteRMInvoiceById, deleteRMItemFromDBById, deleteSalesOrderById, deleteSalesOrderItemByItemId, generateGSTInvoiceForFinishGoodsById, generateGSTInvoiceForPMById, generateGSTInvoiceForRMById, getAllGSTInvoiceFinishGoodsRecords, getAllGSTInvoicePMRecords, getAllGSTInvoiceRMRecords, getAllOrderDetailsItemMappingById, getAllSalesOrderEntry, getGSTInvoiceFinishGoodsById, getGSTInvoiceFinishGoodsInvoiceNo, getGSTInvoicePMById, getGSTInvoicePMInvoiceNo, getGSTInvoiceRMById, getGSTInvoiceRMInvoice, getPakcingMaterialStockByPMID, getProductionStockByProductId, getrawMaterialStockByRMId } from "../controller/despatchController.js";
 
 const despatchRoute = express.Router();
 
@@ -24,5 +24,21 @@ despatchRoute.post("/Despatch/DeleteRMItemFromDBById", checkAuth, deleteRMItemFr
 despatchRoute.get("/Despatch/DeleteRMInvoiceById", checkAuth, deleteRMInvoiceById);
 despatchRoute.get("/Despatch/GenerateGSTInvoiceForRMById", generateGSTInvoiceForRMById);
 
+// Despatch - GST Invoice PM
+despatchRoute.get("/Despatch/GetGSTInvoicePMInvoiceNo", checkAuth, getGSTInvoicePMInvoiceNo);
+despatchRoute.post("/Despatch/GetPakcingMaterialStockByPMID", checkAuth, getPakcingMaterialStockByPMID);
+despatchRoute.post("/Despatch/AddEditInvoicePM", checkAuth, addEditInvoicePM);
+despatchRoute.post("/Despatch/GetAllGSTInvoicePMRecords", checkAuth, getAllGSTInvoicePMRecords);
+despatchRoute.get("/Despatch/GetGSTInvoicePMById", checkAuth, getGSTInvoicePMById);
+despatchRoute.post("/Despatch/DeletePMItemFromDBById", checkAuth, deletePMItemFromDBById);
+despatchRoute.get("/Despatch/DeletePMInvoiceById", checkAuth, deletePMInvoiceById);
+despatchRoute.get("/Despatch/GenerateGSTInvoiceForPMById", generateGSTInvoiceForPMById);
+
+// Despatch - Sales Order Entry
+despatchRoute.post("/Despatch/AddEditSalesOrderEntry", checkAuth, addEditSalesOrderEntry);
+despatchRoute.get("/Despatch/GetAllOrderDetailsItemMappingById", checkAuth, getAllOrderDetailsItemMappingById);
+despatchRoute.post("/Despatch/GetAllSalesOrderEntry", checkAuth, getAllSalesOrderEntry);
+despatchRoute.get("/Despatch/DeleteSalesOrderById", checkAuth, deleteSalesOrderById);
+despatchRoute.get("/Despatch/DeleteSalesOrderItemByItemId", checkAuth, deleteSalesOrderItemByItemId);
 
 export default despatchRoute;
