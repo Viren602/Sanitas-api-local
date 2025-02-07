@@ -22,6 +22,8 @@ import gstInvoicePMModel from "../model/Despatch/gstInvoicePMModel.js";
 import gstInvoicePMItemModel from "../model/Despatch/gstInvoicePMItemsModel.js";
 import orderDetailsSalesOrderEntryModel from "../model/Despatch/orderDetailsSalesOrderEntryModel.js";
 import orderDetailsSalesOrderItemMappingModel from "../model/Despatch/orderDetailsSalesOrderItemMappingModel.js";
+import salesGoodsReturnEntryModel from "../model/Despatch/salesGoodsReturnEntryModel.js";
+import salesGoodsReturnItemsModel from "../model/Despatch/salesGoodsReturnItems.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1973,6 +1975,395 @@ const deleteSalesOrderItemByItemId = async (req, res) => {
     }
 };
 
+
+// Sales Goods Return Entry
+const getSalesGoodsReturnEntryInvoiceNo = async (req, res) => {
+    try {
+        let response = {}
+        let gstNoRecord = await salesGoodsReturnEntryModel
+            .findOne({ isDeleted: false })
+            .sort({ _id: -1 })
+            .select('serialNo');
+
+        if (gstNoRecord && gstNoRecord.serialNo) {
+            let lastNumber = parseInt(gstNoRecord.serialNo, 10);
+            let newNumber = lastNumber + 1;
+
+            response.serialNo = newNumber.toString().padStart(4, '0');
+        } else {
+            response.serialNo = '0001';
+        }
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
+const getAllBatchesForItemByItemId = async (req, res) => {
+    try {
+        const { id } = req.query;
+
+        let reqId = getRequestData(id)
+
+        let queryObject = {
+            isDeleted: false,
+            packingItemId: reqId
+        };
+
+        let batchClearingData = await batchClearingEntryModel
+            .find(queryObject)
+            .populate({
+                path: "productDetialsId",
+                select: "productionNo productId batchNo packing batchSize mfgDate expDate",
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            })
+            .populate({
+                path: "packingItemId",
+                select: "HSNCode",
+            });
+
+        const totalStock = batchClearingData.map(item => ({
+            productionNo: item.productDetialsId.productionNo,
+            batchClearingEntryId: item._id,
+            productId: item.packingItemId._id,
+            batchNo: item.productDetialsId.batchNo,
+            expDate: item.productDetialsId.expDate,
+            mfgDate: item.productDetialsId.mfgDate,
+            quantity: item.quantity,
+            mrp: item.mrp,
+            hsnCode: item.packingItemId.HSNCode,
+        }));
+
+        for (let stockItem of totalStock) {
+            const existingStock = await batchWiseProductStockModel.findOne({
+                batchNo: stockItem.batchNo,
+                batchClearingEntryId: stockItem.batchClearingEntryId,
+                productId: stockItem.productId,
+            });
+
+            if (!existingStock) {
+                await batchWiseProductStockModel.create(stockItem);
+            }
+        }
+
+        let response = await batchWiseProductStockModel.find({
+            productId: reqId,
+        });
+
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
+const addEditSalesGoodsReturnEntry = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        let responseData = {}
+        if (data.salesReturnDetails.salesGoodsReturnId && data.salesReturnDetails.salesGoodsReturnId.trim() !== '') {
+            // Add Edit For Invoice Details
+            const response = await salesGoodsReturnEntryModel.findByIdAndUpdate(data.salesReturnDetails.salesGoodsReturnId, data.salesReturnDetails, { new: true });
+            if (!response) {
+                responseData.salesReturnDetails = 'Party details not found';
+                res.status(200).json({
+                    data: {
+                        statusCode: 404,
+                        Message: "Invoice Details Not found",
+                        responseData: encryptData,
+                        isEnType: true,
+                    },
+                });
+            }
+
+
+            // Stock Updating
+            try {
+                await Promise.all(data.itemListing.map(async (item) => {
+                    if (item.stockUpgrade === 'yes' || item.stockUpgrade === 'Yes') {
+                        const totalReduceQty = (Number(item.qty) || 0) + (Number(item.free) || 0);
+                        const existingItemDetails = await salesGoodsReturnItemsModel.findOne({ _id: item._id, isDeleted: false });
+
+                        if (existingItemDetails) {
+                            const existingQty = (Number(existingItemDetails.qty) || 0) + (Number(existingItemDetails.free) || 0);
+                            const updatedQty = existingQty - totalReduceQty;
+
+                            await batchWiseProductStockModel.findByIdAndUpdate(
+                                item.stockId,
+                                { $inc: { quantity: -updatedQty } },
+                                { new: true }
+                            );
+                        } else {
+                            await batchWiseProductStockModel.findByIdAndUpdate(
+                                item.stockId,
+                                { $inc: { quantity: totalReduceQty } },
+                                { new: true }
+                            );
+                        }
+                    }
+                }));
+
+                // After Stock Updating, proceed with Invoice Item Details
+                await salesGoodsReturnItemsModel.deleteMany({ salesGoodsReturnId: response._id });
+
+                const items = data.itemListing.map(item => ({
+                    ...item,
+                    salesGoodsReturnId: response._id
+                }));
+
+                await salesGoodsReturnItemsModel.insertMany(items);
+
+                responseData.salesReturnDetails = response;
+                let encryptData = encryptionAPI(responseData, 1);
+
+                res.status(200).json({
+                    data: {
+                        statusCode: 200,
+                        Message: "Invoice Details Updated Successfully",
+                        responseData: encryptData,
+                        isEnType: true,
+                    },
+                });
+
+            } catch (error) {
+                console.log("Error in Despatch controller", error);
+                errorHandler(error, req, res, "Error in Despatch controller")
+            }
+
+        } else {
+            // Add Edit For Invoice Details
+            const response = new salesGoodsReturnEntryModel(data.salesReturnDetails);
+            await response.save();
+
+            responseData.salesReturnDetails = response;
+
+            const items = data.itemListing.map(item => ({
+                ...item,
+                salesGoodsReturnId: response._id
+            }));
+
+            // Add Edit For Invoice Item Details
+            await salesGoodsReturnItemsModel.insertMany(items);
+
+            let encryptData = encryptionAPI(responseData, 1);
+
+            res.status(200).json({
+                data: {
+
+                    statusCode: 200,
+                    Message: "Invoice Details Inserted Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+
+            // Stock Updating
+            for (let item of data.itemListing) {
+                if (item.stockUpgrade === 'yes' || item.stockUpgrade === 'Yes') {
+                    let totalReduceQty = (Number(item.qty) || 0) + (Number(item.free) || 0)
+                    await batchWiseProductStockModel.findByIdAndUpdate(
+                        item.stockId,
+                        { $inc: { quantity: totalReduceQty } },
+                        { new: true });
+                }
+            }
+        }
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
+const getAllSalesGoodsReturnEntry = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = { isDeleted: false }
+
+        let sortBy = 'serialNo'
+
+        if (data.invoiceNo && data.invoiceNo.trim() !== "") {
+            queryObject.invoiceNo = { $regex: `^${data.invoiceNo}`, $options: "i" };
+        }
+
+        if (data.arrangedBy && data.arrangedBy.trim() !== "") {
+            sortBy = data.arrangedBy;
+        }
+
+        let response = []
+        response = await salesGoodsReturnEntryModel
+            .find(queryObject)
+            .sort(sortBy)
+            .populate({
+                path: 'partyId',
+                select: 'partyName',
+            })
+            .populate({
+                path: 'transportId',
+                select: 'transportName',
+            });
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch Controller", error);
+        errorHandler(error, req, res, "Error in Despatch Controller")
+    }
+};
+
+const getSalesGoodsReturnDetailsById = async (req, res) => {
+    try {
+        const { id } = req.query;
+
+        let reqId = getRequestData(id)
+
+        let salesReturnDetails = await salesGoodsReturnEntryModel
+            .findOne({ _id: reqId, isDeleted: false })
+            .populate({
+                path: "partyId",
+                select: "partyName",
+            })
+            .populate({
+                path: "transportId",
+                select: "transportName",
+            });
+
+        let itemListing = await salesGoodsReturnItemsModel
+            .find({ salesGoodsReturnId: reqId, isDeleted: false });
+
+        let response = {
+            salesReturnDetails: salesReturnDetails,
+            itemListing: itemListing
+        }
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
+const deleteSalesGoodsReturnItemById = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        // Stock Updating
+        if (item.stockUpgrade === 'yes' || item.stockUpgrade === 'Yes') {
+            let totalReduceQty = (Number(data.qty) || 0) + (Number(data.free) || 0)
+            await batchWiseProductStockModel.findByIdAndUpdate(
+                data.stockId,
+                { $inc: { quantity: -totalReduceQty } },
+                { new: true });
+        }
+        // Removing Particualr Item From GST Invoice
+        let response = await salesGoodsReturnItemsModel.findByIdAndUpdate(data.gstInvoiceBatchId, { isDeleted: true })
+
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Item Deleted successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
+const deleteSalesGoodsReturnById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        let itemList = await salesGoodsReturnItemsModel.find({ salesGoodsReturnId: reqId })
+
+        itemList.map(async item => {
+            // Stock Updating
+            if (item.stockUpgrade === 'yes' || item.stockUpgrade === 'Yes') {
+                let totalReduceQty = (Number(item.qty) || 0) + (Number(item.free) || 0)
+                await batchWiseProductStockModel.findByIdAndUpdate(
+                    item.stockId,
+                    { $inc: { quantity: -totalReduceQty } },
+                    { new: true });
+            }
+            // Removing Particualr Item From GST Invoice
+            await salesGoodsReturnItemsModel.findByIdAndUpdate(item._id, { isDeleted: true })
+        })
+
+        // Removing GST Invoice Finish Goods Record
+        let response = await salesGoodsReturnEntryModel.findByIdAndUpdate(reqId, { isDeleted: true })
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Sales Goods Return Details Deleted Successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
 export {
     getProductionStockByProductId,
     getGSTInvoiceFinishGoodsInvoiceNo,
@@ -2002,5 +2393,12 @@ export {
     getAllOrderDetailsItemMappingById,
     getAllSalesOrderEntry,
     deleteSalesOrderById,
-    deleteSalesOrderItemByItemId
+    deleteSalesOrderItemByItemId,
+    getAllBatchesForItemByItemId,
+    getSalesGoodsReturnEntryInvoiceNo,
+    addEditSalesGoodsReturnEntry,
+    getAllSalesGoodsReturnEntry,
+    getSalesGoodsReturnDetailsById,
+    deleteSalesGoodsReturnItemById,
+    deleteSalesGoodsReturnById
 };

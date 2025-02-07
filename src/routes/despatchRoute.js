@@ -1,6 +1,6 @@
 import express from "express";
 import checkAuth from "../middleware/checkAuth.js";
-import { addEditGSTInvoiceFinishGoods, addEditInvoicePM, addEditInvoiceRM, addEditSalesOrderEntry, deleteInvoiceById, deleteItemFromDBById, deletePMInvoiceById, deletePMItemFromDBById, deleteRMInvoiceById, deleteRMItemFromDBById, deleteSalesOrderById, deleteSalesOrderItemByItemId, generateGSTInvoiceForFinishGoodsById, generateGSTInvoiceForPMById, generateGSTInvoiceForRMById, getAllGSTInvoiceFinishGoodsRecords, getAllGSTInvoicePMRecords, getAllGSTInvoiceRMRecords, getAllOrderDetailsItemMappingById, getAllSalesOrderEntry, getGSTInvoiceFinishGoodsById, getGSTInvoiceFinishGoodsInvoiceNo, getGSTInvoicePMById, getGSTInvoicePMInvoiceNo, getGSTInvoiceRMById, getGSTInvoiceRMInvoice, getPakcingMaterialStockByPMID, getProductionStockByProductId, getrawMaterialStockByRMId } from "../controller/despatchController.js";
+import { addEditGSTInvoiceFinishGoods, addEditInvoicePM, addEditInvoiceRM, addEditSalesGoodsReturnEntry, addEditSalesOrderEntry, deleteInvoiceById, deleteItemFromDBById, deletePMInvoiceById, deletePMItemFromDBById, deleteRMInvoiceById, deleteRMItemFromDBById, deleteSalesGoodsReturnById, deleteSalesGoodsReturnItemById, deleteSalesOrderById, deleteSalesOrderItemByItemId, generateGSTInvoiceForFinishGoodsById, generateGSTInvoiceForPMById, generateGSTInvoiceForRMById, getAllBatchesForItemByItemId, getAllGSTInvoiceFinishGoodsRecords, getAllGSTInvoicePMRecords, getAllGSTInvoiceRMRecords, getAllOrderDetailsItemMappingById, getAllSalesGoodsReturnEntry, getAllSalesOrderEntry, getGSTInvoiceFinishGoodsById, getGSTInvoiceFinishGoodsInvoiceNo, getGSTInvoicePMById, getGSTInvoicePMInvoiceNo, getGSTInvoiceRMById, getGSTInvoiceRMInvoice, getPakcingMaterialStockByPMID, getProductionStockByProductId, getrawMaterialStockByRMId, getSalesGoodsReturnDetailsById, getSalesGoodsReturnEntryInvoiceNo } from "../controller/despatchController.js";
 
 const despatchRoute = express.Router();
 
@@ -40,5 +40,14 @@ despatchRoute.get("/Despatch/GetAllOrderDetailsItemMappingById", checkAuth, getA
 despatchRoute.post("/Despatch/GetAllSalesOrderEntry", checkAuth, getAllSalesOrderEntry);
 despatchRoute.get("/Despatch/DeleteSalesOrderById", checkAuth, deleteSalesOrderById);
 despatchRoute.get("/Despatch/DeleteSalesOrderItemByItemId", checkAuth, deleteSalesOrderItemByItemId);
+
+// Despatch - Sales Goods Return Entry
+despatchRoute.get("/Despatch/GetSalesGoodsReturnEntryInvoiceNo", checkAuth, getSalesGoodsReturnEntryInvoiceNo);
+despatchRoute.get("/Despatch/GetAllBatchesForItemByItemId", checkAuth, getAllBatchesForItemByItemId);
+despatchRoute.post("/Despatch/AddEditSalesGoodsReturnEntry", checkAuth, addEditSalesGoodsReturnEntry);
+despatchRoute.post("/Despatch/GetAllSalesGoodsReturnEntry", checkAuth, getAllSalesGoodsReturnEntry);
+despatchRoute.get("/Despatch/GetSalesGoodsReturnDetailsById", checkAuth, getSalesGoodsReturnDetailsById);
+despatchRoute.post("/Despatch/DeleteSalesGoodsReturnItemById", checkAuth, deleteSalesGoodsReturnItemById);
+despatchRoute.get("/Despatch/DeleteSalesGoodsReturnById", checkAuth, deleteSalesGoodsReturnById);
 
 export default despatchRoute;
