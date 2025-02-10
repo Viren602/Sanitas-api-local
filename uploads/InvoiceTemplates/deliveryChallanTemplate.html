@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <title>Delivery Challan</title>
+</head>
+
+<body class="aspect-[210/297] w-full">
+    <div class="delivery-challan p-[20px] w-full h-full">
+        <div class="delivery-challan-inner flex flex-col h-full">
+            <header class="flex items-center justify-between h-fit shrink-0 mb-[5px]">
+                <div class="header-left text-start">
+                    <p class="text-[20px] font-bold">Delivery Challan</p>
+                </div>
+                <div class="header-right text-end text-[16px]">
+                    <p class="text-[24px] font-bold">SANITAS HEALTHCARE</p>
+                    <p>Plot No. 753, Nidhi Ind. Estate, Rakanpur, Ta. Kalol,</br>Dist. Gandhinagar - 382721
+                        (Gujarat)</br>
+                        Mobile : 9426829676 E-Mail : sanitas19@gmail.com</p>
+                </div>
+            </header>
+            <div class="challan-details border flex h-fit shrink-0">
+                <div class="details-left w-1/2 text-[16px] border-r p-2.5">
+                    <p>To,</p>
+                    <p>Sanitas Healthcare</p>
+                    <p>Rakanpur</p>
+                </div>
+                <div class="details-right w-1/2 text-[16px] p-2.5">
+                    <p><span>Invoice No.:</span> #InvoiceNo</p>
+                    <p><span>Date:</span> #InvoiceDate</p>
+                </div>
+            </div>
+            <div class="challan-table grow-5 border border-t-0">
+                <table class="w-full h-auto">
+                    <thead class="text-[16px] border-b">
+                        <tr>
+                            <th class="w-[30%] text-start px-[5px] py-[2px]">Item Name</th>
+                            <th class="w-[14%] text-center px-[5px] py-[2px]">Packing</th>
+                            <th class="w-[14%] text-center px-[5px] py-[2px]">Batch No</th>
+                            <th class="w-[14%] text-center px-[5px] py-[2px]">Mfg. Date</th>
+                            <th class="w-[14%] text-center px-[5px] py-[2px]">Exp. Date</th>
+                            <th class="w-[14%] text-end px-[5px] py-[2px]">Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-[16px]">
+                        #DeliveryChallanRowLsting
+                        <!-- <tr class="border-b border-gray-300">
+                            <td class="text-start px-[5px] py-[2px]">AKUFOL-D TABLET</td>
+                            <td class="text-center px-[5px] py-[2px]">10 TABLET</td>
+                            <td class="text-center px-[5px] py-[2px]">ST24026</td>
+                            <td class="text-center px-[5px] py-[2px]">10-2024</td>
+                            <td class="text-center px-[5px] py-[2px]">10-2025</td>
+                            <td class="text-end px-[5px] py-[2px]">2500</td>
+                        </tr>
+                        <tr class="border-b border-gray-300">
+                            <td class="text-start px-[5px] py-[2px]">ZYCOFER TABLET</td>
+                            <td class="text-center px-[5px] py-[2px]">10 TABLET</td>
+                            <td class="text-center px-[5px] py-[2px]">ST24027</td>
+                            <td class="text-center px-[5px] py-[2px]">10-2024</td>
+                            <td class="text-center px-[5px] py-[2px]">10-2025</td>
+                            <td class="text-end px-[5px] py-[2px]">3000</td>
+                        </tr>
+                        <tr>
+                            <td class="text-start px-[5px] py-[2px]">ZYCOFER-M TABLET</td>
+                            <td class="text-center px-[5px] py-[2px]">10 TABLET</td>
+                            <td class="text-center px-[5px] py-[2px]">ST24028</td>
+                            <td class="text-center px-[5px] py-[2px]">10-2024</td>
+                            <td class="text-center px-[5px] py-[2px]">10-2025</td>
+                            <td class="text-end px-[5px] py-[2px]">2500</td>
+                        </tr> -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="challan-blank border-x grow-2"></div>
+            <footer class="flex border h-fit shrink-0">
+                <div class="stamp w-1/2 p-[5px]">
+                    <p>Receiver's signature with stemp</p>
+                </div>
+                <div class="signature w-1/2 text-[16px] p-[5px]">
+                    <p class="text-[16px] font-bold">FOR, SANITASH HEALTHCARE</p>
+                    <p class="mt-[100px]">Authorised signatory</p>
+                </div>
+            </footer>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,6 +1,6 @@
 import express from "express";
 import checkAuth from "../middleware/checkAuth.js";
-import { addEditGSTInvoiceFinishGoods, addEditInvoicePM, addEditInvoiceRM, addEditSalesGoodsReturnEntry, addEditSalesOrderEntry, deleteInvoiceById, deleteItemFromDBById, deletePMInvoiceById, deletePMItemFromDBById, deleteRMInvoiceById, deleteRMItemFromDBById, deleteSalesGoodsReturnById, deleteSalesGoodsReturnItemById, deleteSalesOrderById, deleteSalesOrderItemByItemId, generateGSTInvoiceForFinishGoodsById, generateGSTInvoiceForPMById, generateGSTInvoiceForRMById, getAllBatchesForItemByItemId, getAllGSTInvoiceFinishGoodsRecords, getAllGSTInvoicePMRecords, getAllGSTInvoiceRMRecords, getAllOrderDetailsItemMappingById, getAllSalesGoodsReturnEntry, getAllSalesOrderEntry, getGSTInvoiceFinishGoodsById, getGSTInvoiceFinishGoodsInvoiceNo, getGSTInvoicePMById, getGSTInvoicePMInvoiceNo, getGSTInvoiceRMById, getGSTInvoiceRMInvoice, getPakcingMaterialStockByPMID, getProductionStockByProductId, getrawMaterialStockByRMId, getSalesGoodsReturnDetailsById, getSalesGoodsReturnEntryInvoiceNo } from "../controller/despatchController.js";
+import { addEditGSTInvoiceFinishGoods, addEditInvoicePM, addEditInvoiceRM, addEditSalesGoodsReturnEntry, addEditSalesOrderEntry, deleteInvoiceById, deleteItemFromDBById, deletePMInvoiceById, deletePMItemFromDBById, deleteRMInvoiceById, deleteRMItemFromDBById, deleteSalesGoodsReturnById, deleteSalesGoodsReturnItemById, deleteSalesOrderById, deleteSalesOrderItemByItemId, generateGSTInvoiceForFinishGoodsById, generateGSTInvoiceForPMById, generateGSTInvoiceForRMById, getAllBatchesForItemByItemId, getAllGSTInvoiceFinishGoodsRecords, getAllGSTInvoicePMRecords, getAllGSTInvoiceRMRecords, getAllItemWiseDesptach, getALLItemWiseMonthlySales, getAllOrderDetailsItemMappingById, getAllPartyWiseDespatchItem, getAllPartyWiseDespatchItemById, getAllPartyWiseMonthlySalesByPartyId, getAllSalesGoodsReturnEntry, getAllSalesOrderEntry, getCompanyAddressByCompanyId, getGSTInvoiceFinishGoodsById, getGSTInvoiceFinishGoodsInvoiceNo, getGSTInvoicePMById, getGSTInvoicePMInvoiceNo, getGSTInvoiceRMById, getGSTInvoiceRMInvoice, getPakcingMaterialStockByPMID, getProductionStockByProductId, getrawMaterialStockByRMId, getSalesGoodsReturnDetailsById, getSalesGoodsReturnEntryInvoiceNo } from "../controller/despatchController.js";
 
 const despatchRoute = express.Router();
 
@@ -49,5 +49,21 @@ despatchRoute.post("/Despatch/GetAllSalesGoodsReturnEntry", checkAuth, getAllSal
 despatchRoute.get("/Despatch/GetSalesGoodsReturnDetailsById", checkAuth, getSalesGoodsReturnDetailsById);
 despatchRoute.post("/Despatch/DeleteSalesGoodsReturnItemById", checkAuth, deleteSalesGoodsReturnItemById);
 despatchRoute.get("/Despatch/DeleteSalesGoodsReturnById", checkAuth, deleteSalesGoodsReturnById);
+
+// Despatch - Envelope Entry
+despatchRoute.get("/Despatch/GetCompanyAddressByCompanyId", checkAuth, getCompanyAddressByCompanyId);
+
+// Despatch - Reports - Party wise Despatch Report
+despatchRoute.post("/Despatch/GetAllPartyWiseDespatchItem", checkAuth, getAllPartyWiseDespatchItem);
+despatchRoute.get("/Despatch/GetAllPartyWiseDespatchItemById", checkAuth, getAllPartyWiseDespatchItemById);
+
+// Despatch - Reports - Item wise Despatch Report
+despatchRoute.post("/Despatch/GetAllItemWiseDesptach", checkAuth, getAllItemWiseDesptach);
+
+// Despatch - Reports - Item Wise Monthly Sales
+despatchRoute.post("/Despatch/GetALLItemWiseMonthlySales", checkAuth, getALLItemWiseMonthlySales);
+
+// Despatch - Reports - Party Wise Monthly Sales
+despatchRoute.get("/Despatch/GetAllPartyWiseMonthlySalesByPartyId", checkAuth, getAllPartyWiseMonthlySalesByPartyId);
 
 export default despatchRoute;

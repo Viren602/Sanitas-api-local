@@ -24,6 +24,8 @@ import orderDetailsSalesOrderEntryModel from "../model/Despatch/orderDetailsSale
 import orderDetailsSalesOrderItemMappingModel from "../model/Despatch/orderDetailsSalesOrderItemMappingModel.js";
 import salesGoodsReturnEntryModel from "../model/Despatch/salesGoodsReturnEntryModel.js";
 import salesGoodsReturnItemsModel from "../model/Despatch/salesGoodsReturnItems.js";
+import mongoose from "mongoose";
+import partyModel from "../model/partiesModel.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -474,6 +476,19 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
             `).join('')
             : '';
 
+        const deliveryChallanRowLsting = itemListing && itemListing.length > 0
+            ? itemListing.map(item => `
+                <tr>
+                    <td class="text-start px-[5px] py-[2px]">${item.itemName}</td>
+                    <td class="text-center px-[5px] py-[2px]">${item.packing}</td>
+                    <td class="text-center px-[5px] py-[2px]">${item.batchNo}</td>
+                    <td class="text-center px-[5px] py-[2px]">${dayjs(item.expDate).format('MM-YYYY')}</td>
+                    <td class="text-center px-[5px] py-[2px]">${dayjs(item.expDate).format('MM-YYYY')}</td>
+                    <td class="text-end px-[5px] py-[2px]">${item.qty}</td>
+                </tr>
+            `).join('')
+            : '';
+
         let hsnCodeList = await HNSCodesScHema.find({});
 
         let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList)
@@ -507,6 +522,7 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
         let dueDate = date.toDateString()
 
         let htmlTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "gstInvoiceFinishGoodsTemplate.html"), "utf8");
+        let deliveryChallanTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "deliveryChallanTemplate.html"), "utf8");
 
         // Injecting CSS for empty pages
         htmlTemplate = htmlTemplate + `
@@ -565,12 +581,20 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
                 .replace('#TotalGSTCalculation', hsnCodeTotalCalculation.totalAmount)
         }
 
+        const generateDeliveryChallanPage = () => {
+            return deliveryChallanTemplate.replace('#InvoiceNo', invoiceDetails.invoiceNo)
+                .replace('#InvoiceDate', dayjs(invoiceDetails.invoiceDate).format("DD-MM-YYYY"))
+                .replace('#DeliveryChallanRowLsting', deliveryChallanRowLsting);
+        };
+
         htmlTemplate = `
             <div class="empty-page">${generatePage("Original for Recipient")}</div>
             <div class="page-break"></div>
             <div class="empty-page">${generatePage("Duplicate for Transporter")}</div>
             <div class="page-break"></div>
             <div class="empty-page">${generatePage("Triplicate for Supplier")}</div>
+            <div class="page-break"></div>
+            <div class="empty-page">${generateDeliveryChallanPage()}</div>
         `;
 
         const browser = await puppeteer.launch();
@@ -2364,6 +2388,430 @@ const deleteSalesGoodsReturnById = async (req, res) => {
     }
 };
 
+const getCompanyAddressByCompanyId = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        let response = await partyModel.findOne({ _id: reqId });
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Sales Goods Return Details Deleted Successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
+// Reports - Party Wise Despatch Report
+const getAllPartyWiseDespatchItem = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = { isDeleted: false }
+        console.log(data.partyName)
+        if (data.startDate && data.endDate) {
+            queryObject.invoiceDate = {
+                $gte: new Date(data.startDate),
+                $lte: new Date(data.endDate),
+            };
+        }
+
+        let gstInvoiceFinishGoodsResponse = await gstInvoiceFinishGoodsModel
+            .find(queryObject)
+            .select('partyId grandTotal invoiceNo invoiceDate transportId lRNo lRDate')
+            .populate({
+                path: 'partyId',
+                select: 'partyName',
+                match: data.partyName ? { partyName: { $regex: data.partyName, $options: 'i' } } : {},
+            })
+            .populate({
+                path: 'transportId',
+                select: 'transportName',
+            });
+
+        gstInvoiceFinishGoodsResponse = gstInvoiceFinishGoodsResponse.filter(
+            (invoice) => invoice.partyId
+        );
+
+        let invoiceNoMap = gstInvoiceFinishGoodsResponse.reduce((acc, record) => {
+            acc[record._id] = {
+                invoiceNo: record.invoiceNo,
+                invoiceDate: record.invoiceDate,
+                transportName: record.transportId?.transportName || null,
+                lRNo: record.lRNo,
+                lRDate: record.lRDate,
+            };
+            return acc;
+        }, {});
+
+        let reqIds = gstInvoiceFinishGoodsResponse.map(record => record._id);
+
+        let itemListing = await gstInvoiceFinishGoodsItemsModel
+            .find({ gstInvoiceFinishGoodsId: { $in: reqIds }, isDeleted: false })
+            .lean();
+
+        itemListing.forEach(item => {
+            let invoiceData = invoiceNoMap[item.gstInvoiceFinishGoodsId] || {};
+            item.invoiceNo = invoiceData.invoiceNo || null;
+            item.invoiceDate = invoiceData.invoiceDate || null;
+            item.transportName = invoiceData.transportName || null;
+            item.lRNo = invoiceData.lRNo || null;
+            item.lRDate = invoiceData.lRDate || null;
+        });
+
+        let response = {
+            gstInvoiceFinishGoodsResponse: gstInvoiceFinishGoodsResponse,
+            itemListing: itemListing
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch Controller", error);
+        errorHandler(error, req, res, "Error in Despatch Controller")
+    }
+};
+
+const getAllPartyWiseDespatchItemById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        let invoiceDetails = await gstInvoiceFinishGoodsModel
+            .findOne({ _id: reqId, isDeleted: false })
+            .populate({
+                path: "partyId",
+                select: "partyName",
+            })
+            .populate({
+                path: "transportId",
+                select: "transportName",
+            });
+
+        let itemListing = await gstInvoiceFinishGoodsItemsModel
+            .find({ gstInvoiceFinishGoodsId: reqId, isDeleted: false });
+
+        let updatedItemListing = itemListing.map(item => ({
+            ...item.toObject(),
+            invoiceNo: invoiceDetails?.invoiceNo || null,
+            invoiceDate: invoiceDetails?.invoiceDate || null,
+            transportName: invoiceDetails?.transportId?.transportName || null,
+            lRDate: invoiceDetails?.lRDate || null,
+            lRNo: invoiceDetails?.lRNo || null
+        }));
+
+        let response = updatedItemListing;
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch Controller", error);
+        errorHandler(error, req, res, "Error in Despatch Controller")
+    }
+};
+
+// Reports - Item Wise Despatch Report
+const getAllItemWiseDesptach = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = { isDeleted: false }
+
+        if (data.startDate && data.endDate) {
+            queryObject.invoiceDate = {
+                $gte: new Date(data.startDate),
+                $lte: new Date(data.endDate),
+            };
+        }
+
+        let gstInvoiceFinishGoodsResponse = await gstInvoiceFinishGoodsModel
+            .find(queryObject)
+            .select('partyId grandTotal invoiceNo invoiceDate transportId lRNo lRDate')
+            .populate({
+                path: 'partyId',
+                select: 'partyName',
+            })
+            .populate({
+                path: 'transportId',
+                select: 'transportName',
+            });
+
+        gstInvoiceFinishGoodsResponse = gstInvoiceFinishGoodsResponse.filter(
+            (invoice) => invoice.partyId
+        );
+
+        let reqIds = gstInvoiceFinishGoodsResponse.map(record => record._id);
+
+        let queryObjectForItem = { isDeleted: false }
+
+        if (reqIds) {
+            queryObjectForItem = { gstInvoiceFinishGoodsId: { $in: reqIds } }
+        }
+
+        let gstInvoiceFinishGoodsItemListing = await gstInvoiceFinishGoodsItemsModel.aggregate([
+            {
+                $match: {
+                    ...queryObjectForItem,
+                    itemName: { $regex: data.itemName, $options: 'i' }
+                }
+            },
+            {
+                $group: {
+                    _id: "$itemName",
+                    totalQty: { $sum: "$qty" },
+                    totalFree: { $sum: "$free" },
+                    totalAmount: { $sum: "$amount" },
+                    gstInvoiceFinishGoodsId: { $first: "$gstInvoiceFinishGoodsId" },
+                    originalId: { $first: "$_id" },
+                    itemId: { $first: "$itemId" }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    itemName: "$_id",
+                    totalQty: 1,
+                    totalFree: 1,
+                    totalAmount: 1,
+                    gstInvoiceFinishGoodsId: 1,
+                    originalId: 1,
+                    itemId: 1
+                }
+            }
+        ]);
+
+        let ids = gstInvoiceFinishGoodsItemListing.map(record => record.itemId);
+        console.log(gstInvoiceFinishGoodsItemListing)
+        let itemListing = await gstInvoiceFinishGoodsItemsModel
+            .find({ itemId: { $in: ids }, isDeleted: false })
+            .populate({
+                path: 'gstInvoiceFinishGoodsId',
+                select: 'partyId grandTotal invoiceNo invoiceDate transportId lRNo lRDate',
+                populate: [
+                    {
+                        path: 'transportId',
+                        select: 'transportName',
+                    },
+                    {
+                        path: 'partyId',
+                        select: 'partyName',
+                    }
+                ],
+            });
+
+
+        let response = {
+            gstInvoiceFinishGoodsItemListing: gstInvoiceFinishGoodsItemListing,
+            itemListing: itemListing
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch Controller", error);
+        errorHandler(error, req, res, "Error in Despatch Controller")
+    }
+};
+
+// Reports - Item Wise Monthly Sales
+const getALLItemWiseMonthlySales = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = { isDeleted: false }
+
+        let gstInvoiceFinishGoodsItemListing = await gstInvoiceFinishGoodsItemsModel.aggregate([
+            { $match: queryObject },
+            {
+                $lookup: {
+                    from: "gstinvoicefinishgoods",
+                    localField: "gstInvoiceFinishGoodsId",
+                    foreignField: "_id",
+                    as: "invoice"
+                }
+            },
+            { $unwind: "$invoice" },
+            {
+                $group: {
+                    _id: {
+                        itemId: "$itemId",
+                        itemName: "$itemName",
+                        month: { $dateToString: { format: "%m", date: "$invoice.invoiceDate" } }
+                    },
+                    totalSold: { $sum: "$qty" },
+                    totalFree: { $sum: "$free" },
+                    totalAmount: { $sum: "$amount" }
+                }
+            },
+            {
+                $group: {
+                    _id: { itemId: "$_id.itemId", itemName: "$_id.itemName" },
+                    sales: { $push: { month: "$_id.month", sold: "$totalSold", free: "$totalFree", amount: "$totalAmount" } }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    Id: "$_id.itemId",
+                    itemName: "$_id.itemName",
+                    salesData: {
+                        $arrayToObject: {
+                            $map: {
+                                input: "$sales",
+                                as: "sale",
+                                in: [
+                                    { $concat: ["$$sale.month"] },
+                                    { sold: "$$sale.sold", free: "$$sale.free", amount: "$$sale.amount" }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        ]);
+
+        if (data.itemName && data.itemName.trim() !== "") {
+            gstInvoiceFinishGoodsItemListing = gstInvoiceFinishGoodsItemListing.filter((item) =>
+                item?.itemName
+                    ?.toLowerCase()
+                    .startsWith(data.itemName.toLowerCase())
+            );
+        }
+
+        let encryptData = encryptionAPI(gstInvoiceFinishGoodsItemListing, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch Controller", error);
+        errorHandler(error, req, res, "Error in Despatch Controller")
+    }
+};
+
+// Reports - Party Wise Monthly Sales
+const getAllPartyWiseMonthlySalesByPartyId = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let queryObject = { isDeleted: false }
+        let reqIdObjectId = new mongoose.Types.ObjectId(reqId);
+
+        let gstInvoiceFinishGoodsItemListing = await gstInvoiceFinishGoodsItemsModel.aggregate([
+            { $match: queryObject },
+            {
+                $lookup: {
+                    from: "gstinvoicefinishgoods",
+                    localField: "gstInvoiceFinishGoodsId",
+                    foreignField: "_id",
+                    as: "invoice"
+                }
+            },
+            { $unwind: "$invoice" },
+            {
+                $match: {
+                    "invoice.partyId": reqIdObjectId
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        itemId: "$itemId",
+                        itemName: "$itemName",
+                        month: { $dateToString: { format: "%m", date: "$invoice.invoiceDate" } }
+                    },
+                    totalSold: { $sum: "$qty" },
+                    totalFree: { $sum: "$free" },
+                    totalAmount: { $sum: "$amount" },
+                    partyId: { $first: "$invoice.partyId" }
+                }
+            },
+            {
+                $group: {
+                    _id: { itemId: "$_id.itemId", itemName: "$_id.itemName" },
+                    sales: { $push: { month: "$_id.month", sold: "$totalSold", free: "$totalFree", amount: "$totalAmount", partyId: "$partyId" } }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    Id: "$_id.itemId",
+                    itemName: "$_id.itemName",
+                    salesData: {
+                        $arrayToObject: {
+                            $map: {
+                                input: "$sales",
+                                as: "sale",
+                                in: [
+                                    { $concat: ["$$sale.month"] },
+                                    { sold: "$$sale.sold", free: "$$sale.free", amount: "$$sale.amount", partyId: "$$sale.partyId" }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        ]);
+        let encryptData = encryptionAPI(gstInvoiceFinishGoodsItemListing, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch Controller", error);
+        errorHandler(error, req, res, "Error in Despatch Controller")
+    }
+};
+
 export {
     getProductionStockByProductId,
     getGSTInvoiceFinishGoodsInvoiceNo,
@@ -2400,5 +2848,11 @@ export {
     getAllSalesGoodsReturnEntry,
     getSalesGoodsReturnDetailsById,
     deleteSalesGoodsReturnItemById,
-    deleteSalesGoodsReturnById
+    deleteSalesGoodsReturnById,
+    getCompanyAddressByCompanyId,
+    getAllPartyWiseDespatchItem,
+    getAllPartyWiseDespatchItemById,
+    getAllItemWiseDesptach,
+    getALLItemWiseMonthlySales,
+    getAllPartyWiseMonthlySalesByPartyId
 };
