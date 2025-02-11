@@ -2812,6 +2812,227 @@ const getAllPartyWiseMonthlySalesByPartyId = async (req, res) => {
     }
 };
 
+// Reports - Stock Statement Report
+const getAllStockStatementReport = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = { isDeleted: false }
+
+        const response = await batchWiseProductStockModel.find(queryObject)
+            .populate({
+                path: 'productId',
+                select: 'ItemName',
+            });
+
+        const groupedResponse = Object.values(
+            response.reduce((acc, item) => {
+                const productId = item.productId._id.toString();
+                if (!acc[productId]) {
+                    acc[productId] = {
+                        productId: item.productId._id,
+                        itemName: item.productId.ItemName,
+                        batchClearingEntryId: item.batchClearingEntryId,
+                        mrp: item.mrp,
+                        batchNo: item.batchNo,
+                        totalQty: 0,
+                        items: []
+                    };
+                }
+                acc[productId].totalQty += item.quantity;
+                acc[productId].items.push(item);
+                return acc;
+            }, {})
+        );
+        let encryptData = encryptionAPI(groupedResponse, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch Controller", error);
+        errorHandler(error, req, res, "Error in Despatch Controller")
+    }
+};
+
+const getALLStockStatementByProductId = async (req, res) => {
+    try {
+        const { id, id2 } = req.query;
+
+        let itemId = getRequestData(id)
+        let batchClearingEntryId = getRequestData(id2)
+
+        let productionStock = await batchClearingEntryModel
+            .find({ packingItemId: itemId, isDeleted: false })
+            .select('quantity productDetialsId')
+            .populate({
+                path: "productDetialsId",
+                select: "productionNo productId partyId batchNo despDate",
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });
+
+        let issuedItemStock = await gstInvoiceFinishGoodsItemsModel
+            .find({ itemId: itemId, isDeleted: false })
+            .select('qty batchNo gstInvoiceFinishGoodsId free')
+            .populate({
+                path: "gstInvoiceFinishGoodsId",
+                select: "partyId invoiceNo invoiceDate",
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });
+
+        const newArray = [
+            ...productionStock.map(item => ({
+                productionStockId: item._id,
+                issuedStockId: null,
+                partyName: item.productDetialsId.partyId.partyName,
+                refNo: item.productDetialsId.productionNo,
+                batchNo: item.productDetialsId.batchNo,
+                refDate: item.productDetialsId.despDate,
+                produceedQty: item.quantity,
+                issuedQty: null
+            })),
+            ...issuedItemStock.map(item => ({
+                productionStockId: null,
+                issuedStockId: item._id,
+                partyName: item.gstInvoiceFinishGoodsId.partyId.partyName,
+                refNo: item.gstInvoiceFinishGoodsId.invoiceNo,
+                batchNo: item.batchNo,
+                refDate: item.gstInvoiceFinishGoodsId.invoiceDate,
+                issuedQty: item.qty + item.free,
+                produceedQty: null
+            }))
+        ];
+        const sortedArray = newArray.sort((a, b) => new Date(a.refDate) - new Date(b.refDate));
+
+        let encryptData = encryptionAPI(sortedArray, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch Controller", error);
+        errorHandler(error, req, res, "Error in Despatch Controller")
+    }
+};
+
+const getAllBatchWiseStockStatementReport = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = { isDeleted: false }
+
+        const response = await batchWiseProductStockModel.find(queryObject)
+            .populate({
+                path: 'productId',
+                select: 'ItemName',
+            });
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch Controller", error);
+        errorHandler(error, req, res, "Error in Despatch Controller")
+    }
+};
+
+// Reports - Stock Ledger Report
+const getAllStockLedgerReport = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        let productionStock = await batchClearingEntryModel
+            .find({ packingItemId: data.itemId, isDeleted: false })
+            .select('quantity productDetialsId')
+            .populate({
+                path: "productDetialsId",
+                select: "productionNo productId partyId batchNo despDate",
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });
+
+        let issuedItemStock = await gstInvoiceFinishGoodsItemsModel
+            .find({ itemId: data.itemId, isDeleted: false })
+            .select('qty batchNo gstInvoiceFinishGoodsId free')
+            .populate({
+                path: "gstInvoiceFinishGoodsId",
+                select: "partyId invoiceNo invoiceDate",
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });
+
+        const newArray = [
+            ...productionStock.map(item => ({
+                productionStockId: item._id,
+                issuedStockId: null,
+                partyName: item.productDetialsId.partyId.partyName,
+                refNo: item.productDetialsId.productionNo,
+                batchNo: item.productDetialsId.batchNo,
+                refDate: item.productDetialsId.despDate,
+                produceedQty: item.quantity,
+                issuedQty: null,
+                isFreeQty: null
+            })),
+            ...issuedItemStock.map(item => ({
+                productionStockId: null,
+                issuedStockId: item._id,
+                partyName: item.gstInvoiceFinishGoodsId.partyId.partyName,
+                refNo: item.gstInvoiceFinishGoodsId.invoiceNo,
+                batchNo: item.batchNo,
+                refDate: item.gstInvoiceFinishGoodsId.invoiceDate,
+                issuedQty: item.qty,
+                produceedQty: null,
+                isFreeQty: item.free
+            }))
+        ];
+        const sortedArray = newArray.sort((a, b) => new Date(a.refDate) - new Date(b.refDate));
+
+        let encryptData = encryptionAPI(sortedArray, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch Controller", error);
+        errorHandler(error, req, res, "Error in Despatch Controller")
+    }
+};
+
 export {
     getProductionStockByProductId,
     getGSTInvoiceFinishGoodsInvoiceNo,
@@ -2854,5 +3075,9 @@ export {
     getAllPartyWiseDespatchItemById,
     getAllItemWiseDesptach,
     getALLItemWiseMonthlySales,
-    getAllPartyWiseMonthlySalesByPartyId
+    getAllPartyWiseMonthlySalesByPartyId,
+    getAllStockStatementReport,
+    getALLStockStatementByProductId,
+    getAllBatchWiseStockStatementReport,
+    getAllStockLedgerReport
 };
