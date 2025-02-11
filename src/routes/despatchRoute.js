@@ -1,6 +1,6 @@
 import express from "express";
 import checkAuth from "../middleware/checkAuth.js";
-import { addEditGSTInvoiceFinishGoods, addEditInvoicePM, addEditInvoiceRM, addEditSalesGoodsReturnEntry, addEditSalesOrderEntry, deleteInvoiceById, deleteItemFromDBById, deletePMInvoiceById, deletePMItemFromDBById, deleteRMInvoiceById, deleteRMItemFromDBById, deleteSalesGoodsReturnById, deleteSalesGoodsReturnItemById, deleteSalesOrderById, deleteSalesOrderItemByItemId, generateGSTInvoiceForFinishGoodsById, generateGSTInvoiceForPMById, generateGSTInvoiceForRMById, getAllBatchesForItemByItemId, getAllBatchWiseStockStatementReport, getAllGSTInvoiceFinishGoodsRecords, getAllGSTInvoicePMRecords, getAllGSTInvoiceRMRecords, getAllItemWiseDesptach, getALLItemWiseMonthlySales, getAllOrderDetailsItemMappingById, getAllPartyWiseDespatchItem, getAllPartyWiseDespatchItemById, getAllPartyWiseMonthlySalesByPartyId, getAllSalesGoodsReturnEntry, getAllSalesOrderEntry, getAllStockLedgerReport, getALLStockStatementByProductId, getAllStockStatementReport, getCompanyAddressByCompanyId, getGSTInvoiceFinishGoodsById, getGSTInvoiceFinishGoodsInvoiceNo, getGSTInvoicePMById, getGSTInvoicePMInvoiceNo, getGSTInvoiceRMById, getGSTInvoiceRMInvoice, getPakcingMaterialStockByPMID, getProductionStockByProductId, getrawMaterialStockByRMId, getSalesGoodsReturnDetailsById, getSalesGoodsReturnEntryInvoiceNo } from "../controller/despatchController.js";
+import { addEditGSTInvoiceFinishGoods, addEditInvoicePM, addEditInvoiceRM, addEditSalesGoodsReturnEntry, addEditSalesOrderEntry, deleteInvoiceById, deleteItemFromDBById, deletePMInvoiceById, deletePMItemFromDBById, deleteRMInvoiceById, deleteRMItemFromDBById, deleteSalesGoodsReturnById, deleteSalesGoodsReturnItemById, deleteSalesOrderById, deleteSalesOrderItemByItemId, generateGSTInvoiceForFinishGoodsById, generateGSTInvoiceForPMById, generateGSTInvoiceForRMById, getAllBatchesForItemByItemId, getAllBatchWiseStockStatementReport, getAllGSTInvoiceFinishGoodsRecords, getAllGSTInvoicePMRecords, getAllGSTInvoiceRMRecords, getAllItemWiseDesptach, getALLItemWiseMonthlySales, getAllNearExpiryStockReport, getAllOrderDetailsItemMappingById, getAllPartyWiseDespatchItem, getAllPartyWiseDespatchItemById, getAllPartyWiseMonthlySalesByPartyId, getAllSalesGoodsReturnEntry, getAllSalesOrderEntry, getAllStockLedgerReport, getAllStockLedgerReportBatchStock, getALLStockStatementByProductId, getAllStockStatementReport, getCompanyAddressByCompanyId, getGSTInvoiceFinishGoodsById, getGSTInvoiceFinishGoodsInvoiceNo, getGSTInvoicePMById, getGSTInvoicePMInvoiceNo, getGSTInvoiceRMById, getGSTInvoiceRMInvoice, getPakcingMaterialStockByPMID, getProductionStockByProductId, getrawMaterialStockByRMId, getSalesGoodsReturnDetailsById, getSalesGoodsReturnEntryInvoiceNo } from "../controller/despatchController.js";
 
 const despatchRoute = express.Router();
 
@@ -73,5 +73,9 @@ despatchRoute.post("/Despatch/GetAllBatchWiseStockStatementReport", checkAuth, g
 
 // Despatch - Reports - Stock Ledger Report
 despatchRoute.post("/Despatch/GetAllStockLedgerReport", checkAuth, getAllStockLedgerReport);
+despatchRoute.post("/Despatch/GetAllStockLedgerReportBatchStock", checkAuth, getAllStockLedgerReportBatchStock);
+
+// Despatch - Reports - Near Expirty Stock Report
+despatchRoute.post("/Despatch/GetAllNearExpiryStockReport", checkAuth, getAllNearExpiryStockReport);
 
 export default despatchRoute;

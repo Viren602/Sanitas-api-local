@@ -2994,7 +2994,8 @@ const getAllStockLedgerReport = async (req, res) => {
             ...productionStock.map(item => ({
                 productionStockId: item._id,
                 issuedStockId: null,
-                partyName: item.productDetialsId.partyId.partyName,
+                partyName: 'SELF PRODUCTION',
+                partyId: '1',
                 refNo: item.productDetialsId.productionNo,
                 batchNo: item.productDetialsId.batchNo,
                 refDate: item.productDetialsId.despDate,
@@ -3006,6 +3007,7 @@ const getAllStockLedgerReport = async (req, res) => {
                 productionStockId: null,
                 issuedStockId: item._id,
                 partyName: item.gstInvoiceFinishGoodsId.partyId.partyName,
+                partyId: item.gstInvoiceFinishGoodsId.partyId._id,
                 refNo: item.gstInvoiceFinishGoodsId.invoiceNo,
                 batchNo: item.batchNo,
                 refDate: item.gstInvoiceFinishGoodsId.invoiceDate,
@@ -3030,6 +3032,81 @@ const getAllStockLedgerReport = async (req, res) => {
     } catch (error) {
         console.log("Error in Despatch Controller", error);
         errorHandler(error, req, res, "Error in Despatch Controller")
+    }
+};
+
+const getAllStockLedgerReportBatchStock = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+            productId: data.itemId
+        }
+
+        const response = await batchWiseProductStockModel.find(queryObject)
+            .populate({
+                path: 'productId',
+                select: 'ItemName',
+            });
+
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch Controller", error);
+        errorHandler(error, req, res, "Error in Despatch Controller")
+    }
+};
+
+// Near Expiry Stock Report
+const getAllNearExpiryStockReport = async (req, res) => {
+    try {
+        let data = req.body.data
+        let reqData = getRequestData(data, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+        };
+
+        const response = await batchWiseProductStockModel.find(queryObject)
+            .populate({
+                path: 'productId',
+                select: 'ItemName',
+            });
+
+        const today = new Date();
+
+        const responseWithDayDifference = response.map(item => {
+            const expDate = item.expDate;
+            const dayDifference = expDate
+                ? Math.ceil((expDate - today) / (1000 * 60 * 60 * 24))
+                : null;
+            return { ...item.toObject(), dayDifference };
+        })
+            .filter(item => item.dayDifference !== null && item.dayDifference >= 0 && item.dayDifference <= reqData.days);
+
+        let encryptData = encryptionAPI(responseWithDayDifference, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Inventory controller", error);
+        errorHandler(error, req, res, "Error in Inventory controller")
     }
 };
 
@@ -3079,5 +3156,7 @@ export {
     getAllStockStatementReport,
     getALLStockStatementByProductId,
     getAllBatchWiseStockStatementReport,
-    getAllStockLedgerReport
+    getAllStockLedgerReport,
+    getAllStockLedgerReportBatchStock,
+    getAllNearExpiryStockReport
 };
