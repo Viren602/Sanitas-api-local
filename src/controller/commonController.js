@@ -318,7 +318,7 @@ const getAllTransportCourier = async (req, res) => {
         }
         let response = await transportCourierModel.find(queryObject).sort("transportName");
 
-        
+
         let encryptData = encryptionAPI(response, 1)
 
         res.status(200).json({
@@ -338,7 +338,14 @@ const getAllTransportCourier = async (req, res) => {
 
 const getAllDaybooks = async (req, res) => {
     try {
-        let response = await daybookMasterModel.find({});
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let queryObject = { isDeleted: false }
+        if (reqId && reqId.trim() !== "") {
+            queryObject.daybookName = { $regex: `^${reqId}`, $options: "i" };
+        }
+
+        let response = await daybookMasterModel.find(queryObject);
 
         for (let i = 0; i < response.length; i++) {
             const accountCode = response[i].acGroupCode;
@@ -477,7 +484,7 @@ const getAllPackingMaterialDropdown = async (req, res) => {
                 isEnType: true
             },
         });
-        
+
     } catch (error) {
         console.log("Error in Common controller", error);
         errorHandler(error, req, res, "Error in Common controller")

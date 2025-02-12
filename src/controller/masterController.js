@@ -44,7 +44,7 @@ const addEditPackingMaterial = async (req, res) => {
                 res.status(404).json({ Message: "Item not found" });
             }
         } else {
-            const existingItemByName = await packingMaterialSchema.findOne({ pmName: data.pmName.trim() });
+            const existingItemByName = await packingMaterialSchema.findOne({ pmName: data.pmName.trim(), isDeleted: false });
             if (existingItemByName) {
                 let encryptData = encryptionAPI(existingItemByName, 1)
                 res.status(200).json({
@@ -1251,7 +1251,7 @@ const addEditPartyDetails = async (req, res) => {
                 res.status(404).json({ Message: "Item not found" });
             }
         } else {
-            const existingItemByName = await partyModel.findOne({ partyName: data.partyName.trim() });
+            const existingItemByName = await partyModel.findOne({ partyName: data.partyName.trim(), isDeleted: false });
             if (existingItemByName) {
                 let encryptData = encryptionAPI(existingItemByName, 1)
                 res.status(200).json({
@@ -1335,7 +1335,7 @@ const addeditProductDetails = async (req, res) => {
                 res.status(404).json({ Message: "Product not found" });
             }
         } else {
-            const existingItemByName = await productDetailsModel.findOne({ productName: data.productName.trim() });
+            const existingItemByName = await productDetailsModel.findOne({ productName: data.productName.trim(), isDeleted: false });
             if (existingItemByName) {
                 let encryptData = encryptionAPI(existingItemByName, 1)
                 res.status(200).json({
