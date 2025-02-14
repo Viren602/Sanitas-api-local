@@ -27,6 +27,7 @@ import salesGoodsReturnItemsModel from "../model/Despatch/salesGoodsReturnItems.
 import mongoose from "mongoose";
 import partyModel from "../model/partiesModel.js";
 import inwardPostModel from "../model/Despatch/inwardPostEntry.js";
+import paymentReceiptEntryModel from "../model/Account/paymentReceiptEntryModel.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -187,6 +188,21 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
                     }
                 }));
 
+                // Payment Receipt Entry
+                let request = {
+                    voucherNo: data.invoiceDetails.invoiceNo,
+                    date: data.invoiceDetails.invoiceDate,
+                    partyId: data.invoiceDetails.partyId,
+                    debitAmount: data.invoiceDetails.grandTotal,
+                    narration1: `INVOICE NO : ${data.invoiceDetails.invoiceNo}`,
+                }
+
+                await paymentReceiptEntryModel.findOneAndUpdate(
+                    { gstInvoiceFinishGoodsId: data.invoiceDetails.gstInvoiceFinishGoodsId },
+                    request,
+                    { new: true }
+                );
+
                 // After Stock Updating, proceed with Invoice Item Details
                 await gstInvoiceFinishGoodsItemsModel.deleteMany({ gstInvoiceFinishGoodsId: response._id });
 
@@ -240,6 +256,27 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
                     isEnType: true,
                 },
             });
+
+            // Payment Receipt Entry
+            let request = {
+                voucherNo: data.invoiceDetails.invoiceNo,
+                bankName: 'SALES',
+                date: data.invoiceDetails.invoiceDate,
+                partyId: data.invoiceDetails.partyId,
+                partyBankNameOrPayto: '-',
+                chqNo: '-',
+                debitAmount: data.invoiceDetails.grandTotal,
+                creditAmount: 0,
+                narration1: `INVOICE NO : ${data.invoiceDetails.invoiceNo}`,
+                narration2: '-',
+                narration3: '-',
+                entryType: 'Receipt',
+                from: 'GSTInvoiceFinishGoods',
+                gstInvoiceFinishGoodsId: response._id,
+            }
+            let paymentEntry = new paymentReceiptEntryModel(request);
+            await paymentEntry.save();
+
 
             // Stock Updating
             for (let item of data.itemListing) {
@@ -382,7 +419,7 @@ const deleteInvoiceById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let itemList = await gstInvoiceFinishGoodsItemsModel.find({ gstInvoiceFinishGoodsId: reqId })
+        let itemList = await gstInvoiceFinishGoodsItemsModel.find({ gstInvoiceFinishGoodsId: reqId, isDeleted: false })
 
         itemList.map(async item => {
             // Stock Updating
@@ -395,6 +432,9 @@ const deleteInvoiceById = async (req, res) => {
             // Removing Particualr Item From GST Invoice
             await gstInvoiceFinishGoodsItemsModel.findByIdAndUpdate(item._id, { isDeleted: true })
         })
+
+        // Payment Receipt Entry
+        await paymentReceiptEntryModel.findOneAndUpdate({ gstInvoiceFinishGoodsId: reqId }, { isDeleted: true }, { new: true });
 
         // Removing GST Invoice Finish Goods Record
         let response = await gstInvoiceFinishGoodsModel.findByIdAndUpdate(reqId, { isDeleted: true })
@@ -786,6 +826,21 @@ const addEditInvoiceRM = async (req, res) => {
                     }
                 }));
 
+                // Payment Receipt Entry
+                let request = {
+                    voucherNo: data.invoiceDetails.invoiceNo,
+                    date: data.invoiceDetails.invoiceDate,
+                    partyId: data.invoiceDetails.partyId,
+                    debitAmount: data.invoiceDetails.grandTotal,
+                    narration1: `INVOICE NO : ${data.invoiceDetails.invoiceNo}`,
+                }
+
+                await paymentReceiptEntryModel.findOneAndUpdate(
+                    { gstInvoiceRMId: data.invoiceDetails.gstInvoiceRMID },
+                    request,
+                    { new: true }
+                );
+
                 // After Stock Updating, proceed with Invoice Item Details
                 await gstinvoiceRMItemModel.deleteMany({ gstInvoiceRMID: response._id });
 
@@ -828,8 +883,28 @@ const addEditInvoiceRM = async (req, res) => {
             // Add Edit For Invoice Item Details
             await gstinvoiceRMItemModel.insertMany(items);
 
-            // Stock Data Inserting
+            // Payment Receipt Entry
+            let request = {
+                voucherNo: data.invoiceDetails.invoiceNo,
+                bankName: 'SALES',
+                date: data.invoiceDetails.invoiceDate,
+                partyId: data.invoiceDetails.partyId,
+                partyBankNameOrPayto: '-',
+                chqNo: '-',
+                debitAmount: data.invoiceDetails.grandTotal,
+                creditAmount: 0,
+                narration1: `INVOICE NO : ${data.invoiceDetails.invoiceNo}`,
+                narration2: '-',
+                narration3: '-',
+                entryType: 'Receipt',
+                from: 'GSTInvoiceRM',
+                gstInvoiceRMId: response._id,
+            }
+            let paymentEntry = new paymentReceiptEntryModel(request);
+            await paymentEntry.save();
 
+
+            // Stock Data Inserting
             data.itemListing.map(async (item) => {
                 const totalReduceQty = (Number(item.qty) || 0);
                 const existingItemDetails = await InvoiceRMStockModel.findOne({ rmId: item.itemId, isDeleted: false });
@@ -1000,7 +1075,7 @@ const deleteRMInvoiceById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let itemList = await gstinvoiceRMItemModel.find({ gstInvoiceRMID: reqId })
+        let itemList = await gstinvoiceRMItemModel.find({ gstInvoiceRMID: reqId, isDeleted: false })
 
         itemList.map(async item => {
             // Stock Updating
@@ -1015,6 +1090,9 @@ const deleteRMInvoiceById = async (req, res) => {
             // Removing Particualr Item From GST Invoice
             await gstinvoiceRMItemModel.findByIdAndUpdate(item._id, { isDeleted: true })
         })
+
+        // Payment Receipt Entry
+        await paymentReceiptEntryModel.findOneAndUpdate({ gstInvoiceRMId: reqId }, { isDeleted: true }, { new: true });
 
         // Removing GST Invoice Finish Goods Record
         let response = await gstInvoiceRMModel.findByIdAndUpdate(reqId, { isDeleted: true })
@@ -1377,6 +1455,22 @@ const addEditInvoicePM = async (req, res) => {
                     }
                 }));
 
+
+                // Payment Receipt Entry
+                let request = {
+                    voucherNo: data.invoiceDetails.invoiceNo,
+                    date: data.invoiceDetails.invoiceDate,
+                    partyId: data.invoiceDetails.partyId,
+                    debitAmount: data.invoiceDetails.grandTotal,
+                    narration1: `INVOICE NO : ${data.invoiceDetails.invoiceNo}`,
+                }
+
+                await paymentReceiptEntryModel.findOneAndUpdate(
+                    { gstInvoicePMId: data.invoiceDetails.gstInvoicePMID },
+                    request,
+                    { new: true }
+                );
+
                 // After Stock Updating, proceed with Invoice Item Details
                 await gstInvoicePMItemModel.deleteMany({ gstInvoicePMID: response._id });
 
@@ -1419,8 +1513,28 @@ const addEditInvoicePM = async (req, res) => {
             // Add Edit For Invoice Item Details
             await gstInvoicePMItemModel.insertMany(items);
 
-            // Stock Data Inserting
+            // Payment Receipt Entry
+            let request = {
+                voucherNo: data.invoiceDetails.invoiceNo,
+                bankName: 'SALES',
+                date: data.invoiceDetails.invoiceDate,
+                partyId: data.invoiceDetails.partyId,
+                partyBankNameOrPayto: '-',
+                chqNo: '-',
+                debitAmount: data.invoiceDetails.grandTotal,
+                creditAmount: 0,
+                narration1: `INVOICE NO : ${data.invoiceDetails.invoiceNo}`,
+                narration2: '-',
+                narration3: '-',
+                entryType: 'Receipt',
+                from: 'GSTInvoicePM',
+                gstInvoicePMId: response._id,
+            }
+            let paymentEntry = new paymentReceiptEntryModel(request);
+            await paymentEntry.save();
 
+
+            // Stock Data Inserting
             data.itemListing.map(async (item) => {
                 const totalReduceQty = (Number(item.qty) || 0);
                 const existingItemDetails = await InvoicePMStockModel.findOne({ pmId: item.itemId, isDeleted: false });
@@ -1590,7 +1704,7 @@ const deletePMInvoiceById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let itemList = await gstInvoicePMItemModel.find({ gstInvoicePMID: reqId })
+        let itemList = await gstInvoicePMItemModel.find({ gstInvoicePMID: reqId, isDeleted: false })
 
         itemList.map(async item => {
             // Stock Updating
@@ -1605,6 +1719,9 @@ const deletePMInvoiceById = async (req, res) => {
             // Removing Particualr Item From GST Invoice
             await gstInvoicePMItemModel.findByIdAndUpdate(item._id, { isDeleted: true })
         })
+        
+        // Payment Receipt Entry
+        await paymentReceiptEntryModel.findOneAndUpdate({ gstInvoicePMId: reqId }, { isDeleted: true }, { new: true });
 
         // Removing GST Invoice Finish Goods Record
         let response = await gstInvoicePMModel.findByIdAndUpdate(reqId, { isDeleted: true })
@@ -3113,47 +3230,47 @@ const getAllNearExpiryStockReport = async (req, res) => {
 
 const addEditInwardPost = async (req, res) => {
     try {
-      let apiData = req.body.data
-      let data = getRequestData(apiData, 'PostApi')
-      if (data._id && data._id.trim() !== '') {
-        const response = await inwardPostModel.findByIdAndUpdate(data._id, data, { new: true });
-        if (response) {
-  
-          let encryptData = encryptionAPI(response, 1)
-  
-          res.status(200).json({
-            data: {
-              statusCode: 200,
-              Message: "Inward Post updated successfully",
-              responseData: encryptData,
-              isEnType: true
-            },
-          });
-  
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        if (data._id && data._id.trim() !== '') {
+            const response = await inwardPostModel.findByIdAndUpdate(data._id, data, { new: true });
+            if (response) {
+
+                let encryptData = encryptionAPI(response, 1)
+
+                res.status(200).json({
+                    data: {
+                        statusCode: 200,
+                        Message: "Inward Post updated successfully",
+                        responseData: encryptData,
+                        isEnType: true
+                    },
+                });
+
+            } else {
+                res.status(404).json({ Message: "Inward Post not found" });
+            }
         } else {
-          res.status(404).json({ Message: "Inward Post not found" });
+            const response = new inwardPostModel(data);
+            await response.save();
+
+            let encryptData = encryptionAPI(response, 1)
+
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "Inward Post added successfully",
+                    responseData: encryptData,
+                    isEnType: true
+                },
+            });
         }
-      } else {
-        const response = new inwardPostModel(data);
-        await response.save();
-  
-        let encryptData = encryptionAPI(response, 1)
-  
-        res.status(200).json({
-          data: {
-            statusCode: 200,
-            Message: "Inward Post added successfully",
-            responseData: encryptData,
-            isEnType: true
-          },
-        });
-      }
-  
+
     } catch (error) {
-      console.log("Error in Despatch controller", error);
-      errorHandler(error, req, res, "Error in Despatch controller")
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
     }
-  };
+};
 
 export {
     getProductionStockByProductId,
