@@ -26,6 +26,7 @@ import salesGoodsReturnEntryModel from "../model/Despatch/salesGoodsReturnEntryM
 import salesGoodsReturnItemsModel from "../model/Despatch/salesGoodsReturnItems.js";
 import mongoose from "mongoose";
 import partyModel from "../model/partiesModel.js";
+import inwardPostModel from "../model/Despatch/inwardPostEntry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -3110,6 +3111,50 @@ const getAllNearExpiryStockReport = async (req, res) => {
     }
 };
 
+const addEditInwardPost = async (req, res) => {
+    try {
+      let apiData = req.body.data
+      let data = getRequestData(apiData, 'PostApi')
+      if (data._id && data._id.trim() !== '') {
+        const response = await inwardPostModel.findByIdAndUpdate(data._id, data, { new: true });
+        if (response) {
+  
+          let encryptData = encryptionAPI(response, 1)
+  
+          res.status(200).json({
+            data: {
+              statusCode: 200,
+              Message: "Inward Post updated successfully",
+              responseData: encryptData,
+              isEnType: true
+            },
+          });
+  
+        } else {
+          res.status(404).json({ Message: "Inward Post not found" });
+        }
+      } else {
+        const response = new inwardPostModel(data);
+        await response.save();
+  
+        let encryptData = encryptionAPI(response, 1)
+  
+        res.status(200).json({
+          data: {
+            statusCode: 200,
+            Message: "Inward Post added successfully",
+            responseData: encryptData,
+            isEnType: true
+          },
+        });
+      }
+  
+    } catch (error) {
+      console.log("Error in Despatch controller", error);
+      errorHandler(error, req, res, "Error in Despatch controller")
+    }
+  };
+
 export {
     getProductionStockByProductId,
     getGSTInvoiceFinishGoodsInvoiceNo,
@@ -3158,5 +3203,6 @@ export {
     getAllBatchWiseStockStatementReport,
     getAllStockLedgerReport,
     getAllStockLedgerReportBatchStock,
-    getAllNearExpiryStockReport
+    getAllNearExpiryStockReport,
+    addEditInwardPost
 };
