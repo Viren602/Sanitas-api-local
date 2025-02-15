@@ -9,6 +9,7 @@ import migration from "../routes/migrationRoute.js";
 import inventoryRoute from "../routes/inventoryRoute.js";
 import productionRoute from "../routes/productionRoute.js";
 import despatchRoute from "../routes/despatchRoute.js";
+import accountRoute from "../routes/accountRoute.js";
 
 // app.use("/auth",employeeRouter);
 // app.use("/auth",auth);
@@ -29,6 +30,9 @@ app.use("/api", productionRoute);
 
 // Despatch Module
 app.use("/api", despatchRoute);
+
+// Account Module
+app.use("/api", accountRoute);
 
 app.use("/api", migration);
 

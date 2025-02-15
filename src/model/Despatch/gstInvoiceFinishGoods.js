@@ -26,6 +26,8 @@ const gstInvoiceFinishGoodsSchema = mongoose.Schema({
     ugst: { type: Number, default: 0 },
     crDrNote: { type: Number, default: 0 },
     grandTotal: { type: Number, default: 0 },
+    pendingAmount: { type: Number, default: 0 },
+    paidAmount: { type: Number, default: 0 },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
