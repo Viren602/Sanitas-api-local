@@ -4,7 +4,8 @@ import mongoose from "mongoose";
 const paymentReceiptEntrySchema = mongoose.Schema({
     voucherNo: { type: String, default: '' },
     bankName: { type: String, default: '' },
-    date: { type: String, default: '' },
+    bankId: { type: mongoose.Schema.Types.ObjectId, ref: "DaybookMaster", default: null },
+    date: { type: Date, default: '' },
     partyId: { type: mongoose.Schema.Types.ObjectId, ref: "AccountMasters", default: null },
     partyBankNameOrPayto: { type: String, default: '' },
     chqNo: { type: String, default: '' },
