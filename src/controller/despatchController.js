@@ -28,6 +28,8 @@ import mongoose from "mongoose";
 import partyModel from "../model/partiesModel.js";
 import inwardPostModel from "../model/Despatch/inwardPostEntry.js";
 import paymentReceiptEntryModel from "../model/Account/paymentReceiptEntryModel.js";
+import { populate } from "dotenv";
+import outwardPostModel from "../model/Despatch/outwardPostEntry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1719,7 +1721,7 @@ const deletePMInvoiceById = async (req, res) => {
             // Removing Particualr Item From GST Invoice
             await gstInvoicePMItemModel.findByIdAndUpdate(item._id, { isDeleted: true })
         })
-        
+
         // Payment Receipt Entry
         await paymentReceiptEntryModel.findOneAndUpdate({ gstInvoicePMId: reqId }, { isDeleted: true }, { new: true });
 
@@ -3272,6 +3274,266 @@ const addEditInwardPost = async (req, res) => {
     }
 };
 
+const getAllInwardPost = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+        };
+        let sortOption = { date: 1 };
+        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+
+            sortOption = { [data.arrangedBy]: 1 };
+
+        }
+
+        let response = await inwardPostModel.aggregate([
+            { $match: queryObject },
+            {
+                $lookup: {
+                    from: "accountmasters",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "partyDetails"
+                }
+            },
+            { $unwind: "$partyDetails" },
+            {
+                $project: {
+                    date: 1,
+                    courier: 1,
+                    podNo: 1,
+                    narration: 1,
+                    partyName: "$partyDetails.partyName",
+                    _id: 1
+                }
+            },
+            { $sort: sortOption }
+        ]);
+        if (data.partyName && data.partyName.trim() !== '') {
+            response = response.filter(item =>
+                item.partyName?.toLowerCase().startsWith(data.partyName.toLowerCase())
+            );
+        }
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+    } catch (error) {
+        console.log("Error in despatch controller", error);
+        errorHandler(error, req, res, "Error in dispatch controller")
+    }
+};
+const getInwardPostById = async (req, res) => {
+    try {
+
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = {}
+        if (reqId) {
+            response = await inwardPostModel.findOne({ _id: reqId });
+        }
+        console.log(response)
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Inward Post fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(201).json({ Message: "Items fetched successfully", responseContent: response });
+    } catch (error) {
+        console.log("Error in despatch controller", error);
+        errorHandler(error, req, res, "Error in dispatch controller")
+    }
+};
+const deleteInwardPostById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        // Removing GST Invoice Finish Goods Record
+        let response = await inwardPostModel.findByIdAndUpdate(reqId, { isDeleted: true })
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Inward Post Details Deleted Successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+const addEditOutwardPost = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        if (data._id && data._id.trim() !== '') {
+            const response = await outwardPostModel.findByIdAndUpdate(data._id, data, { new: true });
+            if (response) {
+
+                let encryptData = encryptionAPI(response, 1)
+
+                res.status(200).json({
+                    data: {
+                        statusCode: 200,
+                        Message: "Outward Post updated successfully",
+                        responseData: encryptData,
+                        isEnType: true
+                    },
+                });
+
+            } else {
+                res.status(404).json({ Message: "Outward Post not found" });
+            }
+        } else {
+            const response = new outwardPostModel(data);
+            await response.save();
+
+            let encryptData = encryptionAPI(response, 1)
+
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "Outward Post added successfully",
+                    responseData: encryptData,
+                    isEnType: true
+                },
+            });
+        }
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+const getAllOutwardPost = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+        };
+        let sortOption = { date: 1 };
+        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+
+            sortOption = { [data.arrangedBy]: 1 };
+
+        }
+
+        let response = await outwardPostModel.aggregate([
+            { $match: queryObject },
+            {
+                $lookup: {
+                    from: "accountmasters",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "partyDetails"
+                }
+            },
+            { $unwind: "$partyDetails" },
+            {
+                $project: {
+                    date: 1,
+                    courier: 1,
+                    podNo: 1,
+                    narration: 1,
+                    partyName: "$partyDetails.partyName",
+                    _id: 1
+                }
+            },
+            { $sort: sortOption }
+        ]);
+        if (data.partyName && data.partyName.trim() !== '') {
+            response = response.filter(item =>
+                item.partyName?.toLowerCase().startsWith(data.partyName.toLowerCase())
+            );
+        }
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+    } catch (error) {
+        console.log("Error in despatch controller", error);
+        errorHandler(error, req, res, "Error in dispatch controller")
+    }
+};
+const getOutwardPostById = async (req, res) => {
+    try {
+
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = {}
+        if (reqId) {
+            response = await outwardPostModel.findOne({ _id: reqId });
+        }
+       
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Outward Post fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(201).json({ Message: "Items fetched successfully", responseContent: response });
+    } catch (error) {
+        console.log("Error in despatch controller", error);
+        errorHandler(error, req, res, "Error in dispatch controller")
+    }
+};
+const deleteOutwardPostById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        // Removing GST Invoice Finish Goods Record
+        let response = await outwardPostModel.findByIdAndUpdate(reqId, { isDeleted: true })
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Inward Post Details Deleted Successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
 export {
     getProductionStockByProductId,
     getGSTInvoiceFinishGoodsInvoiceNo,
@@ -3321,5 +3583,12 @@ export {
     getAllStockLedgerReport,
     getAllStockLedgerReportBatchStock,
     getAllNearExpiryStockReport,
-    addEditInwardPost
+    addEditInwardPost,
+    getAllInwardPost,
+    getInwardPostById,
+    deleteInwardPostById,
+    addEditOutwardPost,
+    getAllOutwardPost,
+    getOutwardPostById,
+    deleteOutwardPostById
 };
