@@ -2,7 +2,7 @@
 import mongoose from "mongoose";
 
 const paymentAdjustmentListSchema = mongoose.Schema({
-    receiptId: { type: mongoose.Schema.Types.ObjectId, ref: "PaymentReceiptEntry", default: null },
+    paymentReceiptId: { type: mongoose.Schema.Types.ObjectId, ref: "PaymentReceiptEntry", default: null },
     adjType: { type: String, default: '' },
     invoiceNo: { type: String, default: '' },
     invoiceAmount: { type: Number, default: '' },
@@ -10,6 +10,7 @@ const paymentAdjustmentListSchema = mongoose.Schema({
     gstInvoiceFinishGoodsId: { type: mongoose.Schema.Types.ObjectId, ref: "GSTInvoiceFinishGoods", default: null },
     gstPMInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: "GSTInvoiceRM", default: null },
     gstRMInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: "GSTInvoicePM", default: null },
+    gstpurchaseInvoiceRMPMId: { type: mongoose.Schema.Types.ObjectId, ref: "AccountMasters", default: null },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
