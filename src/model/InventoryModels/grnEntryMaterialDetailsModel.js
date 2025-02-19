@@ -14,6 +14,7 @@ const grnEntryMaterialDetailsSchema = mongoose.Schema({
     expDate: { type: Date, default: '' },
     packing: { type: String, default: '' },
     isPurchaseOrderEntry: { type: Boolean, default: false },
+    isGSTPurchaseEntryRMPM: { type: Boolean, default: false },
     purchaseOrderId: { type: mongoose.Schema.Types.ObjectId, ref: "PurchaseOrderDetail", default: null },
     purchaseOrdermaterialId: { type: mongoose.Schema.Types.ObjectId, ref: "PurchaseOrderMaterialDetail" },
     isDeleted: { type: Boolean, default: false },

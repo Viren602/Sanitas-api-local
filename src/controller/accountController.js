@@ -1,10 +1,15 @@
 import { encryptionAPI, getRequestData } from "../middleware/encryption.js";
 import contraEntryModel from "../model/Account/contraEntryModel.js";
+import gstPurchaseWithoutInventoryEntryModel from "../model/Account/gstPurcaseWithoutInventoryEntryModel.js";
+import gstPurchaseEntryRMPMModel from "../model/Account/gstPurchaseEntryRMPMModel.js";
+import gstPurchaseItemListRMPMModel from "../model/Account/gstPurchaseItemListRMPMModel.js";
 import paymentAdjustmentListModel from "../model/Account/paymentAdjustmentListModel.js";
 import paymentReceiptEntryModel from "../model/Account/paymentReceiptEntryModel.js";
 import gstInvoiceFinishGoodsModel from "../model/Despatch/gstInvoiceFinishGoods.js";
 import gstInvoicePMModel from "../model/Despatch/gstInvoicePMModel.js";
 import gstInvoiceRMModel from "../model/Despatch/gstInvoiceRMModel.js";
+import grnEntryMaterialDetailsModel from "../model/InventoryModels/grnEntryMaterialDetailsModel.js";
+import grnEntryPartyDetailsModel from "../model/InventoryModels/grnEntryPartyDetailsModel.js";
 import errorHandler from "../server/errorHandle.js";
 
 // Receipt Entry
@@ -465,6 +470,59 @@ const getPaymentEntryVoucherNo = async (req, res) => {
     }
 };
 
+const getAllPendingInvoiceForPaymentEntryByPartyId = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let queryObject = {
+            isDeleted: false,
+            partyId: reqId
+        }
+        let response = []
+
+        if (reqId) {
+            const gstPurchaseEntryData = await gstPurchaseEntryRMPMModel
+                .find(queryObject)
+                .select('invoiceNo partyId invoiceDate pendingAmount grandTotal')
+                .lean();
+
+            const gstPurchaseWithoutInventoryData = await gstPurchaseWithoutInventoryEntryModel
+                .find(queryObject)
+                .select('invoiceNo partyId invoiceDate pendingAmount grandTotal')
+                .lean();
+
+            response = [
+                ...gstPurchaseEntryData.map(item => ({
+                    ...item,
+                    gstPurchaseEntryRMPMId: item._id,
+                    _id: undefined
+                })),
+                ...gstPurchaseWithoutInventoryData.map(item => ({
+                    ...item,
+                    gstPurchaseEntryWithoutInventoryId: item._id,
+                    _id: undefined
+                })),
+
+            ];
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Invoice details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
 const addEditPaymentEntry = async (req, res) => {
     try {
         let apiData = req.body.data
@@ -489,24 +547,32 @@ const addEditPaymentEntry = async (req, res) => {
 
 
             // Retrieve Existing Adjustments 
-            // const existingAdjustments = await paymentAdjustmentListModel.find({ paymentReceiptId: response._id });
+            const existingAdjustments = await paymentAdjustmentListModel.find({ paymentReceiptId: response._id });
 
-            // const revertPromises = existingAdjustments.map(item => {
-            //     let updates = [];
-            //     let paidAmount = item.adjAmount;
+            const revertPromises = existingAdjustments.map(item => {
+                let updates = [];
+                let paidAmount = item.adjAmount;
 
-            //     if (item.gstInvoiceFinishGoodsId) {
-            //         updates.push(
-            //             gstInvoiceFinishGoodsModel.findByIdAndUpdate(
-            //                 item.gstInvoiceFinishGoodsId,
-            //                 { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
-            //             )
-            //         );
-            //     }
-            //     return Promise.all(updates);
-            // });
+                if (item.gstPurchaseEntryRMPMId) {
+                    updates.push(
+                        gstPurchaseEntryRMPMModel.findByIdAndUpdate(
+                            item.gstPurchaseEntryRMPMId,
+                            { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
+                        )
+                    );
+                }
+                if (item.gstPurchaseEntryWithoutInventoryId) {
+                    updates.push(
+                        gstPurchaseWithoutInventoryEntryModel.findByIdAndUpdate(
+                            item.gstPurchaseEntryWithoutInventoryId,
+                            { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
+                        )
+                    );
+                }
+                return Promise.all(updates);
+            });
 
-            // await Promise.all(revertPromises);
+            await Promise.all(revertPromises);
 
             // Edit Adjustment Details
             await paymentAdjustmentListModel.deleteMany({ paymentReceiptId: response._id });
@@ -517,21 +583,29 @@ const addEditPaymentEntry = async (req, res) => {
             await paymentAdjustmentListModel.insertMany(items);
 
             // Re-Update Adjustment
-            // const updatePromises = data.adjustmentDetailsList.map(item => {
-            //     let updates = [];
-            //     let paidAmount = item.adjAmount;
+            const updatePromises = data.adjustmentDetailsList.map(item => {
+                let updates = [];
+                let paidAmount = item.adjAmount;
 
-            //     if (item.gstInvoiceFinishGoodsId) {
-            //         updates.push(
-            //             gstInvoiceFinishGoodsModel.findByIdAndUpdate(
-            //                 item.gstInvoiceFinishGoodsId,
-            //                 { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
-            //             )
-            //         );
-            //     }
-            //     return Promise.all(updates);
-            // });
-            // await Promise.all(updatePromises);
+                if (item.gstPurchaseEntryRMPMId) {
+                    updates.push(
+                        gstPurchaseEntryRMPMModel.findByIdAndUpdate(
+                            item.gstPurchaseEntryRMPMId,
+                            { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
+                        )
+                    );
+                }
+                if (item.gstPurchaseEntryWithoutInventoryId) {
+                    updates.push(
+                        gstPurchaseWithoutInventoryEntryModel.findByIdAndUpdate(
+                            item.gstPurchaseEntryWithoutInventoryId,
+                            { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
+                        )
+                    );
+                }
+                return Promise.all(updates);
+            });
+            await Promise.all(updatePromises);
 
             let encryptData = encryptionAPI(responseData, 1);
             res.status(200).json({
@@ -558,21 +632,29 @@ const addEditPaymentEntry = async (req, res) => {
             await paymentAdjustmentListModel.insertMany(items);
 
             // Update Amounts in GST Invoices
-            // const updatePromises = data.adjustmentDetailsList.map(item => {
-            //     const updates = [];
-            //     let paidAmount = item.adjAmount;
+            const updatePromises = data.adjustmentDetailsList.map(item => {
+                const updates = [];
+                let paidAmount = item.adjAmount;
 
-            //     if (item.gstInvoiceFinishGoodsId) {
-            //         updates.push(
-            //             gstInvoiceFinishGoodsModel.findByIdAndUpdate(
-            //                 item.gstInvoiceFinishGoodsId,
-            //                 { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
-            //             )
-            //         );
-            //     }
-            //     return Promise.all(updates);
-            // });
-            // await Promise.all(updatePromises);
+                if (item.gstPurchaseEntryRMPMId) {
+                    updates.push(
+                        gstPurchaseEntryRMPMModel.findByIdAndUpdate(
+                            item.gstPurchaseEntryRMPMId,
+                            { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
+                        )
+                    );
+                }
+                if (item.gstPurchaseEntryWithoutInventoryId) {
+                    updates.push(
+                        gstPurchaseWithoutInventoryEntryModel.findByIdAndUpdate(
+                            item.gstPurchaseEntryWithoutInventoryId,
+                            { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
+                        )
+                    );
+                }
+                return Promise.all(updates);
+            });
+            await Promise.all(updatePromises);
 
             responseData.paymentDetails = response;
             let encryptData = encryptionAPI(responseData, 1);
@@ -690,23 +772,31 @@ const deletePaymentDetailsByPaymentReceiptId = async (req, res) => {
         let reqId = getRequestData(id)
 
         // Retrieve Existing Adjustments 
-        // const existingAdjustments = await paymentAdjustmentListModel.find({ paymentReceiptId: reqId });
+        const existingAdjustments = await paymentAdjustmentListModel.find({ paymentReceiptId: reqId });
 
-        // // const revertPromises = existingAdjustments.map(item => {
-        // //     let updates = [];
-        // //     let paidAmount = item.adjAmount;
+        const revertPromises = existingAdjustments.map(item => {
+            let updates = [];
+            let paidAmount = item.adjAmount;
 
-        // //     if (item.gstInvoiceFinishGoodsId) {
-        // //         updates.push(
-        // //             gstInvoiceFinishGoodsModel.findByIdAndUpdate(
-        // //                 item.gstInvoiceFinishGoodsId,
-        // //                 { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
-        // //             )
-        // //         );
-        // //     }
-        // //     return Promise.all(updates);
-        // // });
-        // // await Promise.all(revertPromises);
+            if (item.gstPurchaseEntryRMPMId) {
+                updates.push(
+                    gstPurchaseEntryRMPMModel.findByIdAndUpdate(
+                        item.gstPurchaseEntryRMPMId,
+                        { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
+                    )
+                );
+            }
+            if (item.gstPurchaseEntryWithoutInventoryId) {
+                updates.push(
+                    gstPurchaseWithoutInventoryEntryModel.findByIdAndUpdate(
+                        item.gstPurchaseEntryWithoutInventoryId,
+                        { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
+                    )
+                );
+            }
+            return Promise.all(updates);
+        });
+        await Promise.all(revertPromises);
 
         await paymentAdjustmentListModel.deleteMany({ paymentReceiptId: reqId });
 
@@ -972,6 +1062,507 @@ const deleteContraEntryById = async (req, res) => {
     }
 };
 
+// GST Purchase Entry RM PM
+const getGSTPurchseEntrySRNo = async (req, res) => {
+    try {
+        let response = {}
+        let gstNoRecord = await gstPurchaseEntryRMPMModel
+            .findOne({ isDeleted: false })
+            .sort({ _id: -1 })
+            .select('srNo');
+
+        if (gstNoRecord && gstNoRecord.srNo) {
+            let lastNumber = parseInt(gstNoRecord.srNo.replace('RP', ''), 10);
+            let newNumber = lastNumber + 1;
+
+            response.srNo = `RP${newNumber.toString().padStart(4, '0')}`;
+        } else {
+            response.srNo = 'RP0001';
+        }
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const getAllPendingGRNPurchaseEntry = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        let response = await grnEntryMaterialDetailsModel
+            .find({
+                isDeleted: false,
+                isGSTPurchaseEntryRMPM: false,
+                grnEntryPartyDetailId: await grnEntryPartyDetailsModel.findOne({
+                    partyId: data.partyId,
+                    invoiceNo: data.invoiceNo,
+                    isDeleted: false,
+                }).distinct('_id')
+            })
+            .populate({
+                path: 'grnEntryPartyDetailId',
+                select: 'partyId invoiceNo grnNo grnDate',
+            })
+            .populate({
+                path: 'rawMaterialId',
+                select: 'rmName',
+            })
+            .populate({
+                path: 'packageMaterialId',
+                select: 'pmName',
+            })
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Pending GRN Entry Fetch Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
+const updateGRNEntryToPurchaseEntry = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        let response = await grnEntryMaterialDetailsModel
+            .findByIdAndUpdate(data.grnMaterialId, { isGSTPurchaseEntryRMPM: data.isGRNEntryDone })
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "GRN Entry Details Updated Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
+const addEditGSTPurchaseEntryRMPM = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let responseData = {}
+
+        if (data.invoiceDetails.gstPurchaseEntryRMPMId && data.invoiceDetails.gstPurchaseEntryRMPMId.trim() !== '') {
+            // Edit For Purchase Details
+            const response = await gstPurchaseEntryRMPMModel.findByIdAndUpdate(data.invoiceDetails.gstPurchaseEntryRMPMId, data.invoiceDetails, { new: true });
+            if (!response) {
+                responseData.invoiceDetails = 'Purchase details not found';
+                res.status(200).json({
+                    data: {
+                        statusCode: 404,
+                        Message: "Purchase Not found",
+                        responseData: encryptData,
+                        isEnType: true,
+                    },
+                });
+            }
+
+            // Edit Items For GST Purchase Details
+            await gstPurchaseItemListRMPMModel.deleteMany({ gstPurchaseEntryRMPMId: response._id });
+
+            const items = data.itemListing.map(item => ({
+                ...item,
+                gstPurchaseEntryRMPMId: response._id
+            }));
+
+            await gstPurchaseItemListRMPMModel.insertMany(items);
+
+            responseData.invoiceDetails = response;
+            let encryptData = encryptionAPI(responseData, 1);
+
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "GST Purchase Details Updated Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+        } else {
+            // Add Edit For GST Purchase Details
+            const response = new gstPurchaseEntryRMPMModel(data.invoiceDetails);
+            await response.save();
+
+            responseData.invoiceDetails = response;
+
+            const items = data.itemListing.map(item => ({
+                ...item,
+                gstPurchaseEntryRMPMId: response._id
+            }));
+
+            // ADD Items For GST Purchase Details
+            await gstPurchaseItemListRMPMModel.insertMany(items);
+
+            let encryptData = encryptionAPI(responseData, 1);
+
+            res.status(200).json({
+                data: {
+
+                    statusCode: 200,
+                    Message: "GST Purchase Details Inserted Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+        }
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const getAllGSTPurchaseEntryRMPM = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+        }
+
+        let sortOption = { srNo: 1 };
+        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+            sortOption = { [data.arrangedBy]: 1 };
+        }
+
+        let response = await gstPurchaseEntryRMPMModel.aggregate([
+            { $match: queryObject },
+            {
+                $lookup: {
+                    from: "accountmasters",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "partyDetails"
+                }
+            },
+            { $unwind: "$partyDetails" },
+            {
+                $project: {
+                    srNo: 1,
+                    invoiceNo: 1,
+                    invoiceDate: 1,
+                    partyName: "$partyDetails.partyName",
+                    grandTotal: 1,
+                    _id: 1
+                }
+            },
+            { $sort: sortOption }
+        ]);
+
+        if (data.partyName && data.partyName.trim() !== '') {
+            response = response.filter(item =>
+                item.partyName?.toLowerCase().startsWith(data.partyName.toLowerCase())
+            );
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "GST Purchase Fetch Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
+const getGSTPurchaseEntryRMPMById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        let invoiceDetails = await gstPurchaseEntryRMPMModel
+            .findOne({ _id: reqId, isDeleted: false })
+            .populate({
+                path: "partyId",
+                select: "partyName",
+            });
+
+        let itemListing = await gstPurchaseItemListRMPMModel
+            .find({ gstPurchaseEntryRMPMId: reqId, isDeleted: false });
+
+        let response = {
+            invoiceDetails: invoiceDetails,
+            itemListing: itemListing
+        }
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const deleteGSTPurchaseEntryRMPMById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        await gstPurchaseItemListRMPMModel.updateMany({ gstPurchaseEntryRMPMId: reqId }, { isDeleted: true });
+
+        const response = await gstPurchaseEntryRMPMModel.findByIdAndUpdate(reqId, { isDeleted: true });
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "GST Purchase Entry Deleted Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+// GST Purchase EntryWithOut Inventory
+const getGSTPurchseWithoutInventoryEntrySRNo = async (req, res) => {
+    try {
+        let response = {}
+        let gstNoRecord = await gstPurchaseWithoutInventoryEntryModel
+            .findOne({ isDeleted: false })
+            .sort({ _id: -1 })
+            .select('srNo');
+
+        if (gstNoRecord && gstNoRecord.srNo) {
+            let lastNumber = parseInt(gstNoRecord.srNo.replace('WI', ''), 10);
+            let newNumber = lastNumber + 1;
+
+            response.srNo = `WI${newNumber.toString().padStart(4, '0')}`;
+        } else {
+            response.srNo = 'WI0001';
+        }
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const addEditGSTPurchaseEntryWithoutInventory = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let responseData = {}
+
+        if (data.gstPurchaseEntryWithoutInventoryId && data.gstPurchaseEntryWithoutInventoryId.trim() !== '') {
+
+            const response = await gstPurchaseWithoutInventoryEntryModel.findByIdAndUpdate(data.gstPurchaseEntryWithoutInventoryId, data, { new: true });
+            if (!response) {
+                responseData = 'Purchase details not found';
+                res.status(200).json({
+                    data: {
+                        statusCode: 404,
+                        Message: "Purchase Not found",
+                        responseData: responseData,
+                        isEnType: true,
+                    },
+                });
+            }
+            let encryptData = encryptionAPI(response, 1);
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "GST Purchase Without Inventory Updated Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+        } else {
+            const response = new gstPurchaseWithoutInventoryEntryModel(data);
+            await response.save();
+
+            let encryptData = encryptionAPI(response, 1);
+            res.status(200).json({
+                data: {
+
+                    statusCode: 200,
+                    Message: "GST Purchase Without Inventory Inserted Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+        }
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const getAllPurchaseEntryWithoutInventory = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+        }
+
+        let sortOption = { srNo: 1 };
+        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+            sortOption = { [data.arrangedBy]: 1 };
+        }
+
+        let response = await gstPurchaseWithoutInventoryEntryModel.aggregate([
+            { $match: queryObject },
+            {
+                $lookup: {
+                    from: "accountmasters",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "partyDetails"
+                }
+            },
+            { $unwind: "$partyDetails" },
+            {
+                $project: {
+                    srNo: 1,
+                    invoiceNo: 1,
+                    invoiceDate: 1,
+                    partyName: "$partyDetails.partyName",
+                    grandTotal: 1,
+                    _id: 1
+                }
+            },
+            { $sort: sortOption }
+        ]);
+
+        if (data.partyName && data.partyName.trim() !== '') {
+            response = response.filter(item =>
+                item.partyName?.toLowerCase().startsWith(data.partyName.toLowerCase())
+            );
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "GST Purchase Without Inventory Fetch Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
+const getGSTPurchaseEntryWithoutInventoryById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        const response = await gstPurchaseWithoutInventoryEntryModel
+            .findOne({ _id: reqId })
+            .populate({
+                path: "partyId",
+                select: "partyName",
+            });
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const deleteGSTPurchaseEntryWithoutInventoryById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        const response = await gstPurchaseWithoutInventoryEntryModel.findByIdAndUpdate(reqId, { isDeleted: true });
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "GST Purchase Entry Without Iventory Deleted Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+
 export {
     getReceiptEntryVoucherNo,
     getAllPendingInvoiceByPartyId,
@@ -980,6 +1571,7 @@ export {
     getReceiptDetailsByReceiptId,
     deleteReceiptDetailsByReceiptId,
     getPaymentEntryVoucherNo,
+    getAllPendingInvoiceForPaymentEntryByPartyId,
     addEditPaymentEntry,
     getAllPaymnetEntry,
     getPaymentDetailsByPaymnetReceiptId,
@@ -988,5 +1580,17 @@ export {
     addEditContraEntry,
     getAllContraEntry,
     getContraEntryById,
-    deleteContraEntryById
+    deleteContraEntryById,
+    getGSTPurchseEntrySRNo,
+    getAllPendingGRNPurchaseEntry,
+    updateGRNEntryToPurchaseEntry,
+    addEditGSTPurchaseEntryRMPM,
+    getAllGSTPurchaseEntryRMPM,
+    getGSTPurchaseEntryRMPMById,
+    deleteGSTPurchaseEntryRMPMById,
+    getGSTPurchseWithoutInventoryEntrySRNo,
+    addEditGSTPurchaseEntryWithoutInventory,
+    getAllPurchaseEntryWithoutInventory,
+    getGSTPurchaseEntryWithoutInventoryById,
+    deleteGSTPurchaseEntryWithoutInventoryById
 };

@@ -10,7 +10,8 @@ const paymentAdjustmentListSchema = mongoose.Schema({
     gstInvoiceFinishGoodsId: { type: mongoose.Schema.Types.ObjectId, ref: "GSTInvoiceFinishGoods", default: null },
     gstPMInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: "GSTInvoiceRM", default: null },
     gstRMInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: "GSTInvoicePM", default: null },
-    gstpurchaseInvoiceRMPMId: { type: mongoose.Schema.Types.ObjectId, ref: "AccountMasters", default: null },
+    gstPurchaseEntryRMPMId: { type: mongoose.Schema.Types.ObjectId, ref: "GSTPurchaseEntryRMPM", default: null },
+    gstPurchaseEntryWithoutInventoryId: { type: mongoose.Schema.Types.ObjectId, ref: "GstPurchaseWithoutInventoryEntry", default: null },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
