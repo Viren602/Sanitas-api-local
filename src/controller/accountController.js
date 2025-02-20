@@ -1,5 +1,7 @@
 import { encryptionAPI, getRequestData } from "../middleware/encryption.js";
 import contraEntryModel from "../model/Account/contraEntryModel.js";
+import generalCreditNoteModel from "../model/Account/generalCreditNoteModel.js";
+import generalDebitNoteModel from "../model/Account/generalDebitNoteModel.js";
 import gstPurchaseWithoutInventoryEntryModel from "../model/Account/gstPurcaseWithoutInventoryEntryModel.js";
 import gstPurchaseEntryRMPMModel from "../model/Account/gstPurchaseEntryRMPMModel.js";
 import gstPurchaseItemListRMPMModel from "../model/Account/gstPurchaseItemListRMPMModel.js";
@@ -1562,6 +1564,399 @@ const deleteGSTPurchaseEntryWithoutInventoryById = async (req, res) => {
     }
 };
 
+// General Debit Note Entry
+const getGeneralDebitNoteEntrySRNo = async (req, res) => {
+    try {
+        let response = {}
+        let gstNoRecord = await generalDebitNoteModel
+            .findOne({ isDeleted: false })
+            .sort({ _id: -1 })
+            .select('noteNo');
+
+        if (gstNoRecord && gstNoRecord.noteNo) {
+            let lastNumber = parseInt(gstNoRecord.noteNo.replace('GD', ''), 10);
+            let newNumber = lastNumber + 1;
+
+            response.noteNo = `GD${newNumber.toString().padStart(4, '0')}`;
+        } else {
+            response.noteNo = 'GD0001';
+        }
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const addEditGeneralDebitNoteEntry = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let responseData = {}
+
+        if (data.generalDebitNoteId && data.generalDebitNoteId.trim() !== '') {
+
+            const response = await generalDebitNoteModel.findByIdAndUpdate(data.generalDebitNoteId, data, { new: true });
+            if (!response) {
+                responseData = 'Purchase details not found';
+                res.status(200).json({
+                    data: {
+                        statusCode: 404,
+                        Message: "Purchase Not found",
+                        responseData: responseData,
+                        isEnType: true,
+                    },
+                });
+            }
+            let encryptData = encryptionAPI(response, 1);
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "General Debit Note Updated Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+        } else {
+            const response = new generalDebitNoteModel(data);
+            await response.save();
+
+            let encryptData = encryptionAPI(response, 1);
+            res.status(200).json({
+                data: {
+
+                    statusCode: 200,
+                    Message: "General Debit Note Inserted Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+        }
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const getAllGeneralDebitNoteEntry = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+        }
+
+        let sortOption = { noteNo: 1 };
+        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+            sortOption = { [data.arrangedBy]: 1 };
+        }
+
+        let response = await generalDebitNoteModel.aggregate([
+            { $match: queryObject },
+            {
+                $lookup: {
+                    from: "accountmasters",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "partyDetails"
+                }
+            },
+            { $unwind: "$partyDetails" },
+            {
+                $project: {
+                    noteNo: 1,
+                    date: 1,
+                    partyName: "$partyDetails.partyName",
+                    grandTotal: 1,
+                    _id: 1
+                }
+            },
+            { $sort: sortOption }
+        ]);
+
+        if (data.partyName && data.partyName.trim() !== '') {
+            response = response.filter(item =>
+                item.partyName?.toLowerCase().startsWith(data.partyName.toLowerCase())
+            );
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "General Debit Note Fetch Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
+const getGeneralDebitNoteEntryById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        const response = await generalDebitNoteModel
+            .findOne({ _id: reqId })
+            .populate({
+                path: "partyId",
+                select: "partyName",
+            });
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const deleteGeneralDebitNoteEntryById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        const response = await generalDebitNoteModel.findByIdAndUpdate(reqId, { isDeleted: true });
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "General Debit Note Deleted Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+// General Credit Note Entry
+const getGeneralCreditNoteEntrySRNo = async (req, res) => {
+    try {
+        let response = {}
+        let gstNoRecord = await generalCreditNoteModel
+            .findOne({ isDeleted: false })
+            .sort({ _id: -1 })
+            .select('noteNo');
+
+        if (gstNoRecord && gstNoRecord.noteNo) {
+            let lastNumber = parseInt(gstNoRecord.noteNo.replace('GC', ''), 10);
+            let newNumber = lastNumber + 1;
+
+            response.noteNo = `GC${newNumber.toString().padStart(4, '0')}`;
+        } else {
+            response.noteNo = 'GC0001';
+        }
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const addEditGeneralCreditNoteEntry = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let responseData = {}
+
+        if (data.generalCreditNoteId && data.generalCreditNoteId.trim() !== '') {
+
+            const response = await generalCreditNoteModel.findByIdAndUpdate(data.generalCreditNoteId, data, { new: true });
+            if (!response) {
+                responseData = 'Purchase details not found';
+                res.status(200).json({
+                    data: {
+                        statusCode: 404,
+                        Message: "Purchase Not found",
+                        responseData: responseData,
+                        isEnType: true,
+                    },
+                });
+            }
+            let encryptData = encryptionAPI(response, 1);
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "General Credit Note Updated Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+        } else {
+            const response = new generalCreditNoteModel(data);
+            await response.save();
+
+            let encryptData = encryptionAPI(response, 1);
+            res.status(200).json({
+                data: {
+
+                    statusCode: 200,
+                    Message: "General Credit Note Inserted Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+        }
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const getAllGeneralCreditNoteEntry = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+        }
+
+        let sortOption = { noteNo: 1 };
+        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+            sortOption = { [data.arrangedBy]: 1 };
+        }
+
+        let response = await generalCreditNoteModel.aggregate([
+            { $match: queryObject },
+            {
+                $lookup: {
+                    from: "accountmasters",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "partyDetails"
+                }
+            },
+            { $unwind: "$partyDetails" },
+            {
+                $project: {
+                    noteNo: 1,
+                    date: 1,
+                    partyName: "$partyDetails.partyName",
+                    grandTotal: 1,
+                    _id: 1
+                }
+            },
+            { $sort: sortOption }
+        ]);
+
+        if (data.partyName && data.partyName.trim() !== '') {
+            response = response.filter(item =>
+                item.partyName?.toLowerCase().startsWith(data.partyName.toLowerCase())
+            );
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "General Credit Note Fetch Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
+const getGeneralCreditNoteEntryById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        const response = await generalCreditNoteModel
+            .findOne({ _id: reqId })
+            .populate({
+                path: "partyId",
+                select: "partyName",
+            });
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const deleteGeneralCreditNoteEntryById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        const response = await generalCreditNoteModel.findByIdAndUpdate(reqId, { isDeleted: true });
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "General Credit Note Deleted Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
 
 export {
     getReceiptEntryVoucherNo,
@@ -1592,5 +1987,15 @@ export {
     addEditGSTPurchaseEntryWithoutInventory,
     getAllPurchaseEntryWithoutInventory,
     getGSTPurchaseEntryWithoutInventoryById,
-    deleteGSTPurchaseEntryWithoutInventoryById
+    deleteGSTPurchaseEntryWithoutInventoryById,
+    getGeneralDebitNoteEntrySRNo,
+    addEditGeneralDebitNoteEntry,
+    getAllGeneralDebitNoteEntry,
+    getGeneralDebitNoteEntryById,
+    deleteGeneralDebitNoteEntryById,
+    getGeneralCreditNoteEntrySRNo,
+    addEditGeneralCreditNoteEntry,
+    getAllGeneralCreditNoteEntry,
+    getGeneralCreditNoteEntryById,
+    deleteGeneralCreditNoteEntryById
 };
