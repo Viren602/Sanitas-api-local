@@ -5,6 +5,7 @@ import generalDebitNoteModel from "../model/Account/generalDebitNoteModel.js";
 import gstPurchaseWithoutInventoryEntryModel from "../model/Account/gstPurcaseWithoutInventoryEntryModel.js";
 import gstPurchaseEntryRMPMModel from "../model/Account/gstPurchaseEntryRMPMModel.js";
 import gstPurchaseItemListRMPMModel from "../model/Account/gstPurchaseItemListRMPMModel.js";
+import jvEntryModel from "../model/Account/jvEntryModel.js";
 import paymentAdjustmentListModel from "../model/Account/paymentAdjustmentListModel.js";
 import paymentReceiptEntryModel from "../model/Account/paymentReceiptEntryModel.js";
 import gstInvoiceFinishGoodsModel from "../model/Despatch/gstInvoiceFinishGoods.js";
@@ -1958,6 +1959,249 @@ const deleteGeneralCreditNoteEntryById = async (req, res) => {
     }
 };
 
+// J.V. Entry
+const getJVEntryVoucherNo = async (req, res) => {
+    try {
+        let response = {}
+        let gstNoRecord = await jvEntryModel
+            .findOne({ isDeleted: false })
+            .sort({ _id: -1 })
+            .select('srNo');
+
+        if (gstNoRecord && gstNoRecord.srNo) {
+            let lastNumber = parseInt(gstNoRecord.srNo.replace('JV', ''), 10);
+            let newNumber = lastNumber + 1;
+
+            response.srNo = `JV${newNumber.toString().padStart(4, '0')}`;
+        } else {
+            response.srNo = 'JV0001';
+        }
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const addEditJVEntry = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let responseData = {}
+        if (data.jvDetails.jvEntryId && data.jvDetails.jvEntryId.trim() !== '') {
+            // Edit For Receipt Details
+            const response = await jvEntryModel.findByIdAndUpdate(data.jvDetails.jvEntryId, data.jvDetails, { new: true });
+            if (!response) {
+                responseData.jvDetails = 'Party details not found';
+                res.status(200).json({
+                    data: {
+                        statusCode: 404,
+                        Message: "JV Details Not found",
+                        responseData: encryptData,
+                        isEnType: true,
+                    },
+                });
+            }
+            responseData.jvDetails = response;
+
+            // Edit Items In Receipt Entry Model
+            await paymentReceiptEntryModel.deleteMany({ jvEntryId: response._id });
+            const items = data.jvEntryItemList.map(item => ({
+                ...item,
+                jvEntryId: response._id
+            }));
+            await paymentReceiptEntryModel.insertMany(items);
+
+            let encryptData = encryptionAPI(responseData, 1);
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "JV Entry Updated Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+
+
+        } else {
+            // Add JV Entry
+            const response = new jvEntryModel(data.jvDetails);
+            await response.save();
+
+            const items = data.jvEntryItemList.map(item => ({
+                ...item,
+                jvEntryId: response._id
+            }));
+
+            // Add Items In Receipt Entry Model
+            await paymentReceiptEntryModel.insertMany(items);
+
+            responseData.jvDetails = response;
+            let encryptData = encryptionAPI(responseData, 1);
+            res.status(200).json({
+                data: {
+
+                    statusCode: 200,
+                    Message: "JV Entry Inserted Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+        }
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const getAllJVEntry = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+        }
+
+        let arrangedBy = 'srNo'
+
+        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+            arrangedBy = data.arrangedBy
+        }
+
+        let response = await jvEntryModel
+            .find(queryObject)
+            .sort(arrangedBy)
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "JV Entry Details Fetch Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
+const getJVEntryById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = {}
+
+        if (reqId) {
+            let jvDetails = await jvEntryModel.findOne({ isDeleted: false, _id: reqId })
+            response.jvDetails = jvDetails
+
+            let jvEntryItemList = await paymentReceiptEntryModel
+                .find({ isDeleted: false, jvEntryId: reqId, entryType: 'JVEntry' })
+                .populate({
+                    path: 'partyId',
+                    select: 'partyName'
+                })
+            response.jvEntryItemList = jvEntryItemList
+        }
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "JV Entry details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+const deleteJVEntryById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        await paymentReceiptEntryModel.updateMany({ jvEntryId: reqId }, { isDeleted: true });
+
+        const response = await jvEntryModel.findByIdAndUpdate(reqId, { isDeleted: true });
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Receipt details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
+// Reports
+const getAllAccountLedger = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+            partyId : data.partyId
+        }
+
+        let arrangedBy = 'date'
+
+        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+            arrangedBy = data.arrangedBy
+        }
+
+        let response = await paymentReceiptEntryModel
+            .find(queryObject)
+            .sort(arrangedBy)
+            .populate({
+                path: 'bankId',
+                select : 'shortName'
+            })
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Account Ledger Fetch Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
 export {
     getReceiptEntryVoucherNo,
     getAllPendingInvoiceByPartyId,
@@ -1997,5 +2241,11 @@ export {
     addEditGeneralCreditNoteEntry,
     getAllGeneralCreditNoteEntry,
     getGeneralCreditNoteEntryById,
-    deleteGeneralCreditNoteEntryById
+    deleteGeneralCreditNoteEntryById,
+    getJVEntryVoucherNo,
+    addEditJVEntry,
+    getAllJVEntry,
+    getJVEntryById,
+    deleteJVEntryById,
+    getAllAccountLedger
 };

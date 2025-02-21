@@ -1,6 +1,6 @@
 import express from "express";
 import checkAuth from "../middleware/checkAuth.js";
-import { addEditContraEntry, addEditGeneralCreditNoteEntry, addEditGeneralDebitNoteEntry, addEditGSTPurchaseEntryRMPM, addEditGSTPurchaseEntryWithoutInventory, addEditPaymentEntry, addEditReceiptEntry, deleteContraEntryById, deleteGeneralCreditNoteEntryById, deleteGeneralDebitNoteEntryById, deleteGSTPurchaseEntryRMPMById, deleteGSTPurchaseEntryWithoutInventoryById, deletePaymentDetailsByPaymentReceiptId, deleteReceiptDetailsByReceiptId, getAllContraEntry, getAllGeneralCreditNoteEntry, getAllGeneralDebitNoteEntry, getAllGSTPurchaseEntryRMPM, getAllPaymnetEntry, getAllPendingGRNPurchaseEntry, getAllPendingInvoiceByPartyId, getAllPendingInvoiceForPaymentEntryByPartyId, getAllPurchaseEntryWithoutInventory, getAllReceiptEntry, getContraEntryById, getContraEntryVoucherNo, getGeneralCreditNoteEntryById, getGeneralCreditNoteEntrySRNo, getGeneralDebitNoteEntryById, getGeneralDebitNoteEntrySRNo, getGSTPurchaseEntryRMPMById, getGSTPurchaseEntryWithoutInventoryById, getGSTPurchseEntrySRNo, getGSTPurchseWithoutInventoryEntrySRNo, getPaymentDetailsByPaymnetReceiptId, getPaymentEntryVoucherNo, getReceiptDetailsByReceiptId, getReceiptEntryVoucherNo, updateGRNEntryToPurchaseEntry } from "../controller/accountController.js";
+import { addEditContraEntry, addEditGeneralCreditNoteEntry, addEditGeneralDebitNoteEntry, addEditGSTPurchaseEntryRMPM, addEditGSTPurchaseEntryWithoutInventory, addEditJVEntry, addEditPaymentEntry, addEditReceiptEntry, deleteContraEntryById, deleteGeneralCreditNoteEntryById, deleteGeneralDebitNoteEntryById, deleteGSTPurchaseEntryRMPMById, deleteGSTPurchaseEntryWithoutInventoryById, deleteJVEntryById, deletePaymentDetailsByPaymentReceiptId, deleteReceiptDetailsByReceiptId, getAllAccountLedger, getAllContraEntry, getAllGeneralCreditNoteEntry, getAllGeneralDebitNoteEntry, getAllGSTPurchaseEntryRMPM, getAllJVEntry, getAllPaymnetEntry, getAllPendingGRNPurchaseEntry, getAllPendingInvoiceByPartyId, getAllPendingInvoiceForPaymentEntryByPartyId, getAllPurchaseEntryWithoutInventory, getAllReceiptEntry, getContraEntryById, getContraEntryVoucherNo, getGeneralCreditNoteEntryById, getGeneralCreditNoteEntrySRNo, getGeneralDebitNoteEntryById, getGeneralDebitNoteEntrySRNo, getGSTPurchaseEntryRMPMById, getGSTPurchaseEntryWithoutInventoryById, getGSTPurchseEntrySRNo, getGSTPurchseWithoutInventoryEntrySRNo, getJVEntryById, getJVEntryVoucherNo, getPaymentDetailsByPaymnetReceiptId, getPaymentEntryVoucherNo, getReceiptDetailsByReceiptId, getReceiptEntryVoucherNo, updateGRNEntryToPurchaseEntry } from "../controller/accountController.js";
 
 const accountRoute = express.Router();
 
@@ -56,5 +56,15 @@ accountRoute.post("/Account/AddEditGeneralCreditNoteEntry", checkAuth, addEditGe
 accountRoute.post("/Account/GetAllGeneralCreditNoteEntry", checkAuth, getAllGeneralCreditNoteEntry);
 accountRoute.get("/Account/GetGeneralCreditNoteEntryById", checkAuth, getGeneralCreditNoteEntryById);
 accountRoute.get("/Account/DeleteGeneralCreditNoteEntryById", checkAuth, deleteGeneralCreditNoteEntryById);
+
+// J.V Entry
+accountRoute.get("/Account/GetJVEntryVoucherNo", checkAuth, getJVEntryVoucherNo);
+accountRoute.post("/Account/AddEditJVEntry", checkAuth, addEditJVEntry);
+accountRoute.post("/Account/GetAllJVEntry", checkAuth, getAllJVEntry);
+accountRoute.get("/Account/GetJVEntryById", checkAuth, getJVEntryById);
+accountRoute.get("/Account/DeleteJVEntryById", checkAuth, deleteJVEntryById);
+
+// Reports
+accountRoute.post("/Account/GetAllAccountLedger", checkAuth, getAllAccountLedger);
 
 export default accountRoute;

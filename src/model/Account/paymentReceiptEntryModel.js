@@ -20,7 +20,9 @@ const paymentReceiptEntrySchema = mongoose.Schema({
     gstInvoiceRMId: { type: mongoose.Schema.Types.ObjectId, ref: "GSTInvoiceRM", default: null },
     gstInvoicePMId: { type: mongoose.Schema.Types.ObjectId, ref: "GSTInvoicePM", default: null },
     gstpurchaseInvoiceRMPMId: { type: mongoose.Schema.Types.ObjectId, ref: "AccountMasters", default: null },
-    contraId: { type: mongoose.Schema.Types.ObjectId, ref: "PaymentReceiptEntry", default: null },
+    contraId: { type: mongoose.Schema.Types.ObjectId, ref: "ContraEntry", default: null },
+    jvEntryId: { type: mongoose.Schema.Types.ObjectId, ref: "JVEntry", default: null },
+    drcrDropDown: { type: String, default: false },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
