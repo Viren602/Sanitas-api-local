@@ -3490,7 +3490,7 @@ const getOutwardPostById = async (req, res) => {
         if (reqId) {
             response = await outwardPostModel.findOne({ _id: reqId });
         }
-       
+
 
         let encryptData = encryptionAPI(response, 1)
 
@@ -3531,6 +3531,72 @@ const deleteOutwardPostById = async (req, res) => {
     } catch (error) {
         console.log("Error in Despatch controller", error);
         errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
+const getAllInwardOutwardRegister = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = { isDeleted: false }
+
+        if (data.startDate && data.endDate) {
+            queryObject.date = {
+                $gte: new Date(data.startDate),
+                $lte: new Date(data.endDate),
+            };
+        }
+        if (data.partyId && data.partyId !== null && data.partyId !== "") {
+            queryObject.partyId = data.partyId
+        }
+        let Response = []
+        let inwardData = await inwardPostModel
+            .find(queryObject)
+            .populate({
+                path: 'partyId',
+                select: 'partyName',
+            })
+            .lean();
+        const updatedInwardData = inwardData.map((x) => ({
+            ...x,
+            category: "Inward"
+        }));
+
+        let outwardData = await outwardPostModel
+            .find(queryObject)
+            .populate({
+                path: 'partyId',
+                select: 'partyName',
+            })
+            .lean();
+        const updatedOutwardData = outwardData.map((x) => ({
+            ...x,
+            category: "Outward"
+        }));
+
+        if (data.category === "inward") {
+            Response = updatedInwardData
+        } else if (data.category === "outward") {
+            Response = updatedOutwardData
+        } else {
+            Response = [...updatedInwardData, ...updatedOutwardData]
+        }
+
+
+        let encryptData = encryptionAPI(Response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch Controller", error);
+        errorHandler(error, req, res, "Error in Despatch Controller")
     }
 };
 
@@ -3590,5 +3656,6 @@ export {
     addEditOutwardPost,
     getAllOutwardPost,
     getOutwardPostById,
-    deleteOutwardPostById
+    deleteOutwardPostById,
+    getAllInwardOutwardRegister
 };
