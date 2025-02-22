@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { encryptionAPI, getRequestData } from "../middleware/encryption.js";
 import contraEntryModel from "../model/Account/contraEntryModel.js";
 import generalCreditNoteModel from "../model/Account/generalCreditNoteModel.js";
@@ -8,11 +9,13 @@ import gstPurchaseItemListRMPMModel from "../model/Account/gstPurchaseItemListRM
 import jvEntryModel from "../model/Account/jvEntryModel.js";
 import paymentAdjustmentListModel from "../model/Account/paymentAdjustmentListModel.js";
 import paymentReceiptEntryModel from "../model/Account/paymentReceiptEntryModel.js";
+import daybookMasterModel from "../model/daybookMasterModel.js";
 import gstInvoiceFinishGoodsModel from "../model/Despatch/gstInvoiceFinishGoods.js";
 import gstInvoicePMModel from "../model/Despatch/gstInvoicePMModel.js";
 import gstInvoiceRMModel from "../model/Despatch/gstInvoiceRMModel.js";
 import grnEntryMaterialDetailsModel from "../model/InventoryModels/grnEntryMaterialDetailsModel.js";
 import grnEntryPartyDetailsModel from "../model/InventoryModels/grnEntryPartyDetailsModel.js";
+import partyModel from "../model/partiesModel.js";
 import errorHandler from "../server/errorHandle.js";
 
 // Receipt Entry
@@ -1190,6 +1193,21 @@ const addEditGSTPurchaseEntryRMPM = async (req, res) => {
                 });
             }
 
+            // Payment Receipt Entry
+            let request = {
+                voucherNo: data.invoiceDetails.invoiceNo,
+                date: data.invoiceDetails.invoiceDate,
+                partyId: data.invoiceDetails.partyId,
+                creditAmount: data.invoiceDetails.grandTotal,
+                narration1: `INVOICE NO : ${data.invoiceDetails.invoiceNo}`,
+            }
+
+            await paymentReceiptEntryModel.findOneAndUpdate(
+                { gstpurchaseInvoiceRMPMId: data.invoiceDetails.gstPurchaseEntryRMPMId },
+                request,
+                { new: true }
+            );
+
             // Edit Items For GST Purchase Details
             await gstPurchaseItemListRMPMModel.deleteMany({ gstPurchaseEntryRMPMId: response._id });
 
@@ -1222,6 +1240,26 @@ const addEditGSTPurchaseEntryRMPM = async (req, res) => {
                 ...item,
                 gstPurchaseEntryRMPMId: response._id
             }));
+
+            // Payment Receipt Entry
+            let request = {
+                voucherNo: data.invoiceDetails.invoiceNo,
+                bankName: 'PURCHASE',
+                date: data.invoiceDetails.invoiceDate,
+                partyId: data.invoiceDetails.partyId,
+                partyBankNameOrPayto: '-',
+                chqNo: '-',
+                debitAmount: 0,
+                creditAmount: data.invoiceDetails.grandTotal,
+                narration1: `INVOICE NO : ${data.invoiceDetails.invoiceNo}`,
+                narration2: '',
+                narration3: '',
+                entryType: 'Payment',
+                from: 'GSTPurchaseEntryRMPM',
+                gstpurchaseInvoiceRMPMId: response._id,
+            }
+            let paymentEntry = new paymentReceiptEntryModel(request);
+            await paymentEntry.save();
 
             // ADD Items For GST Purchase Details
             await gstPurchaseItemListRMPMModel.insertMany(items);
@@ -1350,6 +1388,9 @@ const deleteGSTPurchaseEntryRMPMById = async (req, res) => {
 
         const response = await gstPurchaseEntryRMPMModel.findByIdAndUpdate(reqId, { isDeleted: true });
 
+        // Payment Receipt Entry
+        await paymentReceiptEntryModel.findOneAndUpdate({ gstpurchaseInvoiceRMPMId: reqId }, { isDeleted: true }, { new: true });
+
         let encryptData = encryptionAPI(response, 1)
 
         res.status(200).json({
@@ -1421,6 +1462,22 @@ const addEditGSTPurchaseEntryWithoutInventory = async (req, res) => {
                     },
                 });
             }
+
+            // Payment Receipt Entry
+            let request = {
+                voucherNo: data.invoiceNo,
+                date: data.invoiceDate,
+                partyId: data.partyId,
+                creditAmount: data.grandTotal,
+                narration1: `INVOICE NO : ${data.invoiceNo}`,
+            }
+
+            await paymentReceiptEntryModel.findOneAndUpdate(
+                { gstPurchaseEntryWithoutInventoryId: data.gstPurchaseEntryWithoutInventoryId },
+                request,
+                { new: true }
+            );
+
             let encryptData = encryptionAPI(response, 1);
             res.status(200).json({
                 data: {
@@ -1434,10 +1491,29 @@ const addEditGSTPurchaseEntryWithoutInventory = async (req, res) => {
             const response = new gstPurchaseWithoutInventoryEntryModel(data);
             await response.save();
 
+            // Payment Receipt Entry
+            let request = {
+                voucherNo: data.invoiceNo,
+                bankName: 'PURCHASE',
+                date: data.invoiceDate,
+                partyId: data.partyId,
+                partyBankNameOrPayto: '-',
+                chqNo: '-',
+                debitAmount: 0,
+                creditAmount: data.grandTotal,
+                narration1: `INVOICE NO : ${data.invoiceNo}`,
+                narration2: '',
+                narration3: '',
+                entryType: 'Payment',
+                from: 'GSTPurchaseWithoutInventory',
+                gstpurchaseInvoiceRMPMId: response._id,
+            }
+            let paymentEntry = new paymentReceiptEntryModel(request);
+            await paymentEntry.save();
+
             let encryptData = encryptionAPI(response, 1);
             res.status(200).json({
                 data: {
-
                     statusCode: 200,
                     Message: "GST Purchase Without Inventory Inserted Successfully",
                     responseData: encryptData,
@@ -1547,6 +1623,9 @@ const deleteGSTPurchaseEntryWithoutInventoryById = async (req, res) => {
         let reqId = getRequestData(id)
 
         const response = await gstPurchaseWithoutInventoryEntryModel.findByIdAndUpdate(reqId, { isDeleted: true });
+
+        // Payment Receipt Entry
+        await paymentReceiptEntryModel.findOneAndUpdate({ gstPurchaseEntryWithoutInventoryId: reqId }, { isDeleted: true }, { new: true });
 
         let encryptData = encryptionAPI(response, 1)
 
@@ -2168,7 +2247,7 @@ const getAllAccountLedger = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = {
             isDeleted: false,
-            partyId : data.partyId
+            partyId: data.partyId
         }
 
         let arrangedBy = 'date'
@@ -2182,7 +2261,7 @@ const getAllAccountLedger = async (req, res) => {
             .sort(arrangedBy)
             .populate({
                 path: 'bankId',
-                select : 'shortName'
+                select: 'shortName'
             })
 
         let encryptData = encryptionAPI(response, 1)
@@ -2191,6 +2270,255 @@ const getAllAccountLedger = async (req, res) => {
             data: {
                 statusCode: 200,
                 Message: "Account Ledger Fetch Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
+const getRunningBalanceByPartyId = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let queryObject = {
+            isDeleted: false,
+            partyId: reqId
+        }
+
+        let response = await paymentReceiptEntryModel.find(queryObject).select('debitAmount creditAmount')
+
+        let partyDetails = await partyModel.findOne({ _id: reqId }).select('openBalance openBalanceDRCR');
+        let openingBalance = partyDetails ? Number(partyDetails.openBalance) : 0;
+        let openingBalanceDRCR = partyDetails ? partyDetails.openBalanceDRCR : 'Dr';
+
+        // Adjust the sign of opening balance based on Dr/Cr
+        let runningBalance = openingBalanceDRCR === 'Dr' ? openingBalance : -openingBalance;
+
+        let processedTransactions = response.map((transaction) => {
+            const credit = transaction.creditAmount || 0;
+            const debit = transaction.debitAmount || 0;
+
+            runningBalance -= credit;
+            runningBalance += debit;
+
+            return {
+                ...transaction.toObject(),
+                creditAmount: credit,
+                debitAmount: debit,
+                runningBalance: runningBalance,
+                runningBalanceDRCR: runningBalance >= 0 ? 'Dr' : 'Cr'
+            };
+        });
+
+        let totalCreditAmount = processedTransactions.reduce((sum, item) => sum + Number(item.creditAmount), 0);
+        let totalDebitAmount = processedTransactions.reduce((sum, item) => sum + Number(item.debitAmount), 0);
+
+        let finalBalance = (openingBalance + totalDebitAmount) - totalCreditAmount;
+        let closingBalance = Math.abs(finalBalance);
+        let closingBalanceDRCR = finalBalance >= 0 ? 'Dr' : 'Cr';
+
+        let finalResponse = {
+            closingBalanceDRCR: closingBalanceDRCR,
+            closingBalance: closingBalance
+        }
+
+        let encryptData = encryptionAPI(finalResponse, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Running Balance Fetch Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
+const getAllBankWiseCashBankBookReport = async (req, res) => {
+    try {
+        // let apiData = req.body.data
+        // let data = getRequestData(apiData, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+            bookType: { $in: ['Bank Book', 'Cash Book'] }
+        }
+
+        let response = await daybookMasterModel
+            .find(queryObject)
+
+        let finalResponse = await Promise.all(response.map(async (x) => {
+            let totalCreditDebitAmount = await paymentReceiptEntryModel.find({ isDeleted: false, bankId: x._id }).select('creditAmount debitAmount');
+
+            // Summing up the credit and debit amounts
+            let totalCreditAmount = totalCreditDebitAmount.reduce((sum, record) => sum + (record.creditAmount || 0), 0);
+            let totalDebitAmount = totalCreditDebitAmount.reduce((sum, record) => sum + (record.debitAmount || 0), 0);
+            let closingBalance = (x.openBalance + totalCreditAmount) - totalDebitAmount;
+            return {
+                bankId: x._id,
+                bankName: x.daybookName,
+                openingBalance: x.openBalance,
+                totalCreditAmount,
+                totalDebitAmount,
+                closingBalance
+            };
+        }));
+
+        let encryptData = encryptionAPI(finalResponse, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Bank Wise Report Fetch Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
+const getAllMonthWiseCashBankBookReportbyBankId = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        const months = [
+            "April", "May", "June", "July", "August", "September",
+            "October", "November", "December", "January", "February", "March"
+        ];
+
+        const getFinancialYear = () => {
+            const currentDate = dayjs();
+            const currentYear = currentDate.year();
+            const currentMonth = currentDate.month() + 1;
+
+            return currentMonth >= 4 ? currentYear : currentYear - 1;
+        };
+
+        let bankId = reqId
+        let financialYear = getFinancialYear()
+
+        const startDateOfYear = dayjs(`${financialYear}-04-01`).startOf("day").toDate();
+        const endDateOfYear = dayjs(`${financialYear + 1}-03-31`).endOf("day").toDate();
+
+        const bankDetails = await daybookMasterModel.findOne({ _id: bankId }).select("openBalance openBalanceDRCR");
+        if (!bankDetails) throw new Error("Bank not found");
+
+        let runningBalance = Number(bankDetails.openBalance) || 0;
+        if (bankDetails.openBalanceDRCR === "Cr") runningBalance = -runningBalance;
+
+        const queryObject = {
+            isDeleted: false,
+            bankId,
+            date: { $gte: startDateOfYear, $lte: endDateOfYear }
+        };
+
+        const transactions = await paymentReceiptEntryModel
+            .find(queryObject)
+            .select("date debitAmount creditAmount");
+
+        let monthlyData = months.map((month, index) => {
+            let monthIndex = (index + 3) % 12; // Convert from financial to calendar year index
+            let year = monthIndex >= 3 ? financialYear : financialYear + 1;
+
+            let startDate = dayjs(`${year}-${monthIndex + 1}-01`).startOf("month").toDate();
+            let endDate = dayjs(`${year}-${monthIndex + 1}-01`).endOf("month").toDate();
+
+            return {
+                month,
+                openingBalance: 0,
+                openingBalanceDRCR: "Dr",
+                receipt: 0,
+                payment: 0,
+                closingBalance: 0,
+                closingBalanceDRCR: "Dr",
+                bankId: reqId,
+                startDate,
+                endDate
+            };
+        });
+
+        transactions.forEach((transaction) => {
+            let monthIndex = dayjs(transaction.date).month();
+            monthIndex = (monthIndex + 9) % 12;
+
+            const debit = Number(transaction.debitAmount) || 0;
+            const credit = Number(transaction.creditAmount) || 0;
+
+            monthlyData[monthIndex].receipt += debit;
+            monthlyData[monthIndex].payment += credit;
+            monthlyData[monthIndex].monthIndex = monthIndex
+        });
+
+        monthlyData.forEach((monthData, index) => {
+            if (index === 0) {
+                monthData.openingBalance = Math.abs(runningBalance);
+                monthData.openingBalanceDRCR = runningBalance >= 0 ? "Dr" : "Cr";
+            } else {
+                monthData.openingBalance = Math.abs(monthlyData[index - 1].closingBalance);
+                monthData.openingBalanceDRCR = monthlyData[index - 1].closingBalanceDRCR;
+            }
+
+            runningBalance += monthData.receipt;
+            runningBalance -= monthData.payment;
+
+            monthData.closingBalance = Math.abs(runningBalance);
+            monthData.closingBalanceDRCR = runningBalance >= 0 ? "Dr" : "Cr";
+        });
+
+        let encryptData = encryptionAPI(monthlyData, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Running Balance Fetch Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
+const getAllDateWiseCashBankBookReportbyBankId = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        console.log(data)
+        let bankId = data.bankId
+
+        const transactions = await paymentReceiptEntryModel.find({
+            isDeleted: false,
+            bankId,
+            date: { $gte: data.startDate, $lte: data.endDate }
+        }).select("date debitAmount creditAmount partyId voucherNo chqNo")
+            .populate({
+                path: 'partyId',
+                select: 'partyName'
+            });
+
+        let encryptData = encryptionAPI(transactions, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Date Wise Report Fetch Successfully",
                 responseData: encryptData,
                 isEnType: true
             },
@@ -2247,5 +2575,9 @@ export {
     getAllJVEntry,
     getJVEntryById,
     deleteJVEntryById,
-    getAllAccountLedger
+    getAllAccountLedger,
+    getRunningBalanceByPartyId,
+    getAllBankWiseCashBankBookReport,
+    getAllMonthWiseCashBankBookReportbyBankId,
+    getAllDateWiseCashBankBookReportbyBankId
 };
