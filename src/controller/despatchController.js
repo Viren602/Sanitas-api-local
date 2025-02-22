@@ -3225,8 +3225,8 @@ const getAllNearExpiryStockReport = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("Error in Inventory controller", error);
-        errorHandler(error, req, res, "Error in Inventory controller")
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
     }
 };
 
@@ -3327,7 +3327,7 @@ const getAllInwardPost = async (req, res) => {
         });
     } catch (error) {
         console.log("Error in despatch controller", error);
-        errorHandler(error, req, res, "Error in dispatch controller")
+        errorHandler(error, req, res, "Error in despatch controller")
     }
 };
 const getInwardPostById = async (req, res) => {
