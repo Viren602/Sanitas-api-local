@@ -1833,6 +1833,8 @@ const generateGSTInvoiceForPMById = async (req, res) => {
         date.setDate(date.getDate() + invoiceDetails.creditDay);
         let dueDate = date.toDateString()
 
+        console.log(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "gstInvoiceRMTemplate.html"))
+        console.log(__dirname)
         let htmlTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "gstInvoiceRMTemplate.html"), "utf8");
 
         // Injecting CSS for empty pages
