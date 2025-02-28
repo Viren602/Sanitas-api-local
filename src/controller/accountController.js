@@ -17,6 +17,7 @@ import grnEntryMaterialDetailsModel from "../model/InventoryModels/grnEntryMater
 import grnEntryPartyDetailsModel from "../model/InventoryModels/grnEntryPartyDetailsModel.js";
 import partyModel from "../model/partiesModel.js";
 import errorHandler from "../server/errorHandle.js";
+import accountGroupModel from "../model/accountGroupModel.js";
 
 // Receipt Entry
 const getReceiptEntryVoucherNo = async (req, res) => {
@@ -2500,7 +2501,6 @@ const getAllDateWiseCashBankBookReportbyBankId = async (req, res) => {
     try {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
-        console.log(data)
         let bankId = data.bankId
 
         const transactions = await paymentReceiptEntryModel.find({
@@ -2519,6 +2519,127 @@ const getAllDateWiseCashBankBookReportbyBankId = async (req, res) => {
             data: {
                 statusCode: 200,
                 Message: "Date Wise Report Fetch Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
+const getAllGroupWiseAccountSummary = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+            // partyName : 'ZYDEN IT SOLUTION'
+        }
+
+        if (data.group && data.group.trim() !== '') {
+            queryObject.acGroupCode = data.group
+        }
+
+        let partyList = await partyModel.find(queryObject).select("partyName openBalance openBalanceDRCR acGroupCode").sort("partyName");
+
+        partyList = await Promise.all(
+            partyList.map(async (x) => {
+
+                let queryObjectForParty = {
+                    isDeleted: false,
+                    partyId: x._id,
+                }
+
+                if (data.startDate && data.endDate) {
+                    queryObjectForParty.date = { $gte: data.startDate, $lte: data.endDate }
+                }
+
+                let partyTransaction = await paymentReceiptEntryModel.find(queryObjectForParty);
+
+                let accountGroupDetails = await accountGroupModel.findOne({ isDeleted: false, accountGroupCode: x.acGroupCode })
+
+                let creditAmount = partyTransaction.reduce((sum, entry) => sum + entry.creditAmount, 0);
+                let debitAmount = partyTransaction.reduce((sum, entry) => sum + entry.debitAmount, 0);
+
+                let openingBalance = x.openBalance;
+                let openingBalanceDRCR = x.openBalanceDRCR ? x.openBalanceDRCR : 'Dr';
+
+                if (openingBalanceDRCR === "Dr") {
+                    openingBalance = -openingBalance;
+                }
+
+                let closingBalance = openingBalance + creditAmount - debitAmount;
+                let closingBalanceDRCR = closingBalance >= 0 ? "Cr" : "Dr";
+
+                return {
+                    ...x.toObject(),
+                    openingBalance: Math.abs(openingBalance),
+                    openingBalanceDRCR,
+                    creditAmount,
+                    creditAmountDRCR: "Cr",
+                    debitAmount,
+                    debitAmountDRCR: "Dr",
+                    closingBalance: Math.abs(closingBalance),
+                    closingBalanceDRCR,
+                    accountGroupname: accountGroupDetails?.accountGroupname ? accountGroupDetails.accountGroupname : ''
+                };
+            })
+        );
+
+        let encryptData = encryptionAPI(partyList, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Group Wise Report Fetch Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
+const getAllOpeningBalanceReport = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+            openBalance: { $gt: 0 },
+            // partyName : 'ZYDEN IT SOLUTION'
+        }
+
+        let sort = 'partyName'
+
+        if (data.orderBy && data.orderBy.trim() !== '') {
+            sort = data.orderBy
+        }
+
+        let partyList = await partyModel
+            .find(queryObject)
+            .select("partyName openBalance openBalanceDRCR acGroupCode")
+            .sort(sort);
+
+        partyList = await Promise.all(partyList.map(async (party) => {
+            let accountGroupDetails = await accountGroupModel.findOne({ isDeleted: false, accountGroupCode: party.acGroupCode });
+            return {
+                ...party.toObject(),
+                accountGroupName: accountGroupDetails ? accountGroupDetails.accountGroupname : null
+            };
+        }));
+        let encryptData = encryptionAPI(partyList, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Opening Balance Report Fetch Successfully",
                 responseData: encryptData,
                 isEnType: true
             },
@@ -2579,5 +2700,7 @@ export {
     getRunningBalanceByPartyId,
     getAllBankWiseCashBankBookReport,
     getAllMonthWiseCashBankBookReportbyBankId,
-    getAllDateWiseCashBankBookReportbyBankId
+    getAllDateWiseCashBankBookReportbyBankId,
+    getAllGroupWiseAccountSummary,
+    getAllOpeningBalanceReport
 };

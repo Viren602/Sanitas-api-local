@@ -4,13 +4,15 @@ import http from "http";
 import https from "https";
 import app from "./expressApp.js"
 import "./routes.js"
-import { config } from "dotenv";
+// import { config } from "dotenv";
+import config from "../config/config.js";
 
 let server;
 const flag = config.PRODUCTION; // Flag to determine the environment (production or local)
 
 // Check the flag to determine which type of server to create
 if (flag == "true") {
+    console.log(flag)
     // Read SSL certificate files for HTTPS server
     const options = {
         key: fs.readFileSync('./certs/privkey.pem'), // Private key
@@ -18,7 +20,6 @@ if (flag == "true") {
         requestCert: false,
         rejectUnauthorized: false
     };
-    
     // Create HTTPS server with the given options and app
     server = https.createServer(options, app);
 } else {
