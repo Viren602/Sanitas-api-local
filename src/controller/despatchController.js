@@ -30,6 +30,7 @@ import inwardPostModel from "../model/Despatch/inwardPostEntry.js";
 import paymentReceiptEntryModel from "../model/Account/paymentReceiptEntryModel.js";
 import { populate } from "dotenv";
 import outwardPostModel from "../model/Despatch/outwardPostEntry.js";
+import companyGroupModel from "../model/companyGroup.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -464,6 +465,13 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
+        let companyDetails = await companyGroupModel.findOne({});
+        let adminAddress = companyDetails.addressLine1 + ' '
+            + companyDetails.addressLine2 + ' '
+            + companyDetails.addressLine3 + ' '
+            + companyDetails.pinCode + '(' + companyDetails.state + ')'
+        console.log(companyDetails)
+
         let invoiceDetails = await gstInvoiceFinishGoodsModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -622,12 +630,33 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
                 .replace('#SGSTTotalAmount', hsnCodeTotalCalculation.sgstAmount)
                 .replace('#CGSTTotalAmount', hsnCodeTotalCalculation.cgstAmount)
                 .replace('#TotalGSTCalculation', hsnCodeTotalCalculation.totalAmount)
+                .replaceAll('#AdminCompanyName', companyDetails.CompanyName)
+                .replace('#AdminAddress', adminAddress)
+                .replace('#AdminEmail', companyDetails.email)
+                .replace('#AdminMobile', companyDetails.mobile)
+                .replace('#AdminMfgLicNo', companyDetails.mfgLicNo)
+                .replace('#AdminFssaiNo', companyDetails.fssaiNo)
+                .replace('#AdminGSTNNo', companyDetails.gstnNo)
+                .replace('#AdminPanNo', companyDetails.panNo)
+                .replace('#TermsConditionLine1', companyDetails.termsConditionLine1)
+                .replace('#TermsConditionLine2', companyDetails.termsConditionLine2)
+                .replace('#TermsConditionLine3', companyDetails.termsConditionLine3)
+                .replace('#TermsConditionLine4', companyDetails.termsConditionLine4)
+                .replace('#AdminBankName', companyDetails.bankName)
+                .replace('#AdminIFSCCode', companyDetails.ifscCode)
+                .replace('#ADMINACNo', companyDetails.acNo)
+                .replace('#AdminBankBranch', companyDetails.branch)
         }
 
         const generateDeliveryChallanPage = () => {
             return deliveryChallanTemplate.replace('#InvoiceNo', invoiceDetails.invoiceNo)
                 .replace('#InvoiceDate', dayjs(invoiceDetails.invoiceDate).format("DD-MM-YYYY"))
-                .replace('#DeliveryChallanRowLsting', deliveryChallanRowLsting);
+                .replace('#DeliveryChallanRowLsting', deliveryChallanRowLsting)
+                .replaceAll('#AdminCompanyName', companyDetails.CompanyName)
+                .replace('#AdminAddress', adminAddress)
+                .replace('#AdminEmail', companyDetails.email)
+                .replace('#CompanyLocation', companyDetails.location)
+                .replace('#AdminMobile', companyDetails.mobile);
         };
 
         htmlTemplate = `
@@ -640,7 +669,10 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
             <div class="empty-page">${generateDeliveryChallanPage()}</div>
         `;
 
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({
+            headless: "new",
+            args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        });
         const page = await browser.newPage();
 
         await page.setContent(htmlTemplate, { waitUntil: "load" });
@@ -1122,6 +1154,12 @@ const generateGSTInvoiceForRMById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
+        let companyDetails = await companyGroupModel.findOne({});
+        let adminAddress = companyDetails.addressLine1 + ' '
+            + companyDetails.addressLine2 + ' '
+            + companyDetails.addressLine3 + ' '
+            + companyDetails.pinCode + '(' + companyDetails.state + ')'
+
         let invoiceDetails = await gstInvoiceRMModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -1261,6 +1299,22 @@ const generateGSTInvoiceForRMById = async (req, res) => {
                 .replace('#SGSTTotalAmount', hsnCodeTotalCalculation.sgstAmount)
                 .replace('#CGSTTotalAmount', hsnCodeTotalCalculation.cgstAmount)
                 .replace('#TotalGSTCalculation', hsnCodeTotalCalculation.totalAmount)
+                .replaceAll('#AdminCompanyName', companyDetails.CompanyName)
+                .replace('#AdminAddress', adminAddress)
+                .replace('#AdminEmail', companyDetails.email)
+                .replace('#AdminMobile', companyDetails.mobile)
+                .replace('#AdminMfgLicNo', companyDetails.mfgLicNo)
+                .replace('#AdminFssaiNo', companyDetails.fssaiNo)
+                .replace('#AdminGSTNNo', companyDetails.gstnNo)
+                .replace('#AdminPanNo', companyDetails.panNo)
+                .replace('#TermsConditionLine1', companyDetails.termsConditionLine1)
+                .replace('#TermsConditionLine2', companyDetails.termsConditionLine2)
+                .replace('#TermsConditionLine3', companyDetails.termsConditionLine3)
+                .replace('#TermsConditionLine4', companyDetails.termsConditionLine4)
+                .replace('#AdminBankName', companyDetails.bankName)
+                .replace('#AdminIFSCCode', companyDetails.ifscCode)
+                .replace('#ADMINACNo', companyDetails.acNo)
+                .replace('#AdminBankBranch', companyDetails.branch)
         }
 
         htmlTemplate = `
@@ -1271,7 +1325,10 @@ const generateGSTInvoiceForRMById = async (req, res) => {
             <div class="empty-page">${generatePage("Triplicate for Supplier")}</div>
         `;
 
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({
+            headless: "new",
+            args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        });
         const page = await browser.newPage();
 
         await page.setContent(htmlTemplate, { waitUntil: "load" });
@@ -1751,6 +1808,12 @@ const generateGSTInvoiceForPMById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
+        let companyDetails = await companyGroupModel.findOne({});
+        let adminAddress = companyDetails.addressLine1 + ' '
+            + companyDetails.addressLine2 + ' '
+            + companyDetails.addressLine3 + ' '
+            + companyDetails.pinCode + '(' + companyDetails.state + ')'
+
         let invoiceDetails = await gstInvoicePMModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -1833,8 +1896,6 @@ const generateGSTInvoiceForPMById = async (req, res) => {
         date.setDate(date.getDate() + invoiceDetails.creditDay);
         let dueDate = date.toDateString()
 
-        console.log(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "gstInvoiceRMTemplate.html"))
-        console.log(__dirname)
         let htmlTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "gstInvoiceRMTemplate.html"), "utf8");
 
         // Injecting CSS for empty pages
@@ -1892,6 +1953,22 @@ const generateGSTInvoiceForPMById = async (req, res) => {
                 .replace('#SGSTTotalAmount', hsnCodeTotalCalculation.sgstAmount)
                 .replace('#CGSTTotalAmount', hsnCodeTotalCalculation.cgstAmount)
                 .replace('#TotalGSTCalculation', hsnCodeTotalCalculation.totalAmount)
+                .replaceAll('#AdminCompanyName', companyDetails.CompanyName)
+                .replace('#AdminAddress', adminAddress)
+                .replace('#AdminEmail', companyDetails.email)
+                .replace('#AdminMobile', companyDetails.mobile)
+                .replace('#AdminMfgLicNo', companyDetails.mfgLicNo)
+                .replace('#AdminFssaiNo', companyDetails.fssaiNo)
+                .replace('#AdminGSTNNo', companyDetails.gstnNo)
+                .replace('#AdminPanNo', companyDetails.panNo)
+                .replace('#TermsConditionLine1', companyDetails.termsConditionLine1)
+                .replace('#TermsConditionLine2', companyDetails.termsConditionLine2)
+                .replace('#TermsConditionLine3', companyDetails.termsConditionLine3)
+                .replace('#TermsConditionLine4', companyDetails.termsConditionLine4)
+                .replace('#AdminBankName', companyDetails.bankName)
+                .replace('#AdminIFSCCode', companyDetails.ifscCode)
+                .replace('#ADMINACNo', companyDetails.acNo)
+                .replace('#AdminBankBranch', companyDetails.branch)
         }
 
         htmlTemplate = `
@@ -1902,7 +1979,10 @@ const generateGSTInvoiceForPMById = async (req, res) => {
             <div class="empty-page">${generatePage("Triplicate for Supplier")}</div>
         `;
 
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({
+            headless: "new",
+            args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        });
         const page = await browser.newPage();
 
         await page.setContent(htmlTemplate, { waitUntil: "load" });
@@ -3601,6 +3681,7 @@ const getAllInwardOutwardRegister = async (req, res) => {
         errorHandler(error, req, res, "Error in Despatch Controller")
     }
 };
+
 
 export {
     getProductionStockByProductId,
