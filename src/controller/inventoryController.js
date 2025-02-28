@@ -3,7 +3,7 @@ import grnEntryMaterialDetailsModel from "../model/InventoryModels/grnEntryMater
 import grnEntryPartyDetailsModel from "../model/InventoryModels/grnEntryPartyDetailsModel.js";
 import productionRequisitionEntryModel from "../model/InventoryModels/additionalEntryProductionDetails.js";
 import additionalEntryMaterialDetailsModel from "../model/InventoryModels/additionalEntryMaterialDetailsModel.js";
-import purchaseOrderDetailsModel from "../model/InventoryModels/PurchaseOrderDetailsModel.js";
+import purchaseOrderDetailsModel from "../model/InventoryModels/purchaseOrderDetailsModel.js";
 import purchaserOrderMaterialDetailsModel from "../model/InventoryModels/purchaseOrderMaterialDetailsModel.js";
 import mailsender from "../utils/sendingEmail.js";
 import partyModel from "../model/partiesModel.js";
