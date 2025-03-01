@@ -1,9 +1,10 @@
-import { ENV, ErrorMessage, ErrorSubject, FromMail } from "../middleware/appSetting.js";
+import { ErrorMessage, ErrorSubject, FromMail } from "../middleware/appSetting.js";
 import { getRequestData } from "../middleware/encryption.js";
 import mailsender from "../utils/sendingEmail.js";
+import config from "../config/config.js";
 
 function errorHandler(err, req, res, message) {
-
+    const isProd = config.PRODUCTION === 'true' ? 'Production' : 'Local';
     let html = `<html lang="en">
                     <head>
                         <meta charset="UTF-8">
@@ -12,7 +13,7 @@ function errorHandler(err, req, res, message) {
                     <body>
                         <h1>${message || 'Error Occurred'}</h1>
                         <p><strong>Message:</strong> ${err?.message || 'N/A'}</p>
-                        <p><strong>Environment:</strong> ${ENV}</p>
+                        <p><strong>Environment:</strong> ${isProd}</p>
                         <p><strong>Endpoint:</strong> ${req?.originalUrl || 'N/A'}</p>
                         <p><strong>Method:</strong> ${req?.method || 'N/A'}</p>
                         <p><strong>Request Body:</strong> ${JSON.stringify(req?.body || {}, null, 2)}</p>

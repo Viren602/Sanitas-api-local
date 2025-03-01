@@ -8,7 +8,9 @@ const config = {
   PRODUCTION : process.env.PRODUCTION,
   CryptoKey:process.env.CRYPTO_ENCRYPT_KEY,
   Secret_key:process.env.Secret_key,
-  Session_TimeOut:process.env.Session_TimeOut
+  Session_TimeOut:process.env.Session_TimeOut,
+  YEAR_DBCONNECTION: process.env.YEAR_DBCONNECTION,
+  MASTER_DB: process.env.MASTER_DB,
 };
 
 export default config;

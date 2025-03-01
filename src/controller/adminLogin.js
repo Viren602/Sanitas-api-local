@@ -10,6 +10,8 @@ import errorHandler from "../server/errorHandle.js";
 import { CompanyGroup, FromMail } from "../middleware/appSetting.js";
 import mongoose from "mongoose";
 import mailsender from "../utils/sendingEmail.js";
+import connectToDatabase from "../utils/dbConnection.js";
+import companySelectionMasterModel from "../model/companySelectionMasterModel.js";
 
 const getClientIp = (req) => {
     return (
@@ -19,19 +21,12 @@ const getClientIp = (req) => {
     );
 };
 
-const getCompanyInfo = async (req, res) => {
+const getCompanyForCompanySelection = async (req, res) => {
     try {
-        let response = [];
-        const companyFinancialYear = await companyFinancialYearModel.find({});
-        const companyGroup = await companyGroupModel.find({});
-        const companyGroupName = CompanyGroup;
-        response = {
-            companyGroupName,
-            companyGroup,
-            companyFinancialYear
-        }
+        const CompanyMaster = await companySelectionMasterModel();
+        const companySelection = await CompanyMaster.find({});
 
-        let responseData = encryptionAPI(response, 1)
+        let responseData = encryptionAPI(companySelection, 1)
         res.status(200).json({
             data: {
                 statusCode: 200,
@@ -41,7 +36,30 @@ const getCompanyInfo = async (req, res) => {
             },
         });
 
-        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+    } catch (error) {
+        console.log("Error in Admin Login controller", error);
+        errorHandler(error, req, res, "Error in Admin Login controller")
+    }
+};
+
+const getFinancialYearByCompanyName = async (req, res) => {
+    try {
+        const { id } = req.query;
+        const CompanyMaster = await companyFinancialYearModel();
+        const companyFinancialYear = await CompanyMaster
+        .find({ CompanyName: id })
+        .sort('CompanyYear');
+
+        let responseData = encryptionAPI(companyFinancialYear, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: responseData,
+                isEnType: true
+            },
+        });
+
     } catch (error) {
         console.log("Error in Admin Login controller", error);
         errorHandler(error, req, res, "Error in Admin Login controller")
@@ -53,18 +71,21 @@ const getCompanyDataWithCompanyNameAndYear = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
-        const dbDetails = await companyFinancialYearModel.findOne({
+        const CompanyMaster = await companyFinancialYearModel();
+        // const companyFinancialYear = await CompanyMaster.find({});
+        const dbDetails = await CompanyMaster.findOne({
             CompanyName: data.companyName,
             CompanyYear: data.financialYear
         });
 
         const databaseName = dbDetails.databaseName;
-        await mongoose.disconnect();
-        const dbURI = `mongodb+srv://fenil2502:KRMHA7bwog8xnGso@fenilapi.de2pm.mongodb.net/${databaseName}?retryWrites=true&w=majority&appName=FenilApi`;
+        await connectToDatabase(databaseName);
+        // await mongoose.disconnect();
+        // const dbURI = `mongodb+srv://fenil2502:KRMHA7bwog8xnGso@fenilapi.de2pm.mongodb.net/${databaseName}?retryWrites=true&w=majority&appName=FenilApi`;
 
-        const connection = await mongoose.connect(dbURI);
-        const dbName = connection.connections[0].name;
-        console.log(`Connected to MongoDB: ${dbName}`);
+        // const connection = await mongoose.connect(dbURI);
+        // const dbName = connection.connections[0].name;
+        // console.log(`Connected to MongoDB: ${dbName}`);
 
         res.status(200).json({
             data: {
@@ -184,7 +205,8 @@ const userAuthentication = async (req, res) => {
 
 
 export {
-    getCompanyInfo,
+    getFinancialYearByCompanyName,
     userAuthentication,
-    getCompanyDataWithCompanyNameAndYear
+    getCompanyDataWithCompanyNameAndYear,
+    getCompanyForCompanySelection
 };
