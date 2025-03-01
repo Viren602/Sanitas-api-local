@@ -40,7 +40,7 @@ app.use(
 app.use(errorHandler);
 app.set('trust proxy', 1);
 
-const ddos = new Ddos({ burst: 50, limit: 50 }); // Initialize Ddos correctly
+const ddos = new Ddos({ burst: 500, limit: 500 }); // Initialize Ddos correctly
 app.use(ddos.express);
 
 app.use("/uploads", express.static(path.join( "uploads")));
