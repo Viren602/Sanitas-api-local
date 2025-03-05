@@ -12,6 +12,7 @@ import mongoose from "mongoose";
 import mailsender from "../utils/sendingEmail.js";
 import connectToDatabase from "../utils/dbConnection.js";
 import companySelectionMasterModel from "../model/companySelectionMasterModel.js";
+import globals from "../utils/globals.js";
 
 const getClientIp = (req) => {
     return (
@@ -47,8 +48,8 @@ const getFinancialYearByCompanyName = async (req, res) => {
         const { id } = req.query;
         const CompanyMaster = await companyFinancialYearModel();
         const companyFinancialYear = await CompanyMaster
-        .find({ CompanyName: id })
-        .sort('CompanyYear');
+            .find({ CompanyName: id })
+            .sort('CompanyYear');
 
         let responseData = encryptionAPI(companyFinancialYear, 1)
         res.status(200).json({
@@ -72,20 +73,14 @@ const getCompanyDataWithCompanyNameAndYear = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
 
         const CompanyMaster = await companyFinancialYearModel();
-        // const companyFinancialYear = await CompanyMaster.find({});
         const dbDetails = await CompanyMaster.findOne({
             CompanyName: data.companyName,
             CompanyYear: data.financialYear
         });
 
         const databaseName = dbDetails.databaseName;
+        globals.Database = databaseName;
         await connectToDatabase(databaseName);
-        // await mongoose.disconnect();
-        // const dbURI = `mongodb+srv://fenil2502:KRMHA7bwog8xnGso@fenilapi.de2pm.mongodb.net/${databaseName}?retryWrites=true&w=majority&appName=FenilApi`;
-
-        // const connection = await mongoose.connect(dbURI);
-        // const dbName = connection.connections[0].name;
-        // console.log(`Connected to MongoDB: ${dbName}`);
 
         res.status(200).json({
             data: {
@@ -106,8 +101,9 @@ const userAuthentication = async (req, res) => {
     try {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
-        let user = await companyAdminModel.findOne({ UserName: data.userName });
-        console.log(data)
+        let comModel = await companyAdminModel();
+        let user = await comModel.findOne({ UserName: data.userName });
+
         if (user !== null) {
             const isPasswordValid = await bcrypt.compare(data.password, user.hashPassword);
             if (!isPasswordValid) {
@@ -147,7 +143,8 @@ const userAuthentication = async (req, res) => {
                     expires: expiry,
                     device: currentDevice ? currentDevice : 'Unknown'
                 }
-                const userLogData = new userLogModel(reqData);
+                let ulModel = await userLogModel()
+                const userLogData = new ulModel(reqData);
                 await userLogData.save();
 
                 let html = `<html lang="en">
@@ -199,7 +196,7 @@ const userAuthentication = async (req, res) => {
 
     } catch (error) {
         console.log("Error in Admin Login controller", error);
-        errorHandler(error, req, res, "Error in Admin Login controller")
+        // errorHandler(error, req, res, "Error in Admin Login controller")
     }
 };
 

@@ -1,5 +1,7 @@
 
 import mongoose from "mongoose";
+import connectToDatabase from "../utils/dbConnection.js";
+import globals from "../utils/globals.js";
 
 const productDetailSchema = mongoose.Schema({
     ID: { type: Number, default: 0 },
@@ -24,6 +26,10 @@ const productDetailSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const productDetailsModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    return db.models.ProductMasters || db.model("ProductMasters", productDetailSchema);
+}
 
-const productDetailsModel = mongoose.model("ProductMasters", productDetailSchema)
+// const productDetailsModel = mongoose.model("ProductMasters", productDetailSchema)
 export default productDetailsModel;

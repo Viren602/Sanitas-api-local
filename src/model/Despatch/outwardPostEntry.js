@@ -1,4 +1,7 @@
 import mongoose from "mongoose";
+import connectToDatabase from "../../utils/dbConnection.js";
+import globals from "../../utils/globals.js";
+import partyModel from "../partiesModel.js";
 
 const outwardPostScHema = mongoose.Schema({
     date: { type: Date, default: '' },
@@ -9,6 +12,12 @@ const outwardPostScHema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const outwardPostModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await partyModel()
+    return db.models.OutwardPostEntry || db.model("OutwardPostEntry", outwardPostScHema);
+}
 
-const outwardPostModel = mongoose.model("OutwardPostEntry", outwardPostScHema)
+
+// const outwardPostModel = mongoose.model("OutwardPostEntry", outwardPostScHema)
 export default outwardPostModel;

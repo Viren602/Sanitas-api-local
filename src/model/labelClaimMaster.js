@@ -1,5 +1,7 @@
 
 import mongoose from "mongoose";
+import connectToDatabase from "../utils/dbConnection.js";
+import globals from "../utils/globals.js";
 
 const labelClaimSchema = mongoose.Schema({
     labelClaim: { type: String, default: '' },
@@ -7,6 +9,10 @@ const labelClaimSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const labelClaimModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    return db.models.LabelClaimMasters || db.model("LabelClaimMasters", labelClaimSchema);
+}
 
-const labelClaimModel = mongoose.model("LabelClaimMasters", labelClaimSchema)
+// const labelClaimModel = mongoose.model("LabelClaimMasters", labelClaimSchema)
 export default labelClaimModel;

@@ -27,7 +27,8 @@ const addEditPackingMaterial = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data && data._id && data._id.trim() !== '') {
-            const response = await packingMaterialSchema.findByIdAndUpdate(data._id, data, { new: true });
+            let mpModel = await packingMaterialSchema()
+            const response = await mpModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
 
@@ -44,7 +45,8 @@ const addEditPackingMaterial = async (req, res) => {
                 res.status(404).json({ Message: "Item not found" });
             }
         } else {
-            const existingItemByName = await packingMaterialSchema.findOne({ pmName: data.pmName.trim(), isDeleted: false });
+            let mpModel = await packingMaterialSchema()
+            const existingItemByName = await mpModel.findOne({ pmName: data.pmName.trim(), isDeleted: false });
             if (existingItemByName) {
                 let encryptData = encryptionAPI(existingItemByName, 1)
                 res.status(200).json({
@@ -56,7 +58,8 @@ const addEditPackingMaterial = async (req, res) => {
                     },
                 });
             } else {
-                const response = new packingMaterialSchema(data);
+                let mpModel = await packingMaterialSchema()
+                const response = new mpModel(data);
                 await response.save();
 
                 let encryptData = encryptionAPI(response, 1)
@@ -95,9 +98,11 @@ const getAllPackingMaterials = async (req, res) => {
 
         const skip = (pageNo - 1) * pageLimit;
 
-        const totalCount = await packingMaterialSchema.countDocuments(queryObject);
+        let mpModel = await packingMaterialSchema()
+        const totalCount = await mpModel.countDocuments(queryObject);
 
-        let data = await packingMaterialSchema
+        let mpModel1 = await packingMaterialSchema()
+        let data = await mpModel1
             .find(queryObject)
             .sort("pmName")
             .skip(skip)
@@ -133,7 +138,8 @@ const getPackingMaterialById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await packingMaterialSchema.findOne({ _id: reqId });
+            let mpModel = await packingMaterialSchema()
+            response = await mpModel.findOne({ _id: reqId });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -161,7 +167,8 @@ const deletePackingMaterialById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await packingMaterialSchema.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let mpModel = await packingMaterialSchema()
+            response = await mpModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -187,7 +194,8 @@ const addEditRMCategory = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            const response = await rmCategoryModel.findByIdAndUpdate(data._id, data, { new: true });
+            let rmCModel = await rmCategoryModel()
+            const response = await rmCModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
                 let encryptData = encryptionAPI(response, 1)
@@ -205,7 +213,8 @@ const addEditRMCategory = async (req, res) => {
                 res.status(404).json({ Message: "Category not found" });
             }
         } else {
-            const response = new rmCategoryModel(data);
+            let rmCModel = await rmCategoryModel()
+            const response = new rmCModel(data);
             await response.save();
 
             let encryptData = encryptionAPI(response, 1)
@@ -232,7 +241,8 @@ const deleteRMCategoryById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await rmCategoryModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let rmCModel = await rmCategoryModel()
+            response = await rmCModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -257,7 +267,8 @@ const addEditPMCategory = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            const response = await pmCategoryModel.findByIdAndUpdate(data._id, data, { new: true });
+            let pmcModel = await pmCategoryModel()
+            const response = await pmcModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
 
@@ -273,7 +284,8 @@ const addEditPMCategory = async (req, res) => {
                 res.status(404).json({ Message: "Category not found" });
             }
         } else {
-            const response = new pmCategoryModel(data);
+            let pmcModel = await pmCategoryModel()
+            const response = new pmcModel(data);
             await response.save();
             let encryptData = encryptionAPI(response, 1)
 
@@ -299,7 +311,8 @@ const deletePMCategoryById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await pmCategoryModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let pmcModel = await pmCategoryModel()
+            response = await pmcModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -324,7 +337,8 @@ const addEditPackingMaterialSize = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            const response = await packingMaterialSizeModel.findByIdAndUpdate(data._id, data, { new: true });
+            let pmsModel = await packingMaterialSizeModel()
+            const response = await pmsModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
                 let encryptData = encryptionAPI(response, 1)
@@ -341,7 +355,8 @@ const addEditPackingMaterialSize = async (req, res) => {
                 res.status(404).json({ Message: "Category not found" });
             }
         } else {
-            const response = new packingMaterialSizeModel(data);
+            let pmsModel = await packingMaterialSizeModel()
+            const response = new pmsModel(data);
             await response.save();
 
             let encryptData = encryptionAPI(response, 1)
@@ -368,7 +383,8 @@ const deletePackingMaterialSizeById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await packingMaterialSizeModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let pmsModel = await packingMaterialSizeModel()
+            response = await pmsModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
         let encryptData = encryptionAPI(response, 1)
 
@@ -392,7 +408,8 @@ const addEditStates = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            const response = await stateModel.findByIdAndUpdate(data._id, data, { new: true });
+            let sModel = stateModel()
+            const response = await sModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
                 let encryptData = encryptionAPI(response, 1)
@@ -409,7 +426,8 @@ const addEditStates = async (req, res) => {
                 res.status(404).json({ Message: "Category not found" });
             }
         } else {
-            const response = new stateModel(data);
+            let sModel = stateModel()
+            const response = new sModel(data);
             await response.save();
 
             let encryptData = encryptionAPI(response, 1)
@@ -436,7 +454,8 @@ const deleteStateById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await stateModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let sModel = stateModel()
+            response = await sModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -461,7 +480,8 @@ const addEditStereo = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            const response = await stereoModel.findByIdAndUpdate(data._id, data, { new: true });
+            let sModel = await stereoModel()
+            const response = await sModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
                 let encryptData = encryptionAPI(response, 1)
@@ -478,7 +498,8 @@ const addEditStereo = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            const response = new stereoModel(data);
+            let sModel = await stereoModel()
+            const response = new sModel(data);
             await response.save();
             let encryptData = encryptionAPI(response, 1)
 
@@ -504,7 +525,8 @@ const deleteStereoById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await stereoModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let sModel = await stereoModel()
+            response = await sModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -529,7 +551,8 @@ const addEditLabelClaims = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            const response = await labelClaimModel.findByIdAndUpdate(data._id, data, { new: true });
+            let lcModel = await labelClaimModel()
+            const response = await lcModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
 
@@ -545,7 +568,8 @@ const addEditLabelClaims = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            const response = new labelClaimModel(data);
+            let lcModel = await labelClaimModel()
+            const response = new lcModel(data);
             await response.save();
             let encryptData = encryptionAPI(response, 1)
 
@@ -571,7 +595,8 @@ const deleteLabelClaimById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await labelClaimModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let lcModel = await labelClaimModel()
+            response = await lcModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -596,7 +621,8 @@ const addEditStorageConditions = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            const response = await storageConditionModel.findByIdAndUpdate(data._id, data, { new: true });
+            let scModel = await storageConditionModel()
+            const response = await scModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
                 let encryptData = encryptionAPI(response, 1)
@@ -614,7 +640,8 @@ const addEditStorageConditions = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            const response = new storageConditionModel(data);
+            let scModel = await storageConditionModel()
+            const response = new scModel(data);
             await response.save();
 
             let encryptData = encryptionAPI(response, 1)
@@ -641,7 +668,8 @@ const deleteStorageConditionById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await storageConditionModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let scModel = await storageConditionModel()
+            response = await scModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -666,7 +694,8 @@ const addEditColors = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            const response = await colorModel.findByIdAndUpdate(data._id, data, { new: true });
+            let cModel = await colorModel()
+            const response = await cModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
 
@@ -683,7 +712,8 @@ const addEditColors = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            const response = new colorModel(data);
+            let cModel = await colorModel()
+            const response = new cModel(data);
             await response.save();
             let encryptData = encryptionAPI(response, 1)
 
@@ -709,7 +739,8 @@ const deleteColorById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await colorModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let cModel = await colorModel()
+            response = await cModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -733,7 +764,8 @@ const addMfgLic = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            const response = await mfgLicModel.findByIdAndUpdate(data._id, data, { new: true });
+            let mlModel = await mfgLicModel()
+            const response = await mlModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
 
@@ -750,7 +782,8 @@ const addMfgLic = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            const response = new mfgLicModel(data);
+            let mlModel = await mfgLicModel()
+            const response = new mlModel(data);
             await response.save();
             let encryptData = encryptionAPI(response, 1)
 
@@ -776,7 +809,8 @@ const deleteMfgLicById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await mfgLicModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let mlModel = await mfgLicModel()
+            response = await mlModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -801,7 +835,8 @@ const addProductionStages = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            const response = await productionStageModel.findByIdAndUpdate(data._id, data, { new: true });
+            let pstageModel = await productionStageModel()
+            const response = await pstageModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
                 let encryptData = encryptionAPI(response, 1)
@@ -819,7 +854,8 @@ const addProductionStages = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            const response = new productionStageModel(data);
+            let pstageModel = await productionStageModel()
+            const response = new pstageModel(data);
             await response.save();
 
             let encryptData = encryptionAPI(response, 1)
@@ -847,7 +883,8 @@ const deleteProductionStageById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await productionStageModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let pstageModel = await productionStageModel()
+            response = await pstageModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -872,7 +909,8 @@ const addEditPunchSizeMaster = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            const response = await punchSizeModel.findByIdAndUpdate(data._id, data, { new: true });
+            let pSizeModel = await punchSizeModel()
+            const response = await pSizeModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
                 let encryptData = encryptionAPI(response, 1)
@@ -889,7 +927,8 @@ const addEditPunchSizeMaster = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            const response = new punchSizeModel(data);
+            let pSizeModel = await punchSizeModel()
+            const response = new pSizeModel(data);
             await response.save();
 
             let encryptData = encryptionAPI(response, 1)
@@ -916,7 +955,8 @@ const deletePunchSizeById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await punchSizeModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let pSizeModel = await punchSizeModel()
+            response = await pSizeModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -940,7 +980,8 @@ const addEditAccountGroup = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            const response = await accountGroupModel.findByIdAndUpdate(data._id, data, { new: true });
+            let acModel = await accountGroupModel()
+            const response = await acModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
                 let encryptData = encryptionAPI(response, 1)
@@ -958,7 +999,8 @@ const addEditAccountGroup = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            const response = new accountGroupModel(data);
+            let acModel = await accountGroupModel()
+            const response = new acModel(data);
             await response.save();
 
             let encryptData = encryptionAPI(response, 1)
@@ -986,7 +1028,8 @@ const deleteAccountGroupById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await accountGroupModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let acModel = await accountGroupModel()
+            response = await acModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -1010,7 +1053,8 @@ const addEditTransportCourier = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            const response = await transportCourierModel.findByIdAndUpdate(data._id, data, { new: true });
+            let tcModel = await transportCourierModel()
+            const response = await tcModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
 
@@ -1027,7 +1071,8 @@ const addEditTransportCourier = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            const response = new transportCourierModel(data);
+            let tcModel = await transportCourierModel()
+            const response = new tcModel(data);
             await response.save();
             let encryptData = encryptionAPI(response, 1)
 
@@ -1054,7 +1099,8 @@ const deleteTransportCourierById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await transportCourierModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let tcModel = await transportCourierModel()
+            response = await tcModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -1079,7 +1125,8 @@ const addEditDaybook = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            const response = await daybookMasterModel.findByIdAndUpdate(data._id, data, { new: true });
+            let dbMasterModel = await daybookMasterModel()
+            const response = await dbMasterModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
                 let encryptData = encryptionAPI(response, 1)
@@ -1097,7 +1144,8 @@ const addEditDaybook = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            const response = new daybookMasterModel(data);
+            let dbMasterModel = await daybookMasterModel()
+            const response = new dbMasterModel(data);
             await response.save();
 
             let encryptData = encryptionAPI(response, 1)
@@ -1126,7 +1174,8 @@ const deleteDaybookById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await daybookMasterModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let dbMasterModel = await daybookMasterModel()
+            response = await dbMasterModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -1155,7 +1204,9 @@ const getAllParties = async (req, res) => {
         if (reqId && reqId.trim() !== "") {
             queryObject.partyName = { $regex: `^${reqId}`, $options: "i" };
         }
-        let response = await partyModel
+
+        let pModel = await partyModel()
+        let response = await pModel
             .find(queryObject)
             .select('partyName city email mobileNo1 transporterName gstnNo')
             .sort("partyName");
@@ -1197,10 +1248,12 @@ const getPartyDetailsById = async (req, res) => {
         let response = {}
         let accountCode = {}
         if (reqId) {
-            response = await partyModel.findOne({ _id: reqId });
+            let pModel = await partyModel()
+            response = await pModel.findOne({ _id: reqId });
         }
         if (response.acGroupCode) {
-            accountCode = await accountGroupModel.findOne({ accountGroupCode: response.acGroupCode });
+            let acModel = await accountGroupModel()
+            accountCode = await acModel.findOne({ accountGroupCode: response.acGroupCode });
         }
         response.accountCodeName = accountCode.accountGroupname
 
@@ -1228,11 +1281,13 @@ const addEditPartyDetails = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
         let accountCode = {}
         if (data.accountCodeName) {
-            accountCode = await accountGroupModel.findOne({ accountGroupname: data.accountCodeName });
+            let acModel = await accountGroupModel()
+            accountCode = await acModel.findOne({ accountGroupname: data.accountCodeName });
         }
         data.acGroupCode = accountCode.accountGroupCode
         if (data && data._id && data._id.trim() !== '') {
-            const response = await partyModel.findByIdAndUpdate(data._id, data, { new: true });
+            let pModel = await partyModel()
+            const response = await pModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
                 let encryptData = encryptionAPI(response, 1)
@@ -1251,7 +1306,8 @@ const addEditPartyDetails = async (req, res) => {
                 res.status(404).json({ Message: "Item not found" });
             }
         } else {
-            const existingItemByName = await partyModel.findOne({ partyName: data.partyName.trim(), isDeleted: false });
+            let pModel = await partyModel()
+            const existingItemByName = await pModel.findOne({ partyName: data.partyName.trim(), isDeleted: false });
             if (existingItemByName) {
                 let encryptData = encryptionAPI(existingItemByName, 1)
                 res.status(200).json({
@@ -1263,7 +1319,8 @@ const addEditPartyDetails = async (req, res) => {
                     },
                 });
             } else {
-                const response = new partyModel(data);
+                let pModel = await partyModel()
+                const response = new pModel(data);
                 await response.save();
 
                 let encryptData = encryptionAPI(response, 1)
@@ -1292,7 +1349,8 @@ const deletePartyDetailsById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await partyModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let pModel = await partyModel()
+            response = await pModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -1318,7 +1376,8 @@ const addeditProductDetails = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data && data._id && data._id.trim() !== '') {
-            const response = await productDetailsModel.findByIdAndUpdate(data._id, data, { new: true });
+            let pdModel = await productDetailsModel()
+            const response = await pdModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
 
@@ -1335,7 +1394,8 @@ const addeditProductDetails = async (req, res) => {
                 res.status(404).json({ Message: "Product not found" });
             }
         } else {
-            const existingItemByName = await productDetailsModel.findOne({ productName: data.productName.trim(), isDeleted: false });
+            let pdModel = await productDetailsModel()
+            const existingItemByName = await pdModel.findOne({ productName: data.productName.trim(), isDeleted: false });
             if (existingItemByName) {
                 let encryptData = encryptionAPI(existingItemByName, 1)
                 res.status(200).json({
@@ -1347,7 +1407,8 @@ const addeditProductDetails = async (req, res) => {
                     },
                 });
             } else {
-                const response = new productDetailsModel(data);
+                let pdModel = await productDetailsModel()
+                const response = new pdModel(data);
                 await response.save();
                 let encryptData = encryptionAPI(response, 1)
 
@@ -1384,9 +1445,12 @@ const getAllProductDetails = async (req, res) => {
         }
         const skip = (pageNo - 1) * pageLimit;
 
-        const totalCount = await productDetailsModel.countDocuments(queryObject);
+        let pdModel = await productDetailsModel()
+        const totalCount = await pdModel.countDocuments(queryObject);
 
-        let data = await productDetailsModel
+
+        let pdModel1 = await productDetailsModel()
+        let data = await pdModel1
             .find(queryObject)
             .sort("productName")
             .skip(skip)
@@ -1422,7 +1486,8 @@ const getProductDetailById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await productDetailsModel.findOne({ _id: reqId });
+            let pdModel = await productDetailsModel()
+            response = await pdModel.findOne({ _id: reqId });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -1450,7 +1515,8 @@ const deleteProductDetailsById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await productDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let pdModel = await productDetailsModel()
+            response = await pdModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
 
@@ -1477,7 +1543,8 @@ const addEditpartyWiseNetRateDetails = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data && data._id && data._id.trim() !== '') {
-            const response = await partyWiseNetRateDetailsModel.findByIdAndUpdate(data._id, data, { new: true });
+            let pwnrDetailsModel = await partyWiseNetRateDetailsModel()
+            const response = await pwnrDetailsModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
 
@@ -1494,12 +1561,9 @@ const addEditpartyWiseNetRateDetails = async (req, res) => {
             } else {
                 res.status(404).json({ Message: "Details not found" });
             }
-            // const response = new partyWiseNetRateDetailsModel(data);
-            // await response.save();
-            // console.log(response)
-            // res.status(200).json({ Message: "Details added successfully", data: response });
         } else {
-            const response = new partyWiseNetRateDetailsModel(data);
+            let pwnrDetailsModel = await partyWiseNetRateDetailsModel()
+            const response = new pwnrDetailsModel(data);
             await response.save();
 
             let encryptData = encryptionAPI(response, 1)
@@ -1528,7 +1592,8 @@ const getPartyWiseNetRateDetailsByPartyId = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await partyWiseNetRateDetailsModel.find({ partyId: reqId, isDeleted: false });
+            let pwnrDetailsModel = await partyWiseNetRateDetailsModel()
+            response = await pwnrDetailsModel.find({ partyId: reqId, isDeleted: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -1555,7 +1620,8 @@ const deletePartyWiseNetRateById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await partyWiseNetRateDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let pwnrDetailsModel = await partyWiseNetRateDetailsModel()
+            response = await pwnrDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -1583,7 +1649,8 @@ const getRMFormulaByProductId = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await rmFormulaModel.find({ productId: reqId, isDeleted: false });
+            let rmFModel = await rmFormulaModel()
+            response = await rmFModel.find({ productId: reqId, isDeleted: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -1608,7 +1675,8 @@ const addEditRMFormulaDetails = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data && data._id && data._id.trim() !== '') {
-            const response = await rmFormulaModel.findByIdAndUpdate(data._id, data, { new: true });
+            let rmFModel = await rmFormulaModel()
+            const response = await rmFModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
                 let encryptData = encryptionAPI(response, 1)
@@ -1627,7 +1695,8 @@ const addEditRMFormulaDetails = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            const response = new rmFormulaModel(data);
+            let rmFModel = await rmFormulaModel()
+            const response = new rmFModel(data);
             await response.save();
 
             let encryptData = encryptionAPI(response, 1)
@@ -1656,7 +1725,8 @@ const deleteRMFurmulaById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await rmFormulaModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let rmFModel = await rmFormulaModel()
+            response = await rmFModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -1685,7 +1755,8 @@ const getPMFormulaByItemId = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await pmFormulaModel.find({ itemId: reqId, isDeleted: false });
+            let pmfModel = await pmFormulaModel()
+            response = await pmfModel.find({ itemId: reqId, isDeleted: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -1711,7 +1782,8 @@ const addEditPMFormulaDetails = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
 
         if (data && data._id && data._id.trim() !== '') {
-            const response = await pmFormulaModel.findByIdAndUpdate(data._id, data, { new: true });
+            let pmfModel = await pmFormulaModel()
+            const response = await pmfModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
                 let encryptData = encryptionAPI(response, 1)
@@ -1728,7 +1800,8 @@ const addEditPMFormulaDetails = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            const response = new pmFormulaModel(data);
+            let pmfModel = await pmFormulaModel()
+            const response = new pmfModel(data);
             await response.save();
 
             let encryptData = encryptionAPI(response, 1)
@@ -1756,7 +1829,8 @@ const deletePMFurmulaById = async (req, res) => {
 
         let response = {}
         if (reqId) {
-            response = await pmFormulaModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let pmfModel = await pmFormulaModel()
+            response = await pmfModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)

@@ -25,7 +25,8 @@ import errorHandler from "../server/errorHandle.js";
 
 const getAllItemCategory = async (req, res) => {
     try {
-        let response = await ItemCategory.find({});
+        let icModel = await ItemCategory()
+        let response = await icModel.find({});
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
             data: {
@@ -43,7 +44,8 @@ const getAllItemCategory = async (req, res) => {
 
 const getAllHSNCode = async (req, res) => {
     try {
-        let response = await HNSCodesScHema.find({});
+        let hcModel = await HNSCodesScHema()
+        let response = await hcModel.find({});
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
             data: {
@@ -61,7 +63,8 @@ const getAllHSNCode = async (req, res) => {
 
 const getAllStorageConditions = async (req, res) => {
     try {
-        let response = await storageConditionModel.find({});
+        let scModel = await storageConditionModel()
+        let response = await scModel.find({});
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
             data: {
@@ -81,7 +84,8 @@ const getAllStorageConditions = async (req, res) => {
 
 const getAllRMCategory = async (req, res) => {
     try {
-        let response = await rmCategoryModel.find({});
+        let rmCModel = await rmCategoryModel()
+        let response = await rmCModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -102,7 +106,8 @@ const getAllRMCategory = async (req, res) => {
 
 const getAllPMCategory = async (req, res) => {
     try {
-        let response = await pmCategoryModel.find({});
+        let pmcModel = await pmCategoryModel()
+        let response = await pmcModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -123,7 +128,8 @@ const getAllPMCategory = async (req, res) => {
 
 const getAllPackingMaterialSize = async (req, res) => {
     try {
-        let response = await packingMaterialSizeModel.find({});
+        let pmsModel = await packingMaterialSizeModel()
+        let response = await pmsModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -144,7 +150,8 @@ const getAllPackingMaterialSize = async (req, res) => {
 
 const getAllStates = async (req, res) => {
     try {
-        let response = await stateModel.find({});
+        let sModel = await stateModel()
+        let response = await sModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -165,7 +172,8 @@ const getAllStates = async (req, res) => {
 
 const getAllStereoData = async (req, res) => {
     try {
-        let response = await stereoModel.find({});
+        let sModel = await stereoModel()
+        let response = await sModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -186,7 +194,8 @@ const getAllStereoData = async (req, res) => {
 
 const getAllLabelClaims = async (req, res) => {
     try {
-        let response = await labelClaimModel.find({});
+        let lcModel = await labelClaimModel()
+        let response = await lcModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -206,7 +215,8 @@ const getAllLabelClaims = async (req, res) => {
 
 const getAllColors = async (req, res) => {
     try {
-        let response = await colorModel.find({});
+        let cModel = await colorModel()
+        let response = await cModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -227,7 +237,8 @@ const getAllColors = async (req, res) => {
 
 const getAllMfgLicMaster = async (req, res) => {
     try {
-        let response = await mfgLicModel.find({});
+        let mlModel = await mfgLicModel()
+        let response = await mlModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -248,7 +259,8 @@ const getAllMfgLicMaster = async (req, res) => {
 
 const getAllProductionStageMaster = async (req, res) => {
     try {
-        let response = await productionStageModel.find({});
+        let pstageModel = await productionStageModel()
+        let response = await pstageModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -269,7 +281,8 @@ const getAllProductionStageMaster = async (req, res) => {
 
 const getAllPunchSizes = async (req, res) => {
     try {
-        let response = await punchSizeModel.find({});
+        let pSizeModel = await punchSizeModel()
+        let response = await pSizeModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -290,7 +303,8 @@ const getAllPunchSizes = async (req, res) => {
 
 const getAllAccountGroups = async (req, res) => {
     try {
-        let response = await accountGroupModel.find({});
+        let acModel = await accountGroupModel()
+        let response = await acModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -316,7 +330,8 @@ const getAllTransportCourier = async (req, res) => {
         if (reqId && reqId.trim() !== "") {
             queryObject.transportName = { $regex: `^${reqId}`, $options: "i" };
         }
-        let response = await transportCourierModel.find(queryObject).sort("transportName");
+        let tcModel = await transportCourierModel()
+        let response = await tcModel.find(queryObject).sort("transportName");
 
 
         let encryptData = encryptionAPI(response, 1)
@@ -345,13 +360,15 @@ const getAllDaybooks = async (req, res) => {
             queryObject.daybookName = { $regex: `^${reqId}`, $options: "i" };
         }
 
-        let response = await daybookMasterModel.find(queryObject);
+        let dbMasterModel = await daybookMasterModel()
+        let response = await dbMasterModel.find(queryObject);
 
         for (let i = 0; i < response.length; i++) {
             const accountCode = response[i].acGroupCode;
             let accountCodeName = '';
             if (accountCode) {
-                const accountGroup = await accountGroupModel.findOne({ accountGroupCode: accountCode });
+                let acModel = await accountGroupModel()
+                const accountGroup = await acModel.findOne({ accountGroupCode: accountCode });
                 accountCodeName = accountGroup ? accountGroup.accountGroupname : '';
             }
             response[i] = {
@@ -380,7 +397,8 @@ const getAllDaybooks = async (req, res) => {
 const getAllPartyDropdown = async (req, res) => {
     try {
         let queryObject = { isDeleted: false }
-        let response = await partyModel.find(queryObject).select("partyName email transporterName maintainAc gstnNo").sort("partyName");
+        let pModel = await partyModel()
+        let response = await pModel.find(queryObject).select("partyName email transporterName maintainAc gstnNo").sort("partyName");
 
         let encryptData = encryptionAPI(response, 1)
 
@@ -404,7 +422,8 @@ const getAllPartyDropdown = async (req, res) => {
 const getAllItem = async (req, res) => {
     try {
         let queryObject = { IsDeleted: false }
-        let response = await companyItems.find(queryObject).select("ItemName Packing UnitQuantity JobCharge TestingCharge ProdLoss BasicRate").sort("ItemName");
+        let cIModel = await companyItems()
+        let response = await cIModel.find(queryObject).select("ItemName Packing UnitQuantity JobCharge TestingCharge ProdLoss BasicRate").sort("ItemName");
 
         let encryptData = encryptionAPI(response, 1)
 
@@ -427,7 +446,8 @@ const getAllItem = async (req, res) => {
 const getAllProductDropdown = async (req, res) => {
     try {
         let queryObject = { isDeleted: false }
-        let data = await productDetailsModel.find(queryObject).select("productName").sort("productName");
+        let pdModel = await productDetailsModel()
+        let data = await pdModel.find(queryObject).select("productName").sort("productName");
 
         let encryptData = encryptionAPI(data, 1)
 
@@ -450,7 +470,8 @@ const getAllProductDropdown = async (req, res) => {
 const getAllRMDropdown = async (req, res) => {
     try {
         let queryObject = { isDeleted: false }
-        let data = await rawMaterialSchema.find(queryObject).select("rmName rmUOM").sort("rmName");
+        let rmModel = await rawMaterialSchema()
+        let data = await rmModel.find(queryObject).select("rmName rmUOM").sort("rmName");
 
         let encryptData = encryptionAPI(data, 1)
 
@@ -472,7 +493,8 @@ const getAllRMDropdown = async (req, res) => {
 const getAllPackingMaterialDropdown = async (req, res) => {
     try {
         let queryObject = { isDeleted: false }
-        let data = await packingMaterialSchema.find(queryObject).select('pmName pmUOM').sort("pmName");
+        let mpModel = await packingMaterialSchema()
+        let data = await mpModel.find(queryObject).select('pmName pmUOM').sort("pmName");
 
         let encryptData = encryptionAPI(data, 1)
 
@@ -494,7 +516,8 @@ const getAllPackingMaterialDropdown = async (req, res) => {
 const getCompanyDetails = async (req, res) => {
     try {
         let queryObject = { isDeleted: false }
-        let data = await UsersSCHM.find(queryObject);
+        let uSCHMOdel = await UsersSCHM()
+        let data = await uSCHMOdel.find(queryObject);
 
         let encryptData = encryptionAPI(data, 1)
 

@@ -1,5 +1,8 @@
 
 import mongoose from "mongoose";
+import connectToDatabase from "../../utils/dbConnection.js";
+import globals from "../../utils/globals.js";
+import daybookMasterModel from "../daybookMasterModel.js";
 
 const contraEntrySchema = mongoose.Schema({
     voucherNo: { type: String, default: '' },
@@ -13,6 +16,11 @@ const contraEntrySchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const contraEntryModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await daybookMasterModel()
+    return db.models.ContraEntry || db.model("ContraEntry", contraEntrySchema);
+}
 
-const contraEntryModel = mongoose.model("ContraEntry", contraEntrySchema)
+// const contraEntryModel = mongoose.model("ContraEntry", contraEntrySchema)
 export default contraEntryModel;

@@ -1,9 +1,16 @@
 
 import mongoose from "mongoose";
+import globals from "../../utils/globals.js";
+import connectToDatabase from "../../utils/dbConnection.js";
+import gstInvoiceFinishGoodsModel from "./gstInvoiceFinishGoods.js";
+import companyItems from "../companyItems.js";
+import HNSCodesScHema from "../hnsCode.js";
+import batchClearingEntryModel from "../ProductionModels/batchClearingEntryModel.js";
+import batchWiseProductStockModel from "./batchWiseProductStockModel.js";
 
 const gstInvoiceFinishGoodsItemsSchema = mongoose.Schema({
     gstInvoiceFinishGoodsId: { type: mongoose.Schema.Types.ObjectId, ref: "GSTInvoiceFinishGoods" },
-    itemId: { type: mongoose.Schema.Types.ObjectId, ref: "CompanyItem"  },
+    itemId: { type: mongoose.Schema.Types.ObjectId, ref: "CompanyItem" },
     itemName: { type: String, default: '' },
     packing: { type: String, default: 0 },
     batchNo: { type: String, default: '' },
@@ -29,6 +36,15 @@ const gstInvoiceFinishGoodsItemsSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const gstInvoiceFinishGoodsItemsModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await gstInvoiceFinishGoodsModel()
+    await companyItems()
+    await HNSCodesScHema()
+    await batchClearingEntryModel()
+    await batchWiseProductStockModel()
+    return db.models.ItemsForGSTInvoiceFinishGoods || db.model("ItemsForGSTInvoiceFinishGoods", gstInvoiceFinishGoodsItemsSchema);
+}
 
-const gstInvoiceFinishGoodsItemsModel = mongoose.model("ItemsForGSTInvoiceFinishGoods", gstInvoiceFinishGoodsItemsSchema)
+// const gstInvoiceFinishGoodsItemsModel = mongoose.model("ItemsForGSTInvoiceFinishGoods", gstInvoiceFinishGoodsItemsSchema)
 export default gstInvoiceFinishGoodsItemsModel;

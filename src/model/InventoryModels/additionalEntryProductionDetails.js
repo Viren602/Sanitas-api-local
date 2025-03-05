@@ -1,5 +1,7 @@
 
 import mongoose from "mongoose";
+import globals from "../../utils/globals.js";
+import connectToDatabase from "../../utils/dbConnection.js";
 
 const productionRequisitionEntryschema = mongoose.Schema({
     reqDate: { type: Date, default: '' },
@@ -12,6 +14,10 @@ const productionRequisitionEntryschema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const productionRequisitionEntryModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    return db.models.AdditionalProductionEntry || db.model("AdditionalProductionEntry", productionRequisitionEntryschema);
+}
 
-const productionRequisitionEntryModel = mongoose.model("AdditionalProductionEntry", productionRequisitionEntryschema)
+// const productionRequisitionEntryModel = mongoose.model("AdditionalProductionEntry", productionRequisitionEntryschema)
 export default productionRequisitionEntryModel;

@@ -5,23 +5,26 @@ const connections = {};
 
 const connectToDatabase = async (dbName) => {
     if (!connections[dbName]) {
-        // const dbURI = `mongodb+srv://fenil2502:KRMHA7bwog8xnGso@fenilapi.de2pm.mongodb.net/${dbName}?retryWrites=true&w=majority&appName=FenilApi`;
-
         const dbURI = config.YEAR_DBCONNECTION.replace("{0}", dbName);
-        const conn = mongoose.createConnection(dbURI);
 
-        conn.on("connected", () => {
-            console.log(`✅ Connected to database: ${dbName}`);
-        });
+        try {
+            const conn = await mongoose.createConnection(dbURI).asPromise(); // Ensure connection is established before proceeding
 
-        conn.on("error", (err) => {
-            console.error(`❌ Database connection error (${dbName}):`, err);
-        });
+            conn.on("connected", () => {
+                console.log(`✅ Connected to database: ${dbName}`);
+            });
 
-        connections[dbName] = conn;
-    } else {
-        // console.log(`ℹ️ Using existing database connection: ${dbName}`);
+            conn.on("error", (err) => {
+                console.error(`❌ Database connection error (${dbName}):`, err);
+            });
+
+            connections[dbName] = conn;
+        } catch (err) {
+            console.error(`❌ Failed to connect to database: ${dbName}`, err);
+            throw err; // Ensure caller knows about the failure
+        }
     }
+    
     return connections[dbName];
 };
 

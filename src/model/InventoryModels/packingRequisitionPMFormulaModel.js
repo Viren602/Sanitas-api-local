@@ -1,5 +1,9 @@
 
 import mongoose from "mongoose";
+import globals from "../../utils/globals.js";
+import connectToDatabase from "../../utils/dbConnection.js";
+import companyItems from "../companyItems.js";
+import productionPlanningEntryModel from "../ProductionModels/productionPlanningEntryModel.js";
 
 const PackingRequisitionPMFormulaSchema = mongoose.Schema({
     productDetialsId: { type: mongoose.Schema.Types.ObjectId, ref: "ProductionEntry" },
@@ -14,6 +18,12 @@ const PackingRequisitionPMFormulaSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const PackingRequisitionPMFormulaModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await companyItems()
+    await productionPlanningEntryModel()
+    return db.models.PackingRequisitionPMFormulaList || db.model("PackingRequisitionPMFormulaList", PackingRequisitionPMFormulaSchema);
+}
 
-const PackingRequisitionPMFormulaModel = mongoose.model("PackingRequisitionPMFormulaList", PackingRequisitionPMFormulaSchema)
+// const PackingRequisitionPMFormulaModel = mongoose.model("PackingRequisitionPMFormulaList", PackingRequisitionPMFormulaSchema)
 export default PackingRequisitionPMFormulaModel;

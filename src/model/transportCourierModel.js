@@ -1,5 +1,7 @@
 
 import mongoose from "mongoose";
+import connectToDatabase from "../utils/dbConnection.js";
+import globals from "../utils/globals.js";
 
 const transportCourierSchema = mongoose.Schema({
     ID: { type: Number, default: 0 },
@@ -14,6 +16,10 @@ const transportCourierSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const transportCourierModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    return db.models.TransportCourierMasters || db.model("TransportCourierMasters", transportCourierSchema);
+}
 
-const transportCourierModel = mongoose.model("TransportCourierMasters", transportCourierSchema)
+// const transportCourierModel = mongoose.model("TransportCourierMasters", transportCourierSchema)
 export default transportCourierModel;

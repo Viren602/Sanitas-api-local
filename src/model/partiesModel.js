@@ -1,5 +1,7 @@
 
 import mongoose from "mongoose";
+import globals from "../utils/globals.js";
+import connectToDatabase from "../utils/dbConnection.js";
 
 const partySchema = mongoose.Schema({
     id: { type: Number, default: 0 },
@@ -70,6 +72,11 @@ const partySchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+
+const partyModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    return db.models.AccountMasters || db.model("AccountMasters", partySchema);
+}
  
-const partyModel = mongoose.model("AccountMasters", partySchema)
+// const partyModel = mongoose.model("AccountMasters", partySchema)
 export default partyModel;

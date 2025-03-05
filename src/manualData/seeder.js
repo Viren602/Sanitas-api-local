@@ -37,8 +37,9 @@ db.once("open", function () {
 //------------------------------ Inserting HNSCode in Database ------------------------------
 // const importHNSCode = async () => {
 //     try {
-//         await HNSCodesScHema.deleteMany();
-//         const createUsers = await HNSCodesScHema.insertMany(HNSCodes)
+    // let hcModel = await HNSCodesScHema()
+//         await hcModel.deleteMany();
+//         const createUsers = await hcModel.insertMany(HNSCodes)
 //         console.log(createUsers)
 //     } catch (error) {
 //     }

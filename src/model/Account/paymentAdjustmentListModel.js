@@ -1,5 +1,13 @@
 
 import mongoose from "mongoose";
+import connectToDatabase from "../../utils/dbConnection.js";
+import globals from "../../utils/globals.js";
+import paymentReceiptEntryModel from "./paymentReceiptEntryModel.js";
+import gstInvoiceFinishGoodsModel from "../Despatch/gstInvoiceFinishGoods.js";
+import gstInvoiceRMModel from "../Despatch/gstInvoiceRMModel.js";
+import gstInvoicePMModel from "../Despatch/gstInvoicePMModel.js";
+import gstPurchaseEntryRMPMModel from "./gstPurchaseEntryRMPMModel.js";
+import gstPurchaseWithoutInventoryEntryModel from "./gstPurcaseWithoutInventoryEntryModel.js";
 
 const paymentAdjustmentListSchema = mongoose.Schema({
     paymentReceiptId: { type: mongoose.Schema.Types.ObjectId, ref: "PaymentReceiptEntry", default: null },
@@ -15,6 +23,16 @@ const paymentAdjustmentListSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const paymentAdjustmentListModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await paymentReceiptEntryModel()
+    await gstInvoiceFinishGoodsModel()
+    await gstInvoiceRMModel()
+    await gstInvoicePMModel()
+    await gstPurchaseEntryRMPMModel()
+    await gstPurchaseWithoutInventoryEntryModel()
+    return db.models.PaymentAdjustmentList || db.model("PaymentAdjustmentList", paymentAdjustmentListSchema);
+}
 
-const paymentAdjustmentListModel = mongoose.model("PaymentAdjustmentList", paymentAdjustmentListSchema)
+// const paymentAdjustmentListModel = mongoose.model("PaymentAdjustmentList", paymentAdjustmentListSchema)
 export default paymentAdjustmentListModel;

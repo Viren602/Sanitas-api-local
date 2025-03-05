@@ -1,5 +1,7 @@
 
 import mongoose from "mongoose";
+import globals from "../utils/globals.js";
+import connectToDatabase from "../utils/dbConnection.js";
 
 const itemSchema = mongoose.Schema({
     ItemName: { type: String, default: '' },
@@ -25,6 +27,10 @@ const itemSchema = mongoose.Schema({
     IsDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const companyItems = async () => {
+    const db = await connectToDatabase(globals.Database);
+    return db.models.CompanyItem || db.model("CompanyItem", itemSchema);
+}
 
-const companyItems = mongoose.model("CompanyItem", itemSchema)
+// const companyItems = mongoose.model("CompanyItem", itemSchema)
 export default companyItems;

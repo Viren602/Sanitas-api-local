@@ -22,7 +22,8 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
         let responseData = {};
         if (data.grnRawMaterialPartyDetails.partyDetailsId && data.grnRawMaterialPartyDetails.partyDetailsId.trim() !== '') {
-            const response = await grnEntryPartyDetailsModel.findByIdAndUpdate(data.grnRawMaterialPartyDetails.partyDetailsId, data.grnRawMaterialPartyDetails, { new: true });
+            let gepdModel = await grnEntryPartyDetailsModel();
+            const response = await gepdModel.findByIdAndUpdate(data.grnRawMaterialPartyDetails.partyDetailsId, data.grnRawMaterialPartyDetails, { new: true });
             if (response) {
                 responseData.partyDetails = response;
             } else {
@@ -32,7 +33,8 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
 
             let nextGRNNO = 'G001';
 
-            const lastRecord = await grnEntryPartyDetailsModel
+            let gepdModel = await grnEntryPartyDetailsModel();
+            const lastRecord = await gepdModel
                 .findOne()
                 .sort({ grnNo: -1 })
                 .select('grnNo')
@@ -45,14 +47,16 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
 
             data.grnRawMaterialPartyDetails.grnNo = nextGRNNO;
 
-            const response = new grnEntryPartyDetailsModel(data.grnRawMaterialPartyDetails);
+            let gepdModel1 = await grnEntryPartyDetailsModel();
+            const response = new gepdModel1(data.grnRawMaterialPartyDetails);
             await response.save();
             responseData.partyDetails = response;
         }
 
         if (data.grnMaterialDetails.materialDetailsId && data.grnMaterialDetails.materialDetailsId.trim() !== '') {
             data.grnMaterialDetails.grnEntryPartyDetailId = responseData.partyDetails._id
-            const response = await grnEntryMaterialDetailsModel.findByIdAndUpdate(data.grnMaterialDetails.materialDetailsId, data.grnMaterialDetails, { new: true });
+            let gemDetailsModel = await grnEntryMaterialDetailsModel();
+            const response = await gemDetailsModel.findByIdAndUpdate(data.grnMaterialDetails.materialDetailsId, data.grnMaterialDetails, { new: true });
             if (response) {
                 responseData.materialDetails = response;
             } else {
@@ -60,13 +64,15 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
             }
         } else {
             data.grnMaterialDetails.grnEntryPartyDetailId = responseData.partyDetails._id
-            const response = new grnEntryMaterialDetailsModel(data.grnMaterialDetails);
+            let gemDetailsModel = await grnEntryMaterialDetailsModel();
+            const response = new gemDetailsModel(data.grnMaterialDetails);
             await response.save();
             responseData.materialDetails = response;
         }
 
         if (data.grnMaterialDetails.isPurchaseOrderEntry && data.grnMaterialDetails.purchaseOrderId !== '' && data.grnMaterialDetails.purchaseOrdermaterialId !== '') {
-            await purchaserOrderMaterialDetailsModel.findByIdAndUpdate(data.grnMaterialDetails.purchaseOrdermaterialId, { isGRNEntryDone: true }, { new: true, useFindAndModify: false });
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            await pomDetailsModel.findByIdAndUpdate(data.grnMaterialDetails.purchaseOrdermaterialId, { isGRNEntryDone: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(responseData, 1)
@@ -107,7 +113,8 @@ const getAllPartyListForGRNEntry = async (req, res) => {
             queryObject.grnEntryType = data.materialType
         }
 
-        let response = await grnEntryPartyDetailsModel
+        let gepdModel = await grnEntryPartyDetailsModel();
+        let response = await gepdModel
             .find(queryObject)
             .sort(filterBy)
             .populate({
@@ -143,7 +150,8 @@ const getAllgrnEntryMaterialDetailsById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = []
         if (reqId) {
-            response = await grnEntryMaterialDetailsModel
+            let gemDetailsModel = await grnEntryMaterialDetailsModel();
+            response = await gemDetailsModel
                 .find({ grnEntryPartyDetailId: reqId, isDeleted: false })
                 .populate({
                     path: 'rawMaterialId',
@@ -181,7 +189,8 @@ const getPurchaseOrderMaterialByPartyId = async (req, res) => {
 
         let purchaseOrder = [];
         if (data.partyId) {
-            purchaseOrder = await purchaseOrderDetailsModel
+            let podModel = await purchaseOrderDetailsModel()
+            purchaseOrder = await podModel
                 .find({ partyId: data.partyId })
                 .populate({
                     path: 'partyId',
@@ -195,14 +204,16 @@ const getPurchaseOrderMaterialByPartyId = async (req, res) => {
                 purchaseOrder.map(async (item) => {
                     let materials = []
                     if (data.materialType === 'Raw') {
-                        materials = await purchaserOrderMaterialDetailsModel
+                        let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+                        materials = await pomDetailsModel
                             .find({ purchaseOrderId: item._id, rawMaterialId: data.materialId, isDeleted: false, isGRNEntryDone: false })
                             .populate({
                                 path: 'rawMaterialId',
                                 select: 'rmName rmUOM _id',
                             });
                     } else {
-                        materials = await purchaserOrderMaterialDetailsModel
+                        let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+                        materials = await pomDetailsModel
                             .find({ purchaseOrderId: item._id, packageMaterialId: data.materialId, isDeleted: false, isGRNEntryDone: false })
                             .populate({
                                 path: 'packageMaterialId',
@@ -251,7 +262,8 @@ const deleteGRNEntryMaterialDetailsById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await grnEntryPartyDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let gepdModel = await grnEntryPartyDetailsModel();
+            response = await gepdModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -279,11 +291,13 @@ const deleteItemforGRNEntryMaterialById = async (req, res) => {
         console.log(reqId)
         let response = {}
         if (reqId) {
-            response = await grnEntryMaterialDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let gemDetailsModel = await grnEntryMaterialDetailsModel();
+            response = await gemDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         if (response.purchaseOrdermaterialId) {
-            response = await purchaserOrderMaterialDetailsModel.findByIdAndUpdate(response.purchaseOrdermaterialId, { isGRNEntryDone: false }, { new: true, useFindAndModify: false });
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            response = await pomDetailsModel.findByIdAndUpdate(response.purchaseOrdermaterialId, { isGRNEntryDone: false }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -312,7 +326,8 @@ const addEditAdditionalEntryMaterialMapping = async (req, res) => {
 
         let responseData = {};
         if (reqData.productionRequisitionEntry.productionDetailId && reqData.productionRequisitionEntry.productionDetailId.trim() !== '') {
-            const response = await productionRequisitionEntryModel.findByIdAndUpdate(reqData.productionRequisitionEntry.productionDetailId, reqData.productionRequisitionEntry, { new: true });
+            let prodRequisitionDet = await productionRequisitionEntryModel()
+            const response = await prodRequisitionDet.findByIdAndUpdate(reqData.productionRequisitionEntry.productionDetailId, reqData.productionRequisitionEntry, { new: true });
             if (response) {
                 responseData.productionRequisitionDetails = response;
             } else {
@@ -322,7 +337,8 @@ const addEditAdditionalEntryMaterialMapping = async (req, res) => {
 
             let nextSlipno = 'AR001';
 
-            const lastRecord = await productionRequisitionEntryModel
+            let prodRequisitionDet = await productionRequisitionEntryModel()
+            const lastRecord = await prodRequisitionDet
                 .findOne()
                 .sort({ slipNo: -1 })
                 .select('slipNo')
@@ -338,14 +354,16 @@ const addEditAdditionalEntryMaterialMapping = async (req, res) => {
 
             reqData.productionRequisitionEntry.slipNo = nextSlipno;
 
-            const response = new productionRequisitionEntryModel(reqData.productionRequisitionEntry);
+            let prodRequisitionDetModel = await productionRequisitionEntryModel()
+            const response = new prodRequisitionDetModel(reqData.productionRequisitionEntry);
             await response.save();
             responseData.productionRequisitionDetails = response;
         }
 
         if (reqData.productionRequisitionMaterialDetails.productionMaterialDetailId && reqData.productionRequisitionMaterialDetails.productionMaterialDetailId.trim() !== '') {
             reqData.productionRequisitionMaterialDetails.additionalEntryDetailsId = responseData.productionRequisitionDetails._id
-            const response = await additionalEntryMaterialDetailsModel.findByIdAndUpdate(reqData.productionRequisitionMaterialDetails.productionMaterialDetailId, reqData.productionRequisitionMaterialDetails, { new: true });
+            let addEntryDetModel = await additionalEntryMaterialDetailsModel()
+            const response = await addEntryDetModel.findByIdAndUpdate(reqData.productionRequisitionMaterialDetails.productionMaterialDetailId, reqData.productionRequisitionMaterialDetails, { new: true });
             if (response) {
                 responseData.materialDetails = response;
             } else {
@@ -353,7 +371,8 @@ const addEditAdditionalEntryMaterialMapping = async (req, res) => {
             }
         } else {
             reqData.productionRequisitionMaterialDetails.additionalEntryDetailsId = responseData.productionRequisitionDetails._id
-            const response = new additionalEntryMaterialDetailsModel(reqData.productionRequisitionMaterialDetails);
+            let addEntryDetModel = await additionalEntryMaterialDetailsModel()
+            const response = new addEntryDetModel(reqData.productionRequisitionMaterialDetails);
             await response.save();
             responseData.materialDetails = response;
         }
@@ -381,7 +400,8 @@ const getAllAdditionalEntryMaterialDetailsById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = []
         if (reqId) {
-            response = await additionalEntryMaterialDetailsModel
+            let addEntryDetModel = await additionalEntryMaterialDetailsModel()
+            response = await addEntryDetModel
                 .find({ additionalEntryDetailsId: reqId, isDeleted: false })
                 .populate({
                     path: 'rawMaterialId',
@@ -424,7 +444,8 @@ const getAllAdditionalEntryList = async (req, res) => {
             queryObject.materialType = data.materialType
         }
 
-        let response = await productionRequisitionEntryModel
+        let prodRequisitionDetModel = await productionRequisitionEntryModel()
+        let response = await prodRequisitionDetModel
             .find(queryObject)
             .sort(filterBy);
 
@@ -457,7 +478,8 @@ const deleteAdditionalEntryDetailsById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await productionRequisitionEntryModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let prodRequisitionDetModel = await productionRequisitionEntryModel()
+            response = await prodRequisitionDetModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -482,7 +504,8 @@ const deleteAdditionalEntryMaterialDetailsById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await additionalEntryMaterialDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let addEntryDetModel = await additionalEntryMaterialDetailsModel()
+            response = await addEntryDetModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -510,7 +533,8 @@ const addEditPurchaseOrderDetails = async (req, res) => {
 
         let responseData = {};
         if (reqData.purchaseOrderId && reqData.purchaseOrderId.trim() !== '') {
-            const response = await purchaseOrderDetailsModel.findByIdAndUpdate(reqData.purchaseOrderId, reqData, { new: true });
+            let podModel = await purchaseOrderDetailsModel()
+            const response = await podModel.findByIdAndUpdate(reqData.purchaseOrderId, reqData, { new: true });
             if (response) {
                 responseData = encryptionAPI(response, 1)
                 res.status(200).json({
@@ -526,7 +550,8 @@ const addEditPurchaseOrderDetails = async (req, res) => {
 
             let nextOrderNo = 'P0001';
 
-            const lastRecord = await purchaseOrderDetailsModel
+            let podModel = await purchaseOrderDetailsModel()
+            const lastRecord = await podModel
                 .findOne()
                 .sort({ purchaseOrderNo: -1 })
                 .select('purchaseOrderNo')
@@ -540,7 +565,8 @@ const addEditPurchaseOrderDetails = async (req, res) => {
             reqData.purchaseOrderNo = nextOrderNo;
             reqData.purchaseOrderDate = new Date();
 
-            const response = new purchaseOrderDetailsModel(reqData);
+            let podModel1 = await purchaseOrderDetailsModel()
+            const response = new podModel1(reqData);
             await response.save();
 
             responseData = encryptionAPI(response, 1)
@@ -581,7 +607,8 @@ const getAllPurchaseOrders = async (req, res) => {
             queryObject.status = data.status
         }
 
-        let response = await purchaseOrderDetailsModel
+        let podModel = await purchaseOrderDetailsModel()
+        let response = await podModel
             .find(queryObject)
             .sort(filterBy)
             .populate({
@@ -618,7 +645,8 @@ const addEditPurchaserOrderMaterialDetails = async (req, res) => {
         let reqData = getRequestData(data, 'PostApi')
         let responseData = {};
         if (reqData.purchaseOrderMaterialDetialId && reqData.purchaseOrderMaterialDetialId.trim() !== '') {
-            const response = await purchaserOrderMaterialDetailsModel.findByIdAndUpdate(reqData.purchaseOrderMaterialDetialId, reqData, { new: true });
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            const response = await pomDetailsModel.findByIdAndUpdate(reqData.purchaseOrderMaterialDetialId, reqData, { new: true });
             if (response) {
                 responseData = encryptionAPI(response, 1)
                 res.status(200).json({
@@ -631,8 +659,8 @@ const addEditPurchaserOrderMaterialDetails = async (req, res) => {
                 });
             }
         } else {
-
-            const response = new purchaserOrderMaterialDetailsModel(reqData);
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            const response = new pomDetailsModel(reqData);
             await response.save();
 
             responseData = encryptionAPI(response, 1)
@@ -660,7 +688,8 @@ const getPurchaseOrderMaterialDetailsByPurchaseOrderId = async (req, res) => {
         let reqId = getRequestData(id)
         let response = []
         if (reqId) {
-            response = await purchaserOrderMaterialDetailsModel
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            response = await pomDetailsModel
                 .find({ purchaseOrderId: reqId, isDeleted: false })
                 .populate({
                     path: 'rawMaterialId',
@@ -694,7 +723,8 @@ const deletePurchaseOrderDetailsById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await purchaseOrderDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let podModel = await purchaseOrderDetailsModel()
+            response = await podModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -719,7 +749,8 @@ const deletepurchaseOrderMaterialDetialsById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await purchaserOrderMaterialDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            response = await pomDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -745,12 +776,14 @@ const sendPurchaseOrderMail = async (req, res) => {
 
         if (reqData.partyId._id) {
             let id = reqData.partyId._id
-            let partyDetails = await partyModel.findOne({ _id: id }).select("partyName person");
+            let pModel = await partyModel()
+            let partyDetails = await pModel.findOne({ _id: id }).select("partyName person");
 
-            const EmailTemplate = await emailTemplateModel.findOne({ emailTemplateId: 1 });
+            let etModel = await emailTemplateModel()
+            const EmailTemplate = await etModel.findOne({ emailTemplateId: 1 });
 
-            console.log(EmailTemplate)
-            let purchaseMaterial = await purchaserOrderMaterialDetailsModel
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            let purchaseMaterial = await pomDetailsModel
                 .find({ purchaseOrderId: reqData.purchaseOrderId, isDeleted: false })
                 .populate({
                     path: 'rawMaterialId',
@@ -809,7 +842,8 @@ const sendPurchaseOrderMail = async (req, res) => {
                 let reqeust = {
                     status: 'Email Sent'
                 }
-                const response = await purchaseOrderDetailsModel.findByIdAndUpdate(reqData.purchaseOrderId, reqeust, { new: true });
+                let podModel = await purchaseOrderDetailsModel()
+                const response = await podModel.findByIdAndUpdate(reqData.purchaseOrderId, reqeust, { new: true });
                 if (response) {
                     let responseData = encryptionAPI(response, 1)
                     res.status(200).json({
@@ -835,7 +869,8 @@ const approvePurchaseOrderByPurchaseId = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await purchaseOrderDetailsModel.findByIdAndUpdate(reqId, { status: 'Order Approved' }, { new: true, useFindAndModify: false });
+            let podModel = await purchaseOrderDetailsModel()
+            response = await podModel.findByIdAndUpdate(reqId, { status: 'Order Approved' }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -860,7 +895,8 @@ const addEditInquiryDetails = async (req, res) => {
         let reqData = getRequestData(data, 'PostApi')
         let responseData = {};
         if (reqData.inquiryEntryDetails.inquiryId && reqData.inquiryEntryDetails.inquiryId.trim() !== '') {
-            const response = await inquiryDetailsModel.findByIdAndUpdate(reqData.inquiryEntryDetails.inquiryId, reqData.inquiryEntryDetails, { new: true });
+            let idModel = await inquiryDetailsModel();
+            const response = await idModel.findByIdAndUpdate(reqData.inquiryEntryDetails.inquiryId, reqData.inquiryEntryDetails, { new: true });
             if (response) {
                 responseData.inquiryEntryDetails = response;
             } else {
@@ -869,7 +905,8 @@ const addEditInquiryDetails = async (req, res) => {
         } else {
             let nextInquiryNo = 'IQR0001';
 
-            const lastRecord = await inquiryDetailsModel
+            let idModel = await inquiryDetailsModel();
+            const lastRecord = await idModel
                 .findOne()
                 .sort({ inquiryNo: -1 })
                 .select('inquiryNo')
@@ -882,14 +919,16 @@ const addEditInquiryDetails = async (req, res) => {
 
             reqData.inquiryEntryDetails.inquiryNo = nextInquiryNo;
 
-            const response = new inquiryDetailsModel(reqData.inquiryEntryDetails);
+            let idModel1 = await inquiryDetailsModel();
+            const response = new idModel1(reqData.inquiryEntryDetails);
             await response.save();
             responseData.inquiryEntryDetails = response;
         }
 
         if (reqData.inquiryMaterialDetails.inquiryMaterialDetailsId && reqData.inquiryMaterialDetails.inquiryMaterialDetailsId.trim() !== '') {
             reqData.inquiryMaterialDetails.inquiryId = responseData.inquiryEntryDetails._id
-            const response = await inquiryMaterialDetailsModel.findByIdAndUpdate(reqData.inquiryMaterialDetails.inquiryMaterialDetailsId, reqData.inquiryMaterialDetails, { new: true });
+            let iqmDetailsModel = await inquiryMaterialDetailsModel();
+            const response = await iqmDetailsModel.findByIdAndUpdate(reqData.inquiryMaterialDetails.inquiryMaterialDetailsId, reqData.inquiryMaterialDetails, { new: true });
             if (response) {
                 responseData.materialDetails = response;
             } else {
@@ -897,7 +936,8 @@ const addEditInquiryDetails = async (req, res) => {
             }
         } else {
             reqData.inquiryMaterialDetails.inquiryId = responseData.inquiryEntryDetails._id
-            const response = new inquiryMaterialDetailsModel(reqData.inquiryMaterialDetails);
+            let iqmDetailsModel = await inquiryMaterialDetailsModel();
+            const response = new iqmDetailsModel(reqData.inquiryMaterialDetails);
             await response.save();
             responseData.materialDetails = response;
         }
@@ -940,7 +980,8 @@ const getallInquiryDetails = async (req, res) => {
         if (reqData.inquiryDate && reqData.inquiryDate.trim() !== '') {
             queryObject.inquiryDate = reqData.inquiryDate
         }
-        let response = await inquiryDetailsModel
+        let idModel = await inquiryDetailsModel();
+        let response = await idModel
             .find(queryObject);
 
         let encryptData = encryptionAPI(response, 1)
@@ -966,7 +1007,8 @@ const getAllInquiryMaterialDetailsByInquiryId = async (req, res) => {
         let reqId = getRequestData(id)
         let response = []
         if (reqId) {
-            response = await inquiryMaterialDetailsModel
+            let iqmDetailsModel = await inquiryMaterialDetailsModel();
+            response = await iqmDetailsModel
                 .find({ inquiryId: reqId, isDeleted: false })
                 .populate({
                     path: 'rawMaterialId',
@@ -1001,7 +1043,8 @@ const deleteInquiryDetailsById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await inquiryDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let idModel = await inquiryDetailsModel();
+            response = await idModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -1027,7 +1070,8 @@ const deleteInquiryMaterialDetailsById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await inquiryMaterialDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let iqmDetailsModel = await inquiryMaterialDetailsModel();
+            response = await iqmDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -1053,7 +1097,8 @@ const sendInquiryToCompany = async (req, res) => {
         let reqData = getRequestData(data, 'PostApi')
 
         if (reqData.inquiryId) {
-            let inquiryMaterialList = await inquiryMaterialDetailsModel
+            let iqmDetailsModel = await inquiryMaterialDetailsModel();
+            let inquiryMaterialList = await iqmDetailsModel
                 .find({ inquiryId: reqData.inquiryId, isDeleted: false })
                 .populate({
                     path: 'rawMaterialId',
@@ -1064,7 +1109,8 @@ const sendInquiryToCompany = async (req, res) => {
                     select: 'pmName pmUOM _id',
                 });
 
-            const EmailTemplate = await emailTemplateModel.findOne({ emailTemplateId: 2 });
+            let etModel = await emailTemplateModel()
+            const EmailTemplate = await etModel.findOne({ emailTemplateId: 2 });
 
             const tableRows = inquiryMaterialList && inquiryMaterialList.length > 0
                 ? inquiryMaterialList.map(material => `
@@ -1094,7 +1140,8 @@ const sendInquiryToCompany = async (req, res) => {
             let reqeust = {
                 status: 'Email Sent'
             }
-            const response = await inquiryDetailsModel.findByIdAndUpdate(reqData.inquiryId, reqeust, { new: true });
+            let idModel = await inquiryDetailsModel();
+            const response = await idModel.findByIdAndUpdate(reqData.inquiryId, reqeust, { new: true });
 
             let encryptData = encryptionAPI(response, 1)
 
@@ -1146,7 +1193,8 @@ const getAllGoodsRegistered = async (req, res) => {
             }
 
         }
-        let response = await grnEntryMaterialDetailsModel
+        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let response = await gemDetailsModel
             .find(queryObject)
             .populate({
                 path: 'rawMaterialId',
@@ -1215,7 +1263,8 @@ const getAllMaterialWisePurchaseReport = async (req, res) => {
             }
         }
 
-        let response = await purchaserOrderMaterialDetailsModel
+        let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+        let response = await pomDetailsModel
             .find(queryObject)
             .populate({
                 path: 'rawMaterialId',
@@ -1273,8 +1322,10 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
             queryObject.packageMaterialId = { $exists: true, $ne: null };
             queryObject.rawMaterialId = null;
         }
-        let response = await grnEntryMaterialDetailsModel
+        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let response = await gemDetailsModel
             .find(queryObject)
+            .select('rawMaterialId packageMaterialId grnEntryPartyDetailId qty rate amount')
             .populate({
                 path: 'rawMaterialId',
                 select: 'rmName rmCategory rmUOM _id',
@@ -1319,6 +1370,7 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
             }
         }
 
+        console.log(response)
         let encryptData = encryptionAPI(response, 1)
 
 
@@ -1352,7 +1404,8 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
             queryObject.packageMaterialId = reqData.item._id
         }
 
-        let response = await grnEntryMaterialDetailsModel
+        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let response = await gemDetailsModel
             .find(queryObject)
             .populate({
                 path: 'rawMaterialId',
@@ -1380,7 +1433,8 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         if (reqData.materialType === 'Raw Material') {
             queryObject1.rmName = reqData.item.rmName
 
-            responseFromUsedQty = await ProductionRequisitionRMFormulaModel
+            let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
+            responseFromUsedQty = await prRMFormulaModel
                 .find(queryObject1)
                 .populate({
                     path: 'productDetialsId',
@@ -1395,7 +1449,8 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         if (reqData.materialType === 'Packing Material') {
             queryObject1.pmName = reqData.item.pmName
 
-            responseFromUsedQty = await PackingRequisitionPMFormulaModel
+            let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+            responseFromUsedQty = await prPMFormualModel
                 .find(queryObject1)
                 .populate({
                     path: 'productDetialsId',
@@ -1420,7 +1475,8 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         if (reqData.materialType === 'Raw Material') {
             queryObject1.rmName = reqData.item.rmName
 
-            responseFromUsedGSTInvoice = await gstinvoiceRMItemModel
+            let giRMItemModel = await gstinvoiceRMItemModel()
+            responseFromUsedGSTInvoice = await giRMItemModel
                 .find({ itemId: reqData.item._id, isDeleted: false })
                 .populate({
                     path: 'gstInvoiceRMID',
@@ -1444,8 +1500,8 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
                 isGSTInvoiceRecord: true,
             };
         });
-        console.log(responseFromUsedQty)
-        console.log(responseFromUsedGSTInvoice)
+        // console.log(responseFromUsedQty)
+        // console.log(responseFromUsedGSTInvoice)
 
         let combinedResponse = [...response, ...responseFromUsedQty, ...responseFromUsedGSTInvoice];
         let encryptData = encryptionAPI(combinedResponse, 1)
@@ -1481,7 +1537,8 @@ const getAllShourtageReport = async (req, res) => {
             queryObject.packageMaterialId = { $exists: true, $ne: null };
         }
 
-        let response = await grnEntryMaterialDetailsModel
+        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let response = await gemDetailsModel
             .find(queryObject)
             .populate({
                 path: 'rawMaterialId',
@@ -1554,7 +1611,8 @@ const getAllNearExpiryReport = async (req, res) => {
             queryObject.packageMaterialId = { $exists: true, $ne: null };
         }
 
-        let response = await grnEntryMaterialDetailsModel
+        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let response = await gemDetailsModel
             .find(queryObject)
             .populate({
                 path: 'rawMaterialId',
@@ -1639,7 +1697,8 @@ const getAllPurchaseOrderRegister = async (req, res) => {
             status.push('Order Created', 'Email Sent', 'Order Approved');
         }
 
-        let response = await purchaserOrderMaterialDetailsModel
+        let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+        let response = await pomDetailsModel
             .find(queryObject)
             .populate({
                 path: 'rawMaterialId',

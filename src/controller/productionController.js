@@ -16,7 +16,8 @@ const addEditProductionPlanningEntry = async (req, res) => {
     let reqData = getRequestData(apiData, "PostApi");
     let responseData = {};
 
-    const stage = await ProductionStagesModel.findOne({
+    let psModel = await ProductionStagesModel()
+    const stage = await psModel.findOne({
       productionStageId: reqData.productionStageId,
       isDeleted: false,
     });
@@ -24,7 +25,8 @@ const addEditProductionPlanningEntry = async (req, res) => {
     reqData.productionStageStatusId = stage._id;
 
     if (reqData.productDetialsId && reqData.productDetialsId.trim() !== "") {
-      const response = await productionPlanningEntryModel.findByIdAndUpdate(
+      let ppeModel = await productionPlanningEntryModel()
+      const response = await ppeModel.findByIdAndUpdate(
         reqData.productDetialsId,
         reqData,
         { new: true }
@@ -43,7 +45,8 @@ const addEditProductionPlanningEntry = async (req, res) => {
     } else {
       let nextProductionNo = "P0001";
 
-      const lastRecord = await productionPlanningEntryModel
+      let ppeModel = await productionPlanningEntryModel()
+      const lastRecord = await ppeModel
         .findOne()
         .sort({ productionNo: -1 })
         .select("productionNo")
@@ -58,7 +61,8 @@ const addEditProductionPlanningEntry = async (req, res) => {
 
       reqData.productionPlanningDate = new Date();
 
-      const response = new productionPlanningEntryModel(reqData);
+      let ppeModel1 = await productionPlanningEntryModel()
+      const response = new ppeModel1(reqData);
       await response.save();
 
       responseData = encryptionAPI(response, 1);
@@ -93,7 +97,8 @@ const getAllProductionPlanningEntry = async (req, res) => {
     }
 
     if (Array.isArray(data.productionStageId) && data.productionStageId.length > 0) {
-      const stages = await ProductionStagesModel.find({
+      let psModel = await ProductionStagesModel()
+      const stages = await psModel.find({
         productionStageId: { $in: data.productionStageId },
         isDeleted: false,
       });
@@ -108,7 +113,8 @@ const getAllProductionPlanningEntry = async (req, res) => {
       queryObject.productionStageStatusId = { $in: [] };
     }
 
-    let response = await productionPlanningEntryModel
+    let ppeModel = await productionPlanningEntryModel()
+    let response = await ppeModel
       .find(queryObject)
       .sort(filterBy)
       .populate({
@@ -170,7 +176,8 @@ const getProductionPlanningEntryById = async (req, res) => {
     let reqId = getRequestData(id);
     let response = [];
     if (reqId) {
-      response = await productionPlanningEntryModel
+      let ppeModel = await productionPlanningEntryModel()
+      response = await ppeModel
         .findOne({
           _id: reqId,
           isDeleted: false,
@@ -206,18 +213,21 @@ const deleteProductionPlanningEntryById = async (req, res) => {
     let reqId = getRequestData(id);
     let response = {};
     if (reqId) {
-      response = await productionPlanningEntryModel.findByIdAndUpdate(
+      let ppeModel = await productionPlanningEntryModel()
+      response = await ppeModel.findByIdAndUpdate(
         reqId,
         { isDeleted: true },
         { new: true, useFindAndModify: false }
       );
     }
 
-    await PackingRequisitionPMFormulaModel.deleteMany({
+    let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+    await prPMFormualModel.deleteMany({
       _id: reqId,
     });
 
-    await ProductionRequisitionRMFormulaModel.deleteMany({
+    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
+    await prRMFormulaModel.deleteMany({
       _id: reqId,
     });
 
@@ -248,11 +258,13 @@ const getRMFormulaForProductionById = async (req, res) => {
       rawMaterialId: { $ne: null },
     };
 
-    const formulaResponse = await rmFormulaModel
+    let rmFModel = await rmFormulaModel()
+    const formulaResponse = await rmFModel
       .find({ productId: reqId, isDeleted: false })
       .select('qty netQty rmName uom stageName');
 
-    const grnEntryForStock = await grnEntryMaterialDetailsModel
+    let gemDetailsModel = await grnEntryMaterialDetailsModel();
+    const grnEntryForStock = await gemDetailsModel
       .find(queryObject)
       .populate({
         path: 'rawMaterialId',
@@ -364,12 +376,14 @@ const productionRequisitionRMFormulaListing = async (req, res) => {
     let reqData = getRequestData(apiData, "PostApi");
     let responseData = {};
 
-    const existingRecords = await ProductionRequisitionRMFormulaModel.find({
+    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
+    const existingRecords = await prRMFormulaModel.find({
       productId: reqData.productId,
     });
 
+    let prRMFormulaModel1 = await ProductionRequisitionRMFormulaModel();
     if (existingRecords && existingRecords.length > 0) {
-      await ProductionRequisitionRMFormulaModel.deleteMany({
+      await prRMFormulaModel1.deleteMany({
         productId: reqData.productId,
       });
       console.log(`Deleted existing records for productId: ${reqData.productId}`);
@@ -379,7 +393,8 @@ const productionRequisitionRMFormulaListing = async (req, res) => {
       ...item,
       productId: reqData.productId,
     }));
-    const result = await ProductionRequisitionRMFormulaModel.insertMany(newRecords);
+    let prRMFormulaModel2 = await ProductionRequisitionRMFormulaModel();
+    const result = await prRMFormulaModel2.insertMany(newRecords);
 
     responseData = encryptionAPI(result, 1);
 
@@ -404,7 +419,8 @@ const getProductionRMFOrmulaByProductionDetailsId = async (req, res) => {
     const { id } = req.query;
     let reqId = getRequestData(id)
 
-    const response = await ProductionRequisitionRMFormulaModel
+    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
+    const response = await prRMFormulaModel
       .find({ productDetialsId: reqId, isDeleted: false });
 
     let encryptData = encryptionAPI(response, 1);
@@ -435,11 +451,13 @@ const getPMFormulaByPackingItemId = async (req, res) => {
       packageMaterialId: { $ne: null },
     };
 
-    const formulaResponse = await pmFormulaModel
+    let pmfModel = await pmFormulaModel()
+    const formulaResponse = await pmfModel
       .find({ itemId: reqId, isDeleted: false })
       .select('qty netQty pmName uom stageName');
 
-    const grnEntryForStock = await grnEntryMaterialDetailsModel
+      let gemDetailsModel = await grnEntryMaterialDetailsModel();
+    const grnEntryForStock = await gemDetailsModel
       .find(queryObject)
       .populate({
         path: 'packageMaterialId',
@@ -497,12 +515,14 @@ const packingRequisitionPMFormulaListing = async (req, res) => {
     let reqData = getRequestData(apiData, "PostApi");
     let responseData = {};
 
-    const existingRecords = await PackingRequisitionPMFormulaModel.find({
+    let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+    const existingRecords = await prPMFormualModel.find({
       packingItemId: reqData.packingItemId,
     });
 
     if (existingRecords && existingRecords.length > 0) {
-      await PackingRequisitionPMFormulaModel.deleteMany({
+      let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+      await prPMFormualModel.deleteMany({
         packingItemId: reqData.packingItemId,
       });
       console.log(`Deleted existing records for packingItemId: ${reqData.packingItemId}`);
@@ -513,7 +533,8 @@ const packingRequisitionPMFormulaListing = async (req, res) => {
       packingItemId: reqData.packingItemId,
     }));
 
-    const result = await PackingRequisitionPMFormulaModel.insertMany(newRecords);
+    let prPMFormualModel1 = await PackingRequisitionPMFormulaModel()
+    const result = await prPMFormualModel1.insertMany(newRecords);
 
     responseData = encryptionAPI(result, 1);
 
@@ -538,7 +559,8 @@ const getProductionPMFOrmulaByProductionDetailsId = async (req, res) => {
     const { id } = req.query;
     let reqId = getRequestData(id)
 
-    const response = await PackingRequisitionPMFormulaModel
+    let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+    const response = await prPMFormualModel
       .find({ productDetialsId: reqId, isDeleted: false });
 
     let encryptData = encryptionAPI(response, 1);
@@ -565,7 +587,9 @@ const addEditBatchClearingEntry = async (req, res) => {
     let responseData = {};
 
     if (reqData.batchClearingId && reqData.batchClearingId.trim() !== "") {
-      const response = await batchClearingEntryModel.findByIdAndUpdate(
+
+      let batchClrModel = await batchClearingEntryModel()
+      const response = await batchClrModel.findByIdAndUpdate(
         reqData.batchClearingId,
         reqData,
         { new: true }
@@ -583,7 +607,8 @@ const addEditBatchClearingEntry = async (req, res) => {
       }
     } else {
 
-      const response = new batchClearingEntryModel(reqData);
+      let batchClrModel = await batchClearingEntryModel()
+      const response = new batchClrModel(reqData);
       await response.save();
 
       responseData = encryptionAPI(response, 1);
@@ -609,7 +634,8 @@ const getBatchClearingEntryByProductId = async (req, res) => {
     let reqId = getRequestData(id);
     let response = [];
     if (reqId) {
-      response = await batchClearingEntryModel
+      let batchClrModel = await batchClearingEntryModel()
+      response = await batchClrModel
         .find({
           productDetialsId: reqId,
           isDeleted: false,
@@ -643,7 +669,8 @@ const getAllBatchClearedRecords = async (req, res) => {
       isDeleted: false,
     };
 
-    let response = await batchClearingEntryModel
+    let batchClrModel = await batchClearingEntryModel()
+    let response = await batchClrModel
       .find(queryObject)
       // .sort(filterBy)
       .populate({
@@ -704,7 +731,8 @@ const getAllPendingProductionPlanningReport = async (req, res) => {
     };
 
     if (Array.isArray(data.productionStageId) && data.productionStageId.length > 0) {
-      const stages = await ProductionStagesModel.find({
+      let psModel = await ProductionStagesModel()
+      const stages = await psModel.find({
         productionStageId: { $in: data.productionStageId },
         isDeleted: false,
       });
@@ -719,7 +747,8 @@ const getAllPendingProductionPlanningReport = async (req, res) => {
       queryObject.productionStageStatusId = { $in: [] };
     }
 
-    let response = await productionPlanningEntryModel
+    let ppeModel = await productionPlanningEntryModel()
+    let response = await ppeModel
       .find(queryObject)
       .populate({
         path: "partyId",
@@ -775,7 +804,8 @@ const getAllProductionBatchRegister = async (req, res) => {
     }
 
     if (Array.isArray(data.productionStageId) && data.productionStageId.length > 0) {
-      const stages = await ProductionStagesModel.find({
+      let psModel = await ProductionStagesModel()
+      const stages = await psModel.find({
         productionStageId: { $in: data.productionStageId },
         isDeleted: false,
       });
@@ -790,7 +820,8 @@ const getAllProductionBatchRegister = async (req, res) => {
       queryObject.productionStageStatusId = { $in: [] };
     }
 
-    let response = await productionPlanningEntryModel
+    let ppeModel = await productionPlanningEntryModel()
+    let response = await ppeModel
       .find(queryObject)
       .sort(filterBy)
       .populate({
@@ -809,7 +840,8 @@ const getAllProductionBatchRegister = async (req, res) => {
     response = await Promise.all(
       response.map(async (item) => {
         let itemObject = item.toObject();
-        let batchClearDetails = await batchClearingEntryModel
+        let batchClrModel = await batchClearingEntryModel()
+        let batchClearDetails = await batchClrModel
           .find({ productDetialsId: itemObject._id })
           .populate({ path: "packingItemId", select: "UnitQuantity" });
 
@@ -874,7 +906,8 @@ const getAllJobChargeRecords = async (req, res) => {
       isDeleted: false,
     };
 
-    let response = await batchClearingEntryModel
+    let batchClrModel = await batchClearingEntryModel()
+    let response = await batchClrModel
       .find(queryObject)
       // .sort(filterBy)
       .populate({
@@ -938,7 +971,8 @@ const getProductCostingReport = async (req, res) => {
 
     let rmFormulaList = []
     if (data.productId) {
-      rmFormulaList = await rmFormulaModel
+      let rmFModel = await rmFormulaModel()
+      rmFormulaList = await rmFModel
         .find({ productId: data.productId, isDeleted: false })
         .select("netQty rmName uom")
         .populate({
@@ -949,7 +983,8 @@ const getProductCostingReport = async (req, res) => {
       rmFormulaList = await Promise.all(
         rmFormulaList.map(async (item) => {
           let itemObject = item.toObject();
-          const grnEntryForMaterial = await grnEntryMaterialDetailsModel.find({ rawMaterialId: itemObject.rmId });
+          let gemDetailsModel = await grnEntryMaterialDetailsModel();
+          const grnEntryForMaterial = await gemDetailsModel.find({ rawMaterialId: itemObject.rmId });
           const lastRecord = grnEntryForMaterial.at(-1);
           if (lastRecord) {
             itemObject.grnRate = lastRecord.rate;
@@ -967,7 +1002,8 @@ const getProductCostingReport = async (req, res) => {
 
     let pmFormulaList = []
     if (data.packingId) {
-      pmFormulaList = await pmFormulaModel
+      let pmfModel = await pmFormulaModel()
+      pmFormulaList = await pmfModel
         .find({ itemId: data.packingId, isDeleted: false })
         .select("netQty pmName uom batchSize")
         .populate({
@@ -978,7 +1014,8 @@ const getProductCostingReport = async (req, res) => {
       pmFormulaList = await Promise.all(
         pmFormulaList.map(async (item) => {
           let itemObject = item.toObject();
-          const grnEntryForMaterial = await grnEntryMaterialDetailsModel.find({ packageMaterialId: itemObject.packageMaterialId });
+          let gemDetailsModel = await grnEntryMaterialDetailsModel();
+          const grnEntryForMaterial = await gemDetailsModel.find({ packageMaterialId: itemObject.packageMaterialId });
           const lastRecord = grnEntryForMaterial.at(-1);
           if (lastRecord) {
             itemObject.grnRate = lastRecord.rate;
@@ -1019,7 +1056,8 @@ const getProductDetailsForBatchClearedByProductId = async (req, res) => {
     let reqId = getRequestData(id);
     let response = [];
     if (reqId) {
-      response = await batchClearingEntryModel
+      let batchClrModel = await batchClearingEntryModel()
+      response = await batchClrModel
         .find({
           productDetialsId: reqId,
           isDeleted: false,
@@ -1055,15 +1093,18 @@ const getBatchCostingReportRMFormulaId = async (req, res) => {
     const { id } = req.query;
     let reqId = getRequestData(id)
 
-    let response = await ProductionRequisitionRMFormulaModel.find({ productDetialsId: reqId, isDeleted: false });
+    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
+    let response = await prRMFormulaModel.find({ productDetialsId: reqId, isDeleted: false });
 
     response = await Promise.all(
       response.map(async (item) => {
         let itemObject = item.toObject();
 
-        const rmId = await rmFormulaModel.findOne({ rmName: item.rmName, isDeleted: false })
+        let rmFModel = await rmFormulaModel()
+        const rmId = await rmFModel.findOne({ rmName: item.rmName, isDeleted: false })
 
-        const grnEntryForMaterial = await grnEntryMaterialDetailsModel
+        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        const grnEntryForMaterial = await gemDetailsModel
           .find({ rawMaterialId: rmId.rmId })
           .populate({
             path: "grnEntryPartyDetailId",
@@ -1109,15 +1150,18 @@ const getBatchCostingReportPMFormulaById = async (req, res) => {
     const { id } = req.query;
     let reqId = getRequestData(id)
 
-    let response = await PackingRequisitionPMFormulaModel.find({ productDetialsId: reqId, isDeleted: false });
+    let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+    let response = await prPMFormualModel.find({ productDetialsId: reqId, isDeleted: false });
 
     response = await Promise.all(
       response.map(async (item) => {
         let itemObject = item.toObject();
 
-        const pmId = await pmFormulaModel.findOne({ pmName: item.pmName, isDeleted: false })
+        let pmfModel = await pmFormulaModel()
+        const pmId = await pmfModel.findOne({ pmName: item.pmName, isDeleted: false })
 
-        const grnEntryForMaterial = await grnEntryMaterialDetailsModel
+        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        const grnEntryForMaterial = await gemDetailsModel
           .find({ packageMaterialId: pmId.packageMaterialId })
           .populate({
             path: "grnEntryPartyDetailId",
@@ -1169,7 +1213,8 @@ const getAllMaterialRequirementReportForRM = async (req, res) => {
 
     let responseData = await Promise.all(
       data.map(async (item) => {
-        const formulas = await rmFormulaModel
+        let rmFModel = await rmFormulaModel()
+        const formulas = await rmFModel
           .find({ productId: item.productId, isDeleted: false })
           .select('qty netQty rmName uom stageName');
 
@@ -1197,7 +1242,8 @@ const getAllMaterialRequirementReportForRM = async (req, res) => {
       return acc;
     }, []);
 
-    const grnEntryForStock = await grnEntryMaterialDetailsModel
+    let gemDetailsModel = await grnEntryMaterialDetailsModel();
+    const grnEntryForStock = await gemDetailsModel
       .find(queryObject)
       .populate({
         path: 'rawMaterialId',
@@ -1316,7 +1362,8 @@ const getAllMaterialRequirementReportForPM = async (req, res) => {
 
     let responseData = await Promise.all(
       data.map(async (item) => {
-        const formulas = await pmFormulaModel
+        let pmfModel = await pmFormulaModel()
+        const formulas = await pmfModel
           .find({ itemId: item.packingId, isDeleted: false })
           .select('qty netQty pmName uom stageName batchSize');
 
@@ -1343,7 +1390,8 @@ const getAllMaterialRequirementReportForPM = async (req, res) => {
       return acc;
     }, []);
 
-    const grnEntryForStock = await grnEntryMaterialDetailsModel
+    let gemDetailsModel = await grnEntryMaterialDetailsModel();
+    const grnEntryForStock = await gemDetailsModel
       .find(queryObject)
       .populate({
         path: 'packageMaterialId',

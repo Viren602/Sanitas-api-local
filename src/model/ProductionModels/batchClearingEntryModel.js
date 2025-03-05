@@ -1,4 +1,8 @@
 import mongoose from "mongoose";
+import globals from "../../utils/globals.js";
+import connectToDatabase from "../../utils/dbConnection.js";
+import productionPlanningEntryModel from "./productionPlanningEntryModel.js";
+import companyItems from "../companyItems.js";
 
 const batchClearingEntrySchema = mongoose.Schema(
     {
@@ -12,13 +16,21 @@ const batchClearingEntrySchema = mongoose.Schema(
         pending: { type: Number, default: 0 },
         netQuantity: { type: Number, default: 0 },
         clearBatch: { type: Boolean, default: false },
+        isFromOpeningStock: { type: Boolean, default: false },
         isDeleted: { type: Boolean, default: false },
     },
     { timestamps: true }
 );
 
-const batchClearingEntryModel = mongoose.model(
-    "BatchClearningEntry",
-    batchClearingEntrySchema
-);
+const batchClearingEntryModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await productionPlanningEntryModel()
+    await companyItems()
+    return db.models.BatchClearningEntry || db.model("BatchClearningEntry", batchClearingEntrySchema);
+}
+
+// const batchClearingEntryModel = mongoose.model(
+//     "BatchClearningEntry",
+//     batchClearingEntrySchema
+// );
 export default batchClearingEntryModel;

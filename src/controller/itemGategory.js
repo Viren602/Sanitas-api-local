@@ -8,7 +8,8 @@ const addEditItemGategory = async (req, res) => {
     let reqData = req.body.data
     let data = getRequestData(reqData, 'PostApi')
     if (data._id && data._id.trim() !== '') {
-      const response = await ItemCategory.findByIdAndUpdate(data._id, data, { new: true });
+      let icModel = await ItemCategory()
+      const response = await icModel.findByIdAndUpdate(data._id, data, { new: true });
       if (response) {
 
         let encryptData = encryptionAPI(response, 1)
@@ -25,7 +26,8 @@ const addEditItemGategory = async (req, res) => {
         res.status(404).json({ Message: "Category not found" });
       }
     } else {
-      const response = new ItemCategory(data);
+      let icModel = await ItemCategory()
+      const response = new icModel(data);
       await response.save();
 
       let encryptData = encryptionAPI(response, 1)
@@ -52,7 +54,8 @@ const deleteCategoryById = async (req, res) => {
     let reqId = getRequestData(id)
     let response = {}
     if (reqId) {
-      response = await ItemCategory.findByIdAndDelete(reqId, { IsDeleted: true }, { new: true, useFindAndModify: false });
+      let icModel = await ItemCategory()
+      response = await icModel.findByIdAndDelete(reqId, { IsDeleted: true }, { new: true, useFindAndModify: false });
     }
 
     let encryptData = encryptionAPI(response, 1)
@@ -77,7 +80,8 @@ const addEditHSNCode = async (req, res) => {
     let apiData = req.body.data
     let data = getRequestData(apiData, 'PostApi')
     if (data._id && data._id.trim() !== '') {
-      const response = await HNSCodesScHema.findByIdAndUpdate(data._id, data, { new: true });
+      let hcModel = await HNSCodesScHema()
+      const response = await hcModel.findByIdAndUpdate(data._id, data, { new: true });
       if (response) {
 
         let encryptData = encryptionAPI(response, 1)
@@ -95,7 +99,8 @@ const addEditHSNCode = async (req, res) => {
         res.status(404).json({ Message: "HNSCode not found" });
       }
     } else {
-      const response = new HNSCodesScHema(data);
+      let hcModel = await HNSCodesScHema()
+      const response = new hcModel(data);
       await response.save();
 
       let encryptData = encryptionAPI(response, 1)
@@ -122,7 +127,8 @@ const deleteHSNCodeById = async (req, res) => {
     let reqId = getRequestData(id)
     let response = {}
     if (reqId) {
-      response = await HNSCodesScHema.findByIdAndDelete(reqId, { IsDeleted: true }, { new: true, useFindAndModify: false });
+      let hcModel = await HNSCodesScHema()
+      response = await hcModel.findByIdAndDelete(reqId, { IsDeleted: true }, { new: true, useFindAndModify: false });
     }
 
     let encryptData = encryptionAPI(response, 1)

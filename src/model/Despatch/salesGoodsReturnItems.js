@@ -1,5 +1,12 @@
 
 import mongoose from "mongoose";
+import connectToDatabase from "../../utils/dbConnection.js";
+import globals from "../../utils/globals.js";
+import salesGoodsReturnEntryModel from "./salesGoodsReturnEntryModel.js";
+import companyItems from "../companyItems.js";
+import HNSCodesScHema from "../hnsCode.js";
+import batchClearingEntryModel from "../ProductionModels/batchClearingEntryModel.js";
+import batchWiseProductStockModel from "./batchWiseProductStockModel.js";
 
 const salesGoodsReturnItemsSchema = mongoose.Schema({
     salesGoodsReturnId: { type: mongoose.Schema.Types.ObjectId, ref: "SalesGoodsReturnEntry" },
@@ -31,6 +38,15 @@ const salesGoodsReturnItemsSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const salesGoodsReturnItemsModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await salesGoodsReturnEntryModel()
+    await companyItems()
+    await HNSCodesScHema()
+    await batchClearingEntryModel()
+    await batchWiseProductStockModel()
+    return db.models.ItemsForSalesGoodsReturnItems || db.model("ItemsForSalesGoodsReturnItems", salesGoodsReturnItemsSchema);
+}
 
-const salesGoodsReturnItemsModel = mongoose.model("ItemsForSalesGoodsReturnItems", salesGoodsReturnItemsSchema)
+// const salesGoodsReturnItemsModel = mongoose.model("ItemsForSalesGoodsReturnItems", salesGoodsReturnItemsSchema)
 export default salesGoodsReturnItemsModel;

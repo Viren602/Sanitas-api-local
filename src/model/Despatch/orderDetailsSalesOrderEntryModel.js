@@ -1,4 +1,7 @@
 import mongoose from "mongoose";
+import connectToDatabase from "../../utils/dbConnection.js";
+import globals from "../../utils/globals.js";
+import partyModel from "../partiesModel.js";
 
 const orderDetailsSalesOrderEntrySchema = mongoose.Schema({
     partyId: { type: mongoose.Schema.Types.ObjectId, ref: "AccountMasters" },
@@ -8,6 +11,11 @@ const orderDetailsSalesOrderEntrySchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const orderDetailsSalesOrderEntryModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await partyModel()
+    return db.models.SalesOrderDetails || db.model("SalesOrderDetails", orderDetailsSalesOrderEntrySchema);
+}
 
-const orderDetailsSalesOrderEntryModel = mongoose.model("SalesOrderDetails", orderDetailsSalesOrderEntrySchema)
+// const orderDetailsSalesOrderEntryModel = mongoose.model("SalesOrderDetails", orderDetailsSalesOrderEntrySchema)
 export default orderDetailsSalesOrderEntryModel;

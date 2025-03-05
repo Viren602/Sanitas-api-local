@@ -1,5 +1,8 @@
 
 import mongoose from "mongoose";
+import globals from "../../utils/globals.js";
+import connectToDatabase from "../../utils/dbConnection.js";
+import partyModel from "../partiesModel.js";
 
 const generalDebitNoteSchema = mongoose.Schema({
     noteNo: { type: String, default: 0 },
@@ -39,6 +42,11 @@ const generalDebitNoteSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const generalDebitNoteModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await partyModel()
+    return db.models.GeneralDebitNote || db.model("GeneralDebitNote", generalDebitNoteSchema);
+}
 
-const generalDebitNoteModel = mongoose.model("GeneralDebitNote", generalDebitNoteSchema)
+// const generalDebitNoteModel = mongoose.model("GeneralDebitNote", generalDebitNoteSchema)
 export default generalDebitNoteModel;

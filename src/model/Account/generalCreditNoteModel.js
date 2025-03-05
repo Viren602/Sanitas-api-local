@@ -1,5 +1,8 @@
 
 import mongoose from "mongoose";
+import globals from "../../utils/globals.js";
+import connectToDatabase from "../../utils/dbConnection.js";
+import partyModel from "../partiesModel.js";
 
 const generalCreditNoteSchema = mongoose.Schema({
     noteNo: { type: String, default: 0 },
@@ -39,6 +42,11 @@ const generalCreditNoteSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const generalCreditNoteModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await partyModel()
+    return db.models.GeneralCreditNote || db.model("GeneralCreditNote", generalCreditNoteSchema);
+}
 
-const generalCreditNoteModel = mongoose.model("GeneralCreditNote", generalCreditNoteSchema)
+// const generalCreditNoteModel = mongoose.model("GeneralCreditNote", generalCreditNoteSchema)
 export default generalCreditNoteModel;

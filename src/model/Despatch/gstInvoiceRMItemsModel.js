@@ -1,5 +1,10 @@
 
 import mongoose from "mongoose";
+import connectToDatabase from "../../utils/dbConnection.js";
+import globals from "../../utils/globals.js";
+import gstInvoiceRMModel from "./gstInvoiceRMModel.js";
+import rawMaterialSchema from "../rawMaterialModel.js";
+import HNSCodesScHema from "../hnsCode.js";
 
 const gstInvoiceRMItemsSchema = mongoose.Schema({
     gstInvoiceRMID: { type: mongoose.Schema.Types.ObjectId, ref: "GSTInvoiceRM" },
@@ -23,6 +28,13 @@ const gstInvoiceRMItemsSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const gstinvoiceRMItemModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await gstInvoiceRMModel()
+    await rawMaterialSchema()
+    await HNSCodesScHema()
+    return db.models.ItemsForGSTInvoiceRM || db.model("ItemsForGSTInvoiceRM", gstInvoiceRMItemsSchema);
+}
 
-const gstinvoiceRMItemModel = mongoose.model("ItemsForGSTInvoiceRM", gstInvoiceRMItemsSchema)
+// const gstinvoiceRMItemModel = mongoose.model("ItemsForGSTInvoiceRM", gstInvoiceRMItemsSchema)
 export default gstinvoiceRMItemModel;

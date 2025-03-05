@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import connectToDatabase from "../../utils/dbConnection.js";
+import globals from "../../utils/globals.js";
 
 const ProductionStagesSchema = mongoose.Schema(
   {
@@ -9,8 +11,10 @@ const ProductionStagesSchema = mongoose.Schema(
   { timestamps: true }
 );
 
-const ProductionStagesModel = mongoose.model(
-  "ProductionStage",
-  ProductionStagesSchema
-);
+const ProductionStagesModel = async () => {
+  const db = await connectToDatabase(globals.Database);
+  return db.models.ProductionStage || db.model("ProductionStage", ProductionStagesSchema);
+}
+
+// const ProductionStagesModel = mongoose.model("ProductionStage", ProductionStagesSchema);
 export default ProductionStagesModel;

@@ -6,6 +6,10 @@ import pmFormulaModel from '../model/pmFormulaModel.js';
 import rawMaterialSchema from '../model/rawMaterialModel.js';
 import packingMaterialSchema from '../model/packingMaterialModel.js';
 import errorHandler from '../server/errorHandle.js';
+import grnEntryMaterialDetailsModel from '../model/InventoryModels/grnEntryMaterialDetailsModel.js';
+import partyModel from '../model/partiesModel.js';
+import batchClearingEntryModel from '../model/ProductionModels/batchClearingEntryModel.js';
+import batchWiseProductStockModel from '../model/Despatch/batchWiseProductStockModel.js';
 
 const importRMFormula = async (req, res) => {
     try {
@@ -17,7 +21,8 @@ const importRMFormula = async (req, res) => {
             .then(async (response) => {
                 for (let x = 0; x < response.length; x++) {
 
-                    const product = await productDetailsModel.findOne({ productCode: response[x].productCode });
+                    let pdModel = await productDetailsModel()
+                    const product = await pdModel.findOne({ productCode: response[x].productCode });
 
                     if (product) {
                         rmFormulaList.push({
@@ -42,11 +47,13 @@ const importRMFormula = async (req, res) => {
                             stkCode: response[x].stkCode,
                             stkName: response[x].stkName,
                         })
+                        console.log(`${x + 1}`)
                     } else {
                         console.log(`${x + 1} ProductCode ${response[x].productCode} not found in ProductModel`);
                     }
                 }
-                await rmFormulaModel.insertMany(rmFormulaList)
+                let rmFModel = await rmFormulaModel()
+                await rmFModel.insertMany(rmFormulaList)
             })
         res.send({ status: 200, success: true, msg: 'RM Formula CSV Imported Successfully' })
     } catch (error) {
@@ -64,8 +71,8 @@ const importPMFormula = async (req, res) => {
             .then(async (response) => {
                 for (let x = 0; x < response.length; x++) {
 
-                    const item = await companyItems.findOne({ ItemCode: response[x].itemCode });
-
+                    let cIModel = await companyItems()
+                    const item = await cIModel.findOne({ ItemCode: response[x].itemCode });
                     if (item) {
                         pmFormulaList.push({
                             itemId: item._id,
@@ -84,11 +91,14 @@ const importPMFormula = async (req, res) => {
                             stageName: response[x].stageName,
                             stat: response[x].stat,
                         })
+                        console.log(`${x + 1}`)
                     } else {
                         console.log(`${x + 1} ItemCode ${response[x].itemCode} not found in ItemModel`);
                     }
                 }
-                await pmFormulaModel.insertMany(pmFormulaList)
+
+                let pmfModel = await pmFormulaModel()
+                await pmfModel.insertMany(pmFormulaList)
             })
         res.send({ status: 200, success: true, msg: 'PM Formula CSV Imported Successfully' })
     } catch (error) {
@@ -102,11 +112,13 @@ const importRMFormulaWithRMId = async (req, res) => {
             isDeleted: false,
         };
 
-        const rawMaterials = await rawMaterialSchema.find(queryObject);
+        let rmModel = await rawMaterialSchema()
+        const rawMaterials = await rmModel.find(queryObject);
 
         await Promise.all(
             rawMaterials.map(async (rawMaterial) => {
-                const updateResult = await rmFormulaModel.updateMany(
+                let rmFModel = await rmFormulaModel()
+                const updateResult = await rmFModel.updateMany(
                     { itemCode: rawMaterial.rmCode },
                     { $set: { rmId: rawMaterial._id } }
                 );
@@ -135,12 +147,14 @@ const importPMFormulaWithRMId = async (req, res) => {
             isDeleted: false,
         };
 
-        const packingMaterials = await packingMaterialSchema.find(queryObject);
+        let mpModel = await packingMaterialSchema()
+        const packingMaterials = await mpModel.find(queryObject);
         let totalUpdatedRecords = 0;
 
         await Promise.all(
             packingMaterials.map(async (packingMaterial) => {
-                const updateResult = await pmFormulaModel.updateMany(
+                let pmfModel = await pmFormulaModel()
+                const updateResult = await pmfModel.updateMany(
                     { pmCode: packingMaterial.pmCode },
                     { $set: { packageMaterialId: packingMaterial._id } }
                 );
@@ -166,9 +180,170 @@ const importPMFormulaWithRMId = async (req, res) => {
     }
 };
 
+const rawMaterialOpeningStock = async (req, res) => {
+    try {
+
+        let openingStockList = [];
+        csvtojson()
+            .fromFile(req.file.path)
+            .then(async (response) => {
+                for (let x = 0; x < response.length; x++) {
+
+                    let cIModel = await rawMaterialSchema()
+                    const item = await cIModel.findOne({ rmName: response[x].rmName });
+                    if (item) {
+                        openingStockList.push({
+                            rawMaterialId: item._id,
+                            packageMaterialId: null,
+                            grnEntryPartyDetailId: null,
+                            batchNo: '-',
+                            qty: response[x].stock,
+                            rate: response[x].rate,
+                            amount: response[x].amount,
+                            mfgBy: '-',
+                            mfgDate: null,
+                            expDate: null,
+                            packing: '-',
+                            isPurchaseOrderEntry: null,
+                            isGSTPurchaseEntryRMPM: null,
+                            purchaseOrderId: null,
+                            purchaseOrdermaterialId: null,
+                            isOpeningStock: true,
+                            openingStockDate: new Date(),
+                            isDeleted: false,
+                        })
+                        // console.log(`Inserted`)
+                    } else {
+                        console.log(`${x + 1} raw material name ${response[x].rmName} not found in ItemModel`);
+                    }
+                }
+
+                let grnModel = await grnEntryMaterialDetailsModel()
+                await grnModel.insertMany(openingStockList)
+                console.log('Updated')
+            })
+        res.send({ status: 200, success: true, msg: 'Opening Stock RM CSV Imported Successfully' })
+    } catch (error) {
+        res.send({ status: 400, success: false, msg: error.message })
+    }
+}
+
+const packingMaterialOpeningStock = async (req, res) => {
+    try {
+
+        let openingStockList = [];
+        csvtojson()
+            .fromFile(req.file.path)
+            .then(async (response) => {
+                for (let x = 0; x < response.length; x++) {
+
+                    let cIModel = await packingMaterialSchema()
+                    const item = await cIModel.findOne({ pmName: response[x].pmName });
+                    if (item) {
+                        openingStockList.push({
+                            rawMaterialId: null,
+                            packageMaterialId: item._id,
+                            grnEntryPartyDetailId: null,
+                            batchNo: '-',
+                            qty: response[x].stock,
+                            rate: response[x].rate,
+                            amount: response[x].amount,
+                            mfgBy: '-',
+                            mfgDate: null,
+                            expDate: null,
+                            packing: '-',
+                            isPurchaseOrderEntry: null,
+                            isGSTPurchaseEntryRMPM: null,
+                            purchaseOrderId: null,
+                            purchaseOrdermaterialId: null,
+                            isOpeningStock: true,
+                            openingStockDate: new Date(),
+                            isDeleted: false,
+                        })
+                    } else {
+                        console.log(`${x + 1} Packing material name ${response[x].pmName} not found in ItemModel`);
+                    }
+                }
+
+                let grnModel = await grnEntryMaterialDetailsModel()
+                await grnModel.insertMany(openingStockList)
+                console.log('Updated')
+            })
+        res.send({ status: 200, success: true, msg: 'Opening Stock PM CSV Imported Successfully' })
+    } catch (error) {
+        res.send({ status: 400, success: false, msg: error.message })
+    }
+}
+
+const partyOpeningBalance = async (req, res) => {
+    try {
+        csvtojson()
+            .fromFile(req.file.path)
+            .then(async (response) => {
+                for (let x = 0; x < response.length; x++) {
+
+                    let pModel = await partyModel()
+                    const party = await pModel.findOne({ partyName: response[x].partyName });
+                    if (party) {
+                        let DRCR = response[x].closingBalanceDRCR === 'D' ? 'DR' : response[x].closingBalanceDRCR === 'C' ? 'CR' : ''
+                        await pModel.findOneAndUpdate(
+                            { partyName: party.partyName },
+                            { openBalance: response[x].closingBalance, openBalanceDRCR: DRCR },
+                            { new: true })
+                    } else {
+                        console.log(`${x + 1} Party Name ${response[x].partyName} not found`);
+                    }
+                }
+                console.log('Updated')
+            })
+        res.send({ status: 200, success: true, msg: 'Opening Stock PM CSV Imported Successfully' })
+    } catch (error) {
+        res.send({ status: 400, success: false, msg: error.message })
+    }
+}
+
+const productOpeningStock = async (req, res) => {
+    try {
+        csvtojson()
+            .fromFile(req.file.path)
+            .then(async (response) => {
+                for (let x = 0; x < response.length; x++) {
+                    let companyItemModel = await companyItems()
+                    const item = await companyItemModel.findOne({ ItemName: response[x].itemName });
+                    if (item) {
+                        let data = {
+                            productionNo: 0,
+                            batchClearingEntryId: null,
+                            productId: item._id,
+                            batchNo: response[x].batchNo,
+                            expDate: response[x].expDate,
+                            mfgDate: '',
+                            quantity: response[x].quantity,
+                            mrp: response[x].mrp,
+                        }
+                        let batchClrModel = await batchWiseProductStockModel()
+                        const BatchData = new batchClrModel(data);
+                        await BatchData.save();
+                        console.log('found')
+                    } else {
+                        console.log(`${x + 1} Party Name ${response[x].itemName} not found`);
+                    }
+                }
+                console.log('Updated')
+            })
+        res.send({ status: 200, success: true, msg: 'Opening Stock PM CSV Imported Successfully' })
+    } catch (error) {
+        res.send({ status: 400, success: false, msg: error.message })
+    }
+}
+
 export {
     importRMFormula,
     importPMFormula,
     importRMFormulaWithRMId,
-    importPMFormulaWithRMId
+    importPMFormulaWithRMId,
+    rawMaterialOpeningStock,
+    packingMaterialOpeningStock,
+    partyOpeningBalance,
+    productOpeningStock
 };

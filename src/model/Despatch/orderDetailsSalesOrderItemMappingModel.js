@@ -1,4 +1,8 @@
 import mongoose from "mongoose";
+import connectToDatabase from "../../utils/dbConnection.js";
+import globals from "../../utils/globals.js";
+import companyItems from "../companyItems.js";
+import orderDetailsSalesOrderEntryModel from "./orderDetailsSalesOrderEntryModel.js";
 
 const orderDetailsSalesOrderItemMappingSchema = mongoose.Schema({
     salesOrderId: { type: mongoose.Schema.Types.ObjectId, ref: "SalesOrderDetails" },
@@ -11,6 +15,12 @@ const orderDetailsSalesOrderItemMappingSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const orderDetailsSalesOrderItemMappingModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await companyItems()
+    await orderDetailsSalesOrderEntryModel()
+    return db.models.SalesOrderDetailsItemMapping || db.model("SalesOrderDetailsItemMapping", orderDetailsSalesOrderItemMappingSchema);
+}
 
-const orderDetailsSalesOrderItemMappingModel = mongoose.model("SalesOrderDetailsItemMapping", orderDetailsSalesOrderItemMappingSchema)
+// const orderDetailsSalesOrderItemMappingModel = mongoose.model("SalesOrderDetailsItemMapping", orderDetailsSalesOrderItemMappingSchema)
 export default orderDetailsSalesOrderItemMappingModel;

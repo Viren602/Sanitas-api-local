@@ -23,7 +23,8 @@ import accountGroupModel from "../model/accountGroupModel.js";
 const getReceiptEntryVoucherNo = async (req, res) => {
     try {
         let response = {}
-        let voucherNoRecord = await paymentReceiptEntryModel
+        let prEntryModel = await paymentReceiptEntryModel();
+        let voucherNoRecord = await prEntryModel
             .findOne({ isDeleted: false, voucherNo: /^R\d+$/ })
             .sort({ _id: -1 })
             .select('voucherNo');
@@ -64,17 +65,20 @@ const getAllPendingInvoiceByPartyId = async (req, res) => {
         let response = []
 
         if (reqId) {
-            const finishGoodsData = await gstInvoiceFinishGoodsModel
+            let gifgModel = await gstInvoiceFinishGoodsModel();
+            const finishGoodsData = await gifgModel
                 .find(queryObject)
                 .select('invoiceNo partyId invoiceDate pendingAmount grandTotal')
                 .lean();
 
-            const rmData = await gstInvoiceRMModel
+            let girModel = await gstInvoiceRMModel();
+            const rmData = await girModel
                 .find(queryObject)
                 .select('invoiceNo partyId invoiceDate pendingAmount grandTotal')
                 .lean();
 
-            const pmData = await gstInvoicePMModel
+            let gipModel = await gstInvoicePMModel();
+            const pmData = await gipModel
                 .find(queryObject)
                 .select('invoiceNo partyId invoiceDate pendingAmount grandTotal')
                 .lean();
@@ -122,7 +126,8 @@ const addEditReceiptEntry = async (req, res) => {
         let responseData = {}
         if (data.receiptDetails.paymentReceiptId && data.receiptDetails.paymentReceiptId.trim() !== '') {
             // Edit For Receipt Details
-            const response = await paymentReceiptEntryModel.findByIdAndUpdate(data.receiptDetails.paymentReceiptId, data.receiptDetails, { new: true });
+            let prEntryModel = await paymentReceiptEntryModel();
+            const response = await prEntryModel.findByIdAndUpdate(data.receiptDetails.paymentReceiptId, data.receiptDetails, { new: true });
             console.log(response)
             if (!response) {
                 responseData.receiptDetails = 'Party details not found';
@@ -137,16 +142,18 @@ const addEditReceiptEntry = async (req, res) => {
             }
             responseData.receiptDetails = response;
 
-
-            const existingAdjustments = await paymentAdjustmentListModel.find({ paymentReceiptId: response._id });
-
+            let paListModel = await paymentAdjustmentListModel();
+            const existingAdjustments = await paListModel.find({ paymentReceiptId: response._id });
+            let gifgModel = await gstInvoiceFinishGoodsModel();
+            let gipModel = await gstInvoicePMModel();
+            let girModel = await gstInvoiceRMModel();
             const revertPromises = existingAdjustments.map(item => {
                 let updates = [];
                 let paidAmount = item.adjAmount;
 
                 if (item.gstInvoiceFinishGoodsId) {
                     updates.push(
-                        gstInvoiceFinishGoodsModel.findByIdAndUpdate(
+                        gifgModel.findByIdAndUpdate(
                             item.gstInvoiceFinishGoodsId,
                             { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
                         )
@@ -154,7 +161,7 @@ const addEditReceiptEntry = async (req, res) => {
                 }
                 if (item.gstRMInvoiceId) {
                     updates.push(
-                        gstInvoiceRMModel.findByIdAndUpdate(
+                        girModel.findByIdAndUpdate(
                             item.gstRMInvoiceId,
                             { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
                         )
@@ -162,7 +169,7 @@ const addEditReceiptEntry = async (req, res) => {
                 }
                 if (item.gstPMInvoiceId) {
                     updates.push(
-                        gstInvoicePMModel.findByIdAndUpdate(
+                        gipModel.findByIdAndUpdate(
                             item.gstPMInvoiceId,
                             { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
                         )
@@ -174,13 +181,19 @@ const addEditReceiptEntry = async (req, res) => {
             await Promise.all(revertPromises);
 
             // Edit Adjustment Details
-            await paymentAdjustmentListModel.deleteMany({ paymentReceiptId: response._id });
+            let paListModel2 = await paymentAdjustmentListModel();
+            await paListModel2.deleteMany({ paymentReceiptId: response._id });
             const items = data.adjustmentDetailsList.map(item => ({
                 ...item,
                 paymentReceiptId: response._id
             }));
-            await paymentAdjustmentListModel.insertMany(items);
 
+            let paListModel1 = await paymentAdjustmentListModel();
+            await paListModel1.insertMany(items);
+
+            let gifgModel1 = await gstInvoiceFinishGoodsModel();
+            let gipModel1 = await gstInvoicePMModel();
+            let girModel1 = await gstInvoiceRMModel();
             // Re-Update Adjustment
             const updatePromises = data.adjustmentDetailsList.map(item => {
                 let updates = [];
@@ -188,7 +201,7 @@ const addEditReceiptEntry = async (req, res) => {
 
                 if (item.gstInvoiceFinishGoodsId) {
                     updates.push(
-                        gstInvoiceFinishGoodsModel.findByIdAndUpdate(
+                        gifgModel1.findByIdAndUpdate(
                             item.gstInvoiceFinishGoodsId,
                             { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
                         )
@@ -196,7 +209,7 @@ const addEditReceiptEntry = async (req, res) => {
                 }
                 if (item.gstRMInvoiceId) {
                     updates.push(
-                        gstInvoiceRMModel.findByIdAndUpdate(
+                        girModel1.findByIdAndUpdate(
                             item.gstRMInvoiceId,
                             { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
                         )
@@ -204,7 +217,7 @@ const addEditReceiptEntry = async (req, res) => {
                 }
                 if (item.gstPMInvoiceId) {
                     updates.push(
-                        gstInvoicePMModel.findByIdAndUpdate(
+                        gipModel1.findByIdAndUpdate(
                             item.gstPMInvoiceId,
                             { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
                         )
@@ -227,7 +240,8 @@ const addEditReceiptEntry = async (req, res) => {
 
         } else {
             // Add Receipt Details
-            const response = new paymentReceiptEntryModel(data.receiptDetails);
+            let prEntryModel = await paymentReceiptEntryModel();
+            const response = new prEntryModel(data.receiptDetails);
             await response.save();
 
             const items = data.adjustmentDetailsList.map(item => ({
@@ -236,8 +250,12 @@ const addEditReceiptEntry = async (req, res) => {
             }));
 
             // Add Adjustment Details
-            await paymentAdjustmentListModel.insertMany(items);
+            let paListModel = await paymentAdjustmentListModel();
+            await paListModel.insertMany(items);
 
+            let gifgMode = await gstInvoiceFinishGoodsModel();
+            let gipModel = await gstInvoicePMModel();
+            let girModel = await gstInvoiceRMModel();
             // Update Amounts in GST Invoices
             const updatePromises = data.adjustmentDetailsList.map(item => {
                 const updates = [];
@@ -245,7 +263,7 @@ const addEditReceiptEntry = async (req, res) => {
 
                 if (item.gstInvoiceFinishGoodsId) {
                     updates.push(
-                        gstInvoiceFinishGoodsModel.findByIdAndUpdate(
+                        gifgMode.findByIdAndUpdate(
                             item.gstInvoiceFinishGoodsId,
                             { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
                         )
@@ -253,7 +271,7 @@ const addEditReceiptEntry = async (req, res) => {
                 }
                 if (item.gstRMInvoiceId) {
                     updates.push(
-                        gstInvoiceRMModel.findByIdAndUpdate(
+                        girModel.findByIdAndUpdate(
                             item.gstRMInvoiceId,
                             { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
                         )
@@ -261,7 +279,7 @@ const addEditReceiptEntry = async (req, res) => {
                 }
                 if (item.gstPMInvoiceId) {
                     updates.push(
-                        gstInvoicePMModel.findByIdAndUpdate(
+                        gipModel.findByIdAndUpdate(
                             item.gstPMInvoiceId,
                             { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
                         )
@@ -304,7 +322,8 @@ const getAllReceiptEntry = async (req, res) => {
             sortOption = { [data.arrangedBy]: 1 };
         }
 
-        let response = await paymentReceiptEntryModel.aggregate([
+        let prEntryModel = await paymentReceiptEntryModel();
+        let response = await prEntryModel.aggregate([
             { $match: queryObject },
             {
                 $lookup: {
@@ -359,10 +378,12 @@ const getReceiptDetailsByReceiptId = async (req, res) => {
         let response = {}
 
         if (reqId) {
-            let receiptDetails = await paymentReceiptEntryModel.findOne({ isDeleted: false, _id: reqId })
+            let prEntryModel = await paymentReceiptEntryModel();
+            let receiptDetails = await prEntryModel.findOne({ isDeleted: false, _id: reqId })
             response.receiptDetails = receiptDetails
 
-            let adjustmentDetailsList = await paymentAdjustmentListModel.find({ isDeleted: false, paymentReceiptId: reqId })
+            let paListModel = await paymentAdjustmentListModel();
+            let adjustmentDetailsList = await paListModel.find({ isDeleted: false, paymentReceiptId: reqId })
             response.adjustmentDetailsList = adjustmentDetailsList
         }
         let encryptData = encryptionAPI(response, 1)
@@ -388,15 +409,19 @@ const deleteReceiptDetailsByReceiptId = async (req, res) => {
         let reqId = getRequestData(id)
 
         // Retrieve Existing Adjustments 
-        const existingAdjustments = await paymentAdjustmentListModel.find({ paymentReceiptId: reqId });
+        let paListModel = await paymentAdjustmentListModel();
+        const existingAdjustments = await paListModel.find({ paymentReceiptId: reqId });
 
+        let gifgModel = await gstInvoiceFinishGoodsModel();
+        let gipModel = await gstInvoicePMModel();
+        let girModel = await gstInvoiceRMModel();
         const revertPromises = existingAdjustments.map(item => {
             let updates = [];
             let paidAmount = item.adjAmount;
 
             if (item.gstInvoiceFinishGoodsId) {
                 updates.push(
-                    gstInvoiceFinishGoodsModel.findByIdAndUpdate(
+                    gifgModel.findByIdAndUpdate(
                         item.gstInvoiceFinishGoodsId,
                         { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
                     )
@@ -404,7 +429,7 @@ const deleteReceiptDetailsByReceiptId = async (req, res) => {
             }
             if (item.gstRMInvoiceId) {
                 updates.push(
-                    gstInvoiceRMModel.findByIdAndUpdate(
+                    girModel.findByIdAndUpdate(
                         item.gstRMInvoiceId,
                         { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
                     )
@@ -412,7 +437,7 @@ const deleteReceiptDetailsByReceiptId = async (req, res) => {
             }
             if (item.gstPMInvoiceId) {
                 updates.push(
-                    gstInvoicePMModel.findByIdAndUpdate(
+                    gipModel.findByIdAndUpdate(
                         item.gstPMInvoiceId,
                         { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
                     )
@@ -422,9 +447,11 @@ const deleteReceiptDetailsByReceiptId = async (req, res) => {
         });
         await Promise.all(revertPromises);
 
-        await paymentAdjustmentListModel.deleteMany({ paymentReceiptId: reqId });
+        let paListModel1 = await paymentAdjustmentListModel();
+        await paListModel1.deleteMany({ paymentReceiptId: reqId });
 
-        const response = await paymentReceiptEntryModel.findByIdAndUpdate(reqId, { isDeleted: true });
+        let prEntryModel = await paymentReceiptEntryModel();
+        const response = await prEntryModel.findByIdAndUpdate(reqId, { isDeleted: true });
 
         let encryptData = encryptionAPI(response, 1)
 
@@ -447,7 +474,8 @@ const deleteReceiptDetailsByReceiptId = async (req, res) => {
 const getPaymentEntryVoucherNo = async (req, res) => {
     try {
         let response = {}
-        let voucherNoRecord = await paymentReceiptEntryModel
+        let prEntryModel = await paymentReceiptEntryModel();
+        let voucherNoRecord = await prEntryModel
             .findOne({ isDeleted: false, voucherNo: /^P\d+$/ })
             .sort({ _id: -1 })
             .select('voucherNo');
@@ -488,12 +516,14 @@ const getAllPendingInvoiceForPaymentEntryByPartyId = async (req, res) => {
         let response = []
 
         if (reqId) {
-            const gstPurchaseEntryData = await gstPurchaseEntryRMPMModel
+            let gpeRMPMModel = await gstPurchaseEntryRMPMModel();
+            const gstPurchaseEntryData = await gpeRMPMModel
                 .find(queryObject)
                 .select('invoiceNo partyId invoiceDate pendingAmount grandTotal')
                 .lean();
 
-            const gstPurchaseWithoutInventoryData = await gstPurchaseWithoutInventoryEntryModel
+            let gpWithoutInventoryEntryModel = await gstPurchaseWithoutInventoryEntryModel();
+            const gstPurchaseWithoutInventoryData = await gpWithoutInventoryEntryModel
                 .find(queryObject)
                 .select('invoiceNo partyId invoiceDate pendingAmount grandTotal')
                 .lean();
@@ -537,7 +567,8 @@ const addEditPaymentEntry = async (req, res) => {
         let responseData = {}
         if (data.paymentDetails.paymentReceiptId && data.paymentDetails.paymentReceiptId.trim() !== '') {
             // Edit For Receipt Details
-            const response = await paymentReceiptEntryModel.findByIdAndUpdate(data.paymentDetails.paymentReceiptId, data.paymentDetails, { new: true });
+            let prEntryModel = await paymentReceiptEntryModel();
+            const response = await prEntryModel.findByIdAndUpdate(data.paymentDetails.paymentReceiptId, data.paymentDetails, { new: true });
             console.log(response)
             if (!response) {
                 responseData.paymentDetails = 'Party details not found';
@@ -554,15 +585,18 @@ const addEditPaymentEntry = async (req, res) => {
 
 
             // Retrieve Existing Adjustments 
-            const existingAdjustments = await paymentAdjustmentListModel.find({ paymentReceiptId: response._id });
+            let paListModel = await paymentAdjustmentListModel();
+            const existingAdjustments = await paListModel.find({ paymentReceiptId: response._id });
 
+            let gpeRMPMModel = await gstPurchaseEntryRMPMModel();
+            let gpWithoutInventoryEntryModel = await gstPurchaseWithoutInventoryEntryModel();
             const revertPromises = existingAdjustments.map(item => {
                 let updates = [];
                 let paidAmount = item.adjAmount;
 
                 if (item.gstPurchaseEntryRMPMId) {
                     updates.push(
-                        gstPurchaseEntryRMPMModel.findByIdAndUpdate(
+                        gpeRMPMModel.findByIdAndUpdate(
                             item.gstPurchaseEntryRMPMId,
                             { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
                         )
@@ -570,7 +604,7 @@ const addEditPaymentEntry = async (req, res) => {
                 }
                 if (item.gstPurchaseEntryWithoutInventoryId) {
                     updates.push(
-                        gstPurchaseWithoutInventoryEntryModel.findByIdAndUpdate(
+                        gpWithoutInventoryEntryModel.findByIdAndUpdate(
                             item.gstPurchaseEntryWithoutInventoryId,
                             { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
                         )
@@ -582,21 +616,26 @@ const addEditPaymentEntry = async (req, res) => {
             await Promise.all(revertPromises);
 
             // Edit Adjustment Details
-            await paymentAdjustmentListModel.deleteMany({ paymentReceiptId: response._id });
+            let paListModel1 = await paymentAdjustmentListModel();
+            await paListModel1.deleteMany({ paymentReceiptId: response._id });
             const items = data.adjustmentDetailsList.map(item => ({
                 ...item,
                 paymentReceiptId: response._id
             }));
-            await paymentAdjustmentListModel.insertMany(items);
+
+            let paListModel2 = await paymentAdjustmentListModel();
+            await paListModel2.insertMany(items);
 
             // Re-Update Adjustment
+            let gpeRMPMModel1 = await gstPurchaseEntryRMPMModel();
+            let gpWithoutInventoryEntryModel1 = await gstPurchaseWithoutInventoryEntryModel();
             const updatePromises = data.adjustmentDetailsList.map(item => {
                 let updates = [];
                 let paidAmount = item.adjAmount;
 
                 if (item.gstPurchaseEntryRMPMId) {
                     updates.push(
-                        gstPurchaseEntryRMPMModel.findByIdAndUpdate(
+                        gpeRMPMModel1.findByIdAndUpdate(
                             item.gstPurchaseEntryRMPMId,
                             { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
                         )
@@ -604,7 +643,7 @@ const addEditPaymentEntry = async (req, res) => {
                 }
                 if (item.gstPurchaseEntryWithoutInventoryId) {
                     updates.push(
-                        gstPurchaseWithoutInventoryEntryModel.findByIdAndUpdate(
+                        gpWithoutInventoryEntryModel1.findByIdAndUpdate(
                             item.gstPurchaseEntryWithoutInventoryId,
                             { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
                         )
@@ -627,7 +666,8 @@ const addEditPaymentEntry = async (req, res) => {
 
         } else {
             // Add Receipt Details
-            const response = new paymentReceiptEntryModel(data.paymentDetails);
+            let prEntryModel = await paymentReceiptEntryModel();
+            const response = new prEntryModel(data.paymentDetails);
             await response.save();
 
             const items = data.adjustmentDetailsList.map(item => ({
@@ -636,8 +676,11 @@ const addEditPaymentEntry = async (req, res) => {
             }));
 
             // Add Adjustment Details
-            await paymentAdjustmentListModel.insertMany(items);
+            let paListModel = await paymentAdjustmentListModel();
+            await paListModel.insertMany(items);
 
+            let gpeRMPMModel = await gstPurchaseEntryRMPMModel();
+            let gpWithoutInventoryEntryModel = await gstPurchaseWithoutInventoryEntryModel();
             // Update Amounts in GST Invoices
             const updatePromises = data.adjustmentDetailsList.map(item => {
                 const updates = [];
@@ -645,7 +688,7 @@ const addEditPaymentEntry = async (req, res) => {
 
                 if (item.gstPurchaseEntryRMPMId) {
                     updates.push(
-                        gstPurchaseEntryRMPMModel.findByIdAndUpdate(
+                        gpeRMPMModel.findByIdAndUpdate(
                             item.gstPurchaseEntryRMPMId,
                             { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
                         )
@@ -653,7 +696,7 @@ const addEditPaymentEntry = async (req, res) => {
                 }
                 if (item.gstPurchaseEntryWithoutInventoryId) {
                     updates.push(
-                        gstPurchaseWithoutInventoryEntryModel.findByIdAndUpdate(
+                        gpWithoutInventoryEntryModel.findByIdAndUpdate(
                             item.gstPurchaseEntryWithoutInventoryId,
                             { $inc: { pendingAmount: -paidAmount, paidAmount: paidAmount } }
                         )
@@ -696,7 +739,8 @@ const getAllPaymnetEntry = async (req, res) => {
             sortOption = { [data.arrangedBy]: 1 };
         }
 
-        let response = await paymentReceiptEntryModel.aggregate([
+        let prEntryModel = await paymentReceiptEntryModel();
+        let response = await prEntryModel.aggregate([
             { $match: queryObject },
             {
                 $lookup: {
@@ -750,10 +794,12 @@ const getPaymentDetailsByPaymnetReceiptId = async (req, res) => {
         let response = {}
 
         if (reqId) {
-            let paymentDetails = await paymentReceiptEntryModel.findOne({ isDeleted: false, _id: reqId })
+            let prEntryModel = await paymentReceiptEntryModel();
+            let paymentDetails = await prEntryModel.findOne({ isDeleted: false, _id: reqId })
             response.paymentDetails = paymentDetails
 
-            let adjustmentDetailsList = await paymentAdjustmentListModel.find({ isDeleted: false, paymentReceiptId: reqId })
+            let paListModel = await paymentAdjustmentListModel();
+            let adjustmentDetailsList = await paListModel.find({ isDeleted: false, paymentReceiptId: reqId })
             response.adjustmentDetailsList = adjustmentDetailsList
         }
         let encryptData = encryptionAPI(response, 1)
@@ -779,15 +825,18 @@ const deletePaymentDetailsByPaymentReceiptId = async (req, res) => {
         let reqId = getRequestData(id)
 
         // Retrieve Existing Adjustments 
-        const existingAdjustments = await paymentAdjustmentListModel.find({ paymentReceiptId: reqId });
+        let paListModel = await paymentAdjustmentListModel();
+        const existingAdjustments = await paListModel.find({ paymentReceiptId: reqId });
 
+        let gpeRMPMModel = await gstPurchaseEntryRMPMModel();
+        let gpWithoutInventoryEntryModel = await gstPurchaseWithoutInventoryEntryModel();
         const revertPromises = existingAdjustments.map(item => {
             let updates = [];
             let paidAmount = item.adjAmount;
 
             if (item.gstPurchaseEntryRMPMId) {
                 updates.push(
-                    gstPurchaseEntryRMPMModel.findByIdAndUpdate(
+                    gpeRMPMModel.findByIdAndUpdate(
                         item.gstPurchaseEntryRMPMId,
                         { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
                     )
@@ -795,7 +844,7 @@ const deletePaymentDetailsByPaymentReceiptId = async (req, res) => {
             }
             if (item.gstPurchaseEntryWithoutInventoryId) {
                 updates.push(
-                    gstPurchaseWithoutInventoryEntryModel.findByIdAndUpdate(
+                    gpWithoutInventoryEntryModel.findByIdAndUpdate(
                         item.gstPurchaseEntryWithoutInventoryId,
                         { $inc: { pendingAmount: paidAmount, paidAmount: -paidAmount } }
                     )
@@ -805,9 +854,11 @@ const deletePaymentDetailsByPaymentReceiptId = async (req, res) => {
         });
         await Promise.all(revertPromises);
 
-        await paymentAdjustmentListModel.deleteMany({ paymentReceiptId: reqId });
+        let paListModel1 = await paymentAdjustmentListModel();
+        await paListModel1.deleteMany({ paymentReceiptId: reqId });
 
-        const response = await paymentReceiptEntryModel.findByIdAndUpdate(reqId, { isDeleted: true });
+        let prEntryModel = await paymentReceiptEntryModel();
+        const response = await prEntryModel.findByIdAndUpdate(reqId, { isDeleted: true });
 
         let encryptData = encryptionAPI(response, 1)
 
@@ -830,7 +881,8 @@ const deletePaymentDetailsByPaymentReceiptId = async (req, res) => {
 const getContraEntryVoucherNo = async (req, res) => {
     try {
         let response = {}
-        let voucherNoRecord = await contraEntryModel
+        let ceModel = await contraEntryModel();
+        let voucherNoRecord = await ceModel
             .findOne({ isDeleted: false, voucherNo: /^C\d+$/ })
             .sort({ _id: -1 })
             .select('voucherNo');
@@ -866,7 +918,8 @@ const addEditContraEntry = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
 
         if (data.contraId && data.contraId.trim() !== '') {
-            const response = await contraEntryModel.findByIdAndUpdate(data.contraId, data, { new: true });
+            let ceModel = await contraEntryModel();
+            const response = await ceModel.findByIdAndUpdate(data.contraId, data, { new: true });
 
             if (!response) {
                 res.status(200).json({
@@ -879,10 +932,12 @@ const addEditContraEntry = async (req, res) => {
                 });
             }
 
-            await paymentReceiptEntryModel.deleteMany({ contraId: data.contraId });
+            let prEntryModel = await paymentReceiptEntryModel();
+            await prEntryModel.deleteMany({ contraId: data.contraId });
 
             // Create New Transactions
-            const debitTransaction = new paymentReceiptEntryModel({
+            let prEntryModel1 = await paymentReceiptEntryModel();
+            const debitTransaction = new prEntryModel1({
                 voucherNo: data.voucherNo,
                 bankId: data.fromDaybookId,
                 date: data.date,
@@ -895,7 +950,8 @@ const addEditContraEntry = async (req, res) => {
                 contraId: response._id
             });
 
-            const creditTransaction = new paymentReceiptEntryModel({
+            let prEntryModel2 = await paymentReceiptEntryModel();
+            const creditTransaction = new prEntryModel2({
                 voucherNo: data.voucherNo,
                 bankId: data.toDayBookId,
                 date: data.date,
@@ -924,11 +980,13 @@ const addEditContraEntry = async (req, res) => {
 
         } else {
             // Add Contra Details
-            const response = new contraEntryModel(data);
+            let ceModel = await contraEntryModel();
+            const response = new ceModel(data);
             await response.save();
 
             // Paymen Receipt Entry Table
-            const debitTransaction = new paymentReceiptEntryModel({
+            let prEntryModel = await paymentReceiptEntryModel();
+            const debitTransaction = new prEntryModel({
                 voucherNo: data.voucherNo,
                 bankId: data.fromDaybookId,
                 date: data.date,
@@ -941,7 +999,8 @@ const addEditContraEntry = async (req, res) => {
                 contraId: response._id
             });
 
-            const creditTransaction = new paymentReceiptEntryModel({
+            let prEntryModel1 = await paymentReceiptEntryModel();
+            const creditTransaction = new prEntryModel1({
                 voucherNo: data.voucherNo,
                 bankId: data.toDayBookId,
                 date: data.date,
@@ -994,7 +1053,8 @@ const getAllContraEntry = async (req, res) => {
         }
 
         let response = []
-        response = await contraEntryModel
+        let ceModel = await contraEntryModel();
+        response = await ceModel
             .find(queryObject)
             .sort(sortBy);
 
@@ -1022,7 +1082,8 @@ const getContraEntryById = async (req, res) => {
         let response = {}
 
         if (reqId) {
-            response = await contraEntryModel.findOne({ isDeleted: false, _id: reqId })
+            let ceModel = await contraEntryModel();
+            response = await ceModel.findOne({ isDeleted: false, _id: reqId })
         }
         let encryptData = encryptionAPI(response, 1)
 
@@ -1046,11 +1107,13 @@ const deleteContraEntryById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        await paymentReceiptEntryModel.updateMany(
+        let prEntryModel = await paymentReceiptEntryModel();
+        await prEntryModel.updateMany(
             { contraId: reqId },
             { isDeleted: true });
 
-        const response = await contraEntryModel.findByIdAndUpdate(reqId, { isDeleted: true });
+        let ceModel = await contraEntryModel();
+        const response = await ceModel.findByIdAndUpdate(reqId, { isDeleted: true });
 
         let encryptData = encryptionAPI(response, 1)
 
@@ -1073,7 +1136,8 @@ const deleteContraEntryById = async (req, res) => {
 const getGSTPurchseEntrySRNo = async (req, res) => {
     try {
         let response = {}
-        let gstNoRecord = await gstPurchaseEntryRMPMModel
+        let gpeRMPMModel = await gstPurchaseEntryRMPMModel();
+        let gstNoRecord = await gpeRMPMModel
             .findOne({ isDeleted: false })
             .sort({ _id: -1 })
             .select('srNo');
@@ -1108,11 +1172,13 @@ const getAllPendingGRNPurchaseEntry = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
-        let response = await grnEntryMaterialDetailsModel
+        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let gepdModel = await grnEntryPartyDetailsModel();
+        let response = await gemDetailsModel
             .find({
                 isDeleted: false,
                 isGSTPurchaseEntryRMPM: false,
-                grnEntryPartyDetailId: await grnEntryPartyDetailsModel.findOne({
+                grnEntryPartyDetailId: await gepdModel.findOne({
                     partyId: data.partyId,
                     invoiceNo: data.invoiceNo,
                     isDeleted: false,
@@ -1153,7 +1219,8 @@ const updateGRNEntryToPurchaseEntry = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
-        let response = await grnEntryMaterialDetailsModel
+        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let response = await gemDetailsModel
             .findByIdAndUpdate(data.grnMaterialId, { isGSTPurchaseEntryRMPM: data.isGRNEntryDone })
 
         let encryptData = encryptionAPI(response, 1)
@@ -1181,7 +1248,8 @@ const addEditGSTPurchaseEntryRMPM = async (req, res) => {
 
         if (data.invoiceDetails.gstPurchaseEntryRMPMId && data.invoiceDetails.gstPurchaseEntryRMPMId.trim() !== '') {
             // Edit For Purchase Details
-            const response = await gstPurchaseEntryRMPMModel.findByIdAndUpdate(data.invoiceDetails.gstPurchaseEntryRMPMId, data.invoiceDetails, { new: true });
+            let gpeRMPMModel = await gstPurchaseEntryRMPMModel();
+            const response = await gpeRMPMModel.findByIdAndUpdate(data.invoiceDetails.gstPurchaseEntryRMPMId, data.invoiceDetails, { new: true });
             if (!response) {
                 responseData.invoiceDetails = 'Purchase details not found';
                 res.status(200).json({
@@ -1203,21 +1271,24 @@ const addEditGSTPurchaseEntryRMPM = async (req, res) => {
                 narration1: `INVOICE NO : ${data.invoiceDetails.invoiceNo}`,
             }
 
-            await paymentReceiptEntryModel.findOneAndUpdate(
+            let prEntryModel = await paymentReceiptEntryModel();
+            await prEntryModel.findOneAndUpdate(
                 { gstpurchaseInvoiceRMPMId: data.invoiceDetails.gstPurchaseEntryRMPMId },
                 request,
                 { new: true }
             );
 
             // Edit Items For GST Purchase Details
-            await gstPurchaseItemListRMPMModel.deleteMany({ gstPurchaseEntryRMPMId: response._id });
+            let gpitemListRMPMModel = await gstPurchaseItemListRMPMModel();
+            await gpitemListRMPMModel.deleteMany({ gstPurchaseEntryRMPMId: response._id });
 
             const items = data.itemListing.map(item => ({
                 ...item,
                 gstPurchaseEntryRMPMId: response._id
             }));
 
-            await gstPurchaseItemListRMPMModel.insertMany(items);
+            let gpitemListRMPMModel1 = await gstPurchaseItemListRMPMModel();
+            await gpitemListRMPMModel1.insertMany(items);
 
             responseData.invoiceDetails = response;
             let encryptData = encryptionAPI(responseData, 1);
@@ -1232,7 +1303,8 @@ const addEditGSTPurchaseEntryRMPM = async (req, res) => {
             });
         } else {
             // Add Edit For GST Purchase Details
-            const response = new gstPurchaseEntryRMPMModel(data.invoiceDetails);
+            let gpeRMPMModel = await gstPurchaseEntryRMPMModel();
+            const response = new gpeRMPMModel(data.invoiceDetails);
             await response.save();
 
             responseData.invoiceDetails = response;
@@ -1259,11 +1331,13 @@ const addEditGSTPurchaseEntryRMPM = async (req, res) => {
                 from: 'GSTPurchaseEntryRMPM',
                 gstpurchaseInvoiceRMPMId: response._id,
             }
-            let paymentEntry = new paymentReceiptEntryModel(request);
+            let prEntryModel = await paymentReceiptEntryModel();
+            let paymentEntry = new prEntryModel(request);
             await paymentEntry.save();
 
             // ADD Items For GST Purchase Details
-            await gstPurchaseItemListRMPMModel.insertMany(items);
+            let gpitemListRMPMModel = await gstPurchaseItemListRMPMModel();
+            await gpitemListRMPMModel.insertMany(items);
 
             let encryptData = encryptionAPI(responseData, 1);
 
@@ -1297,7 +1371,8 @@ const getAllGSTPurchaseEntryRMPM = async (req, res) => {
             sortOption = { [data.arrangedBy]: 1 };
         }
 
-        let response = await gstPurchaseEntryRMPMModel.aggregate([
+        let gpeRMPMModel = await gstPurchaseEntryRMPMModel();
+        let response = await gpeRMPMModel.aggregate([
             { $match: queryObject },
             {
                 $lookup: {
@@ -1349,14 +1424,16 @@ const getGSTPurchaseEntryRMPMById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let invoiceDetails = await gstPurchaseEntryRMPMModel
+        let gpeRMPMModel = await gstPurchaseEntryRMPMModel();
+        let invoiceDetails = await gpeRMPMModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
                 path: "partyId",
                 select: "partyName",
             });
 
-        let itemListing = await gstPurchaseItemListRMPMModel
+        let gpitemListRMPMModel = await gstPurchaseItemListRMPMModel();
+        let itemListing = await gpitemListRMPMModel
             .find({ gstPurchaseEntryRMPMId: reqId, isDeleted: false });
 
         let response = {
@@ -1385,12 +1462,15 @@ const deleteGSTPurchaseEntryRMPMById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        await gstPurchaseItemListRMPMModel.updateMany({ gstPurchaseEntryRMPMId: reqId }, { isDeleted: true });
+        let gpitemListRMPMModel = await gstPurchaseItemListRMPMModel();
+        await gpitemListRMPMModel.updateMany({ gstPurchaseEntryRMPMId: reqId }, { isDeleted: true });
 
-        const response = await gstPurchaseEntryRMPMModel.findByIdAndUpdate(reqId, { isDeleted: true });
+        let gpeRMPMModel = await gstPurchaseEntryRMPMModel();
+        const response = await gpeRMPMModel.findByIdAndUpdate(reqId, { isDeleted: true });
 
         // Payment Receipt Entry
-        await paymentReceiptEntryModel.findOneAndUpdate({ gstpurchaseInvoiceRMPMId: reqId }, { isDeleted: true }, { new: true });
+        let prEntryModel = await paymentReceiptEntryModel();
+        await prEntryModel.findOneAndUpdate({ gstpurchaseInvoiceRMPMId: reqId }, { isDeleted: true }, { new: true });
 
         let encryptData = encryptionAPI(response, 1)
 
@@ -1413,7 +1493,8 @@ const deleteGSTPurchaseEntryRMPMById = async (req, res) => {
 const getGSTPurchseWithoutInventoryEntrySRNo = async (req, res) => {
     try {
         let response = {}
-        let gstNoRecord = await gstPurchaseWithoutInventoryEntryModel
+        let gpWithoutInventoryEntryModel = await gstPurchaseWithoutInventoryEntryModel();
+        let gstNoRecord = await gpWithoutInventoryEntryModel
             .findOne({ isDeleted: false })
             .sort({ _id: -1 })
             .select('srNo');
@@ -1451,7 +1532,8 @@ const addEditGSTPurchaseEntryWithoutInventory = async (req, res) => {
 
         if (data.gstPurchaseEntryWithoutInventoryId && data.gstPurchaseEntryWithoutInventoryId.trim() !== '') {
 
-            const response = await gstPurchaseWithoutInventoryEntryModel.findByIdAndUpdate(data.gstPurchaseEntryWithoutInventoryId, data, { new: true });
+            let gpWithoutInventoryEntryModel = await gstPurchaseWithoutInventoryEntryModel();
+            const response = await gpWithoutInventoryEntryModel.findByIdAndUpdate(data.gstPurchaseEntryWithoutInventoryId, data, { new: true });
             if (!response) {
                 responseData = 'Purchase details not found';
                 res.status(200).json({
@@ -1473,7 +1555,8 @@ const addEditGSTPurchaseEntryWithoutInventory = async (req, res) => {
                 narration1: `INVOICE NO : ${data.invoiceNo}`,
             }
 
-            await paymentReceiptEntryModel.findOneAndUpdate(
+            let prEntryModel = await paymentReceiptEntryModel();
+            await prEntryModel.findOneAndUpdate(
                 { gstPurchaseEntryWithoutInventoryId: data.gstPurchaseEntryWithoutInventoryId },
                 request,
                 { new: true }
@@ -1489,7 +1572,8 @@ const addEditGSTPurchaseEntryWithoutInventory = async (req, res) => {
                 },
             });
         } else {
-            const response = new gstPurchaseWithoutInventoryEntryModel(data);
+            let gpWithoutInventoryEntryModel = await gstPurchaseWithoutInventoryEntryModel();
+            const response = new gpWithoutInventoryEntryModel(data);
             await response.save();
 
             // Payment Receipt Entry
@@ -1509,7 +1593,8 @@ const addEditGSTPurchaseEntryWithoutInventory = async (req, res) => {
                 from: 'GSTPurchaseWithoutInventory',
                 gstpurchaseInvoiceRMPMId: response._id,
             }
-            let paymentEntry = new paymentReceiptEntryModel(request);
+            let prEntryModel = await paymentReceiptEntryModel();
+            let paymentEntry = new prEntryModel(request);
             await paymentEntry.save();
 
             let encryptData = encryptionAPI(response, 1);
@@ -1542,7 +1627,8 @@ const getAllPurchaseEntryWithoutInventory = async (req, res) => {
             sortOption = { [data.arrangedBy]: 1 };
         }
 
-        let response = await gstPurchaseWithoutInventoryEntryModel.aggregate([
+        let gpWithoutInventoryEntryModel = await gstPurchaseWithoutInventoryEntryModel();
+        let response = await gpWithoutInventoryEntryModel.aggregate([
             { $match: queryObject },
             {
                 $lookup: {
@@ -1594,7 +1680,8 @@ const getGSTPurchaseEntryWithoutInventoryById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        const response = await gstPurchaseWithoutInventoryEntryModel
+        let gpWithoutInventoryEntryModel = await gstPurchaseWithoutInventoryEntryModel();
+        const response = await gpWithoutInventoryEntryModel
             .findOne({ _id: reqId })
             .populate({
                 path: "partyId",
@@ -1623,10 +1710,12 @@ const deleteGSTPurchaseEntryWithoutInventoryById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        const response = await gstPurchaseWithoutInventoryEntryModel.findByIdAndUpdate(reqId, { isDeleted: true });
+        let gpWithoutInventoryEntryModel = await gstPurchaseWithoutInventoryEntryModel();
+        const response = await gpWithoutInventoryEntryModel.findByIdAndUpdate(reqId, { isDeleted: true });
 
         // Payment Receipt Entry
-        await paymentReceiptEntryModel.findOneAndUpdate({ gstPurchaseEntryWithoutInventoryId: reqId }, { isDeleted: true }, { new: true });
+        let prEntryModel = await paymentReceiptEntryModel();
+        await prEntryModel.findOneAndUpdate({ gstPurchaseEntryWithoutInventoryId: reqId }, { isDeleted: true }, { new: true });
 
         let encryptData = encryptionAPI(response, 1)
 
@@ -1649,7 +1738,8 @@ const deleteGSTPurchaseEntryWithoutInventoryById = async (req, res) => {
 const getGeneralDebitNoteEntrySRNo = async (req, res) => {
     try {
         let response = {}
-        let gstNoRecord = await generalDebitNoteModel
+        let gdnModel = await generalDebitNoteModel();
+        let gstNoRecord = await gdnModel
             .findOne({ isDeleted: false })
             .sort({ _id: -1 })
             .select('noteNo');
@@ -1687,7 +1777,8 @@ const addEditGeneralDebitNoteEntry = async (req, res) => {
 
         if (data.generalDebitNoteId && data.generalDebitNoteId.trim() !== '') {
 
-            const response = await generalDebitNoteModel.findByIdAndUpdate(data.generalDebitNoteId, data, { new: true });
+            let gdnModel = await generalDebitNoteModel();
+            const response = await gdnModel.findByIdAndUpdate(data.generalDebitNoteId, data, { new: true });
             if (!response) {
                 responseData = 'Purchase details not found';
                 res.status(200).json({
@@ -1709,7 +1800,8 @@ const addEditGeneralDebitNoteEntry = async (req, res) => {
                 },
             });
         } else {
-            const response = new generalDebitNoteModel(data);
+            let gdnModel = await generalDebitNoteModel();
+            const response = new gdnModel(data);
             await response.save();
 
             let encryptData = encryptionAPI(response, 1);
@@ -1743,7 +1835,8 @@ const getAllGeneralDebitNoteEntry = async (req, res) => {
             sortOption = { [data.arrangedBy]: 1 };
         }
 
-        let response = await generalDebitNoteModel.aggregate([
+        let gdnModel = await generalDebitNoteModel();
+        let response = await gdnModel.aggregate([
             { $match: queryObject },
             {
                 $lookup: {
@@ -1794,7 +1887,8 @@ const getGeneralDebitNoteEntryById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        const response = await generalDebitNoteModel
+        let gdnModel = await generalDebitNoteModel();
+        const response = await gdnModel
             .findOne({ _id: reqId })
             .populate({
                 path: "partyId",
@@ -1823,7 +1917,8 @@ const deleteGeneralDebitNoteEntryById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        const response = await generalDebitNoteModel.findByIdAndUpdate(reqId, { isDeleted: true });
+        let gdnModel = await generalDebitNoteModel();
+        const response = await gdnModel.findByIdAndUpdate(reqId, { isDeleted: true });
 
         let encryptData = encryptionAPI(response, 1)
 
@@ -1846,7 +1941,8 @@ const deleteGeneralDebitNoteEntryById = async (req, res) => {
 const getGeneralCreditNoteEntrySRNo = async (req, res) => {
     try {
         let response = {}
-        let gstNoRecord = await generalCreditNoteModel
+        let gCreditNoteModel = await generalCreditNoteModel();
+        let gstNoRecord = await gCreditNoteModel
             .findOne({ isDeleted: false })
             .sort({ _id: -1 })
             .select('noteNo');
@@ -1884,7 +1980,8 @@ const addEditGeneralCreditNoteEntry = async (req, res) => {
 
         if (data.generalCreditNoteId && data.generalCreditNoteId.trim() !== '') {
 
-            const response = await generalCreditNoteModel.findByIdAndUpdate(data.generalCreditNoteId, data, { new: true });
+            let gCreditNoteModel = await generalCreditNoteModel();
+            const response = await gCreditNoteModel.findByIdAndUpdate(data.generalCreditNoteId, data, { new: true });
             if (!response) {
                 responseData = 'Purchase details not found';
                 res.status(200).json({
@@ -1906,7 +2003,8 @@ const addEditGeneralCreditNoteEntry = async (req, res) => {
                 },
             });
         } else {
-            const response = new generalCreditNoteModel(data);
+            let gCreditNoteModel = await generalCreditNoteModel();
+            const response = new gCreditNoteModel(data);
             await response.save();
 
             let encryptData = encryptionAPI(response, 1);
@@ -1940,7 +2038,8 @@ const getAllGeneralCreditNoteEntry = async (req, res) => {
             sortOption = { [data.arrangedBy]: 1 };
         }
 
-        let response = await generalCreditNoteModel.aggregate([
+        let gCreditNoteModel = await generalCreditNoteModel();
+        let response = await gCreditNoteModel.aggregate([
             { $match: queryObject },
             {
                 $lookup: {
@@ -1991,7 +2090,8 @@ const getGeneralCreditNoteEntryById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        const response = await generalCreditNoteModel
+        let gCreditNoteModel = await generalCreditNoteModel();
+        const response = await gCreditNoteModel
             .findOne({ _id: reqId })
             .populate({
                 path: "partyId",
@@ -2020,7 +2120,8 @@ const deleteGeneralCreditNoteEntryById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        const response = await generalCreditNoteModel.findByIdAndUpdate(reqId, { isDeleted: true });
+        let gCreditNoteModel = await generalCreditNoteModel();
+        const response = await gCreditNoteModel.findByIdAndUpdate(reqId, { isDeleted: true });
 
         let encryptData = encryptionAPI(response, 1)
 
@@ -2043,7 +2144,8 @@ const deleteGeneralCreditNoteEntryById = async (req, res) => {
 const getJVEntryVoucherNo = async (req, res) => {
     try {
         let response = {}
-        let gstNoRecord = await jvEntryModel
+        let jvEModel = await jvEntryModel();
+        let gstNoRecord = await jvEModel
             .findOne({ isDeleted: false })
             .sort({ _id: -1 })
             .select('srNo');
@@ -2080,7 +2182,8 @@ const addEditJVEntry = async (req, res) => {
         let responseData = {}
         if (data.jvDetails.jvEntryId && data.jvDetails.jvEntryId.trim() !== '') {
             // Edit For Receipt Details
-            const response = await jvEntryModel.findByIdAndUpdate(data.jvDetails.jvEntryId, data.jvDetails, { new: true });
+            let jvEModel = await jvEntryModel();
+            const response = await jvEModel.findByIdAndUpdate(data.jvDetails.jvEntryId, data.jvDetails, { new: true });
             if (!response) {
                 responseData.jvDetails = 'Party details not found';
                 res.status(200).json({
@@ -2095,12 +2198,15 @@ const addEditJVEntry = async (req, res) => {
             responseData.jvDetails = response;
 
             // Edit Items In Receipt Entry Model
-            await paymentReceiptEntryModel.deleteMany({ jvEntryId: response._id });
+            let prEntryModel = await paymentReceiptEntryModel();
+            await prEntryModel.deleteMany({ jvEntryId: response._id });
             const items = data.jvEntryItemList.map(item => ({
                 ...item,
                 jvEntryId: response._id
             }));
-            await paymentReceiptEntryModel.insertMany(items);
+
+            let prEntryModel1 = await paymentReceiptEntryModel();
+            await prEntryModel1.insertMany(items);
 
             let encryptData = encryptionAPI(responseData, 1);
             res.status(200).json({
@@ -2115,7 +2221,8 @@ const addEditJVEntry = async (req, res) => {
 
         } else {
             // Add JV Entry
-            const response = new jvEntryModel(data.jvDetails);
+            let jvEModel = await jvEntryModel();
+            const response = new jvEModel(data.jvDetails);
             await response.save();
 
             const items = data.jvEntryItemList.map(item => ({
@@ -2124,7 +2231,8 @@ const addEditJVEntry = async (req, res) => {
             }));
 
             // Add Items In Receipt Entry Model
-            await paymentReceiptEntryModel.insertMany(items);
+            let prEntryModel = await paymentReceiptEntryModel();
+            await prEntryModel.insertMany(items);
 
             responseData.jvDetails = response;
             let encryptData = encryptionAPI(responseData, 1);
@@ -2159,7 +2267,8 @@ const getAllJVEntry = async (req, res) => {
             arrangedBy = data.arrangedBy
         }
 
-        let response = await jvEntryModel
+        let jvEModel = await jvEntryModel();
+        let response = await jvEModel
             .find(queryObject)
             .sort(arrangedBy)
 
@@ -2187,10 +2296,12 @@ const getJVEntryById = async (req, res) => {
         let response = {}
 
         if (reqId) {
-            let jvDetails = await jvEntryModel.findOne({ isDeleted: false, _id: reqId })
+            let jvEModel = await jvEntryModel();
+            let jvDetails = await jvEModel.findOne({ isDeleted: false, _id: reqId })
             response.jvDetails = jvDetails
 
-            let jvEntryItemList = await paymentReceiptEntryModel
+            let prEntryModel = await paymentReceiptEntryModel();
+            let jvEntryItemList = await prEntryModel
                 .find({ isDeleted: false, jvEntryId: reqId, entryType: 'JVEntry' })
                 .populate({
                     path: 'partyId',
@@ -2220,9 +2331,11 @@ const deleteJVEntryById = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        await paymentReceiptEntryModel.updateMany({ jvEntryId: reqId }, { isDeleted: true });
+        let prEntryModel = await paymentReceiptEntryModel();
+        await prEntryModel.updateMany({ jvEntryId: reqId }, { isDeleted: true });
 
-        const response = await jvEntryModel.findByIdAndUpdate(reqId, { isDeleted: true });
+        let jvEModel = await jvEntryModel();
+        const response = await jvEModel.findByIdAndUpdate(reqId, { isDeleted: true });
 
         let encryptData = encryptionAPI(response, 1)
 
@@ -2257,7 +2370,8 @@ const getAllAccountLedger = async (req, res) => {
             arrangedBy = data.arrangedBy
         }
 
-        let response = await paymentReceiptEntryModel
+        let prEntryModel = await paymentReceiptEntryModel();
+        let response = await prEntryModel
             .find(queryObject)
             .sort(arrangedBy)
             .populate({
@@ -2291,9 +2405,11 @@ const getRunningBalanceByPartyId = async (req, res) => {
             partyId: reqId
         }
 
-        let response = await paymentReceiptEntryModel.find(queryObject).select('debitAmount creditAmount')
+        let prEntryModel = await paymentReceiptEntryModel();
+        let response = await prEntryModel.find(queryObject).select('debitAmount creditAmount')
 
-        let partyDetails = await partyModel.findOne({ _id: reqId }).select('openBalance openBalanceDRCR');
+        let pModel = await partyModel()
+        let partyDetails = await pModel.findOne({ _id: reqId }).select('openBalance openBalanceDRCR');
         let openingBalance = partyDetails ? Number(partyDetails.openBalance) : 0;
         let openingBalanceDRCR = partyDetails ? partyDetails.openBalanceDRCR : 'Dr';
 
@@ -2354,11 +2470,13 @@ const getAllBankWiseCashBankBookReport = async (req, res) => {
             bookType: { $in: ['Bank Book', 'Cash Book'] }
         }
 
-        let response = await daybookMasterModel
+        let dbMasterModel = await daybookMasterModel()
+        let response = await dbMasterModel
             .find(queryObject)
 
         let finalResponse = await Promise.all(response.map(async (x) => {
-            let totalCreditDebitAmount = await paymentReceiptEntryModel.find({ isDeleted: false, bankId: x._id }).select('creditAmount debitAmount');
+            let prEntryModel = await paymentReceiptEntryModel();
+            let totalCreditDebitAmount = await prEntryModel.find({ isDeleted: false, bankId: x._id }).select('creditAmount debitAmount');
 
             // Summing up the credit and debit amounts
             let totalCreditAmount = totalCreditDebitAmount.reduce((sum, record) => sum + (record.creditAmount || 0), 0);
@@ -2415,7 +2533,8 @@ const getAllMonthWiseCashBankBookReportbyBankId = async (req, res) => {
         const startDateOfYear = dayjs(`${financialYear}-04-01`).startOf("day").toDate();
         const endDateOfYear = dayjs(`${financialYear + 1}-03-31`).endOf("day").toDate();
 
-        const bankDetails = await daybookMasterModel.findOne({ _id: bankId }).select("openBalance openBalanceDRCR");
+        let dbMasterModel = await daybookMasterModel()
+        const bankDetails = await dbMasterModel.findOne({ _id: bankId }).select("openBalance openBalanceDRCR");
         if (!bankDetails) throw new Error("Bank not found");
 
         let runningBalance = Number(bankDetails.openBalance) || 0;
@@ -2427,7 +2546,8 @@ const getAllMonthWiseCashBankBookReportbyBankId = async (req, res) => {
             date: { $gte: startDateOfYear, $lte: endDateOfYear }
         };
 
-        const transactions = await paymentReceiptEntryModel
+        let prEntryModel = await paymentReceiptEntryModel();
+        const transactions = await prEntryModel
             .find(queryObject)
             .select("date debitAmount creditAmount");
 
@@ -2503,7 +2623,8 @@ const getAllDateWiseCashBankBookReportbyBankId = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
         let bankId = data.bankId
 
-        const transactions = await paymentReceiptEntryModel.find({
+        let prEntryModel = await paymentReceiptEntryModel();
+        const transactions = await prEntryModel.find({
             isDeleted: false,
             bankId,
             date: { $gte: data.startDate, $lte: data.endDate }
@@ -2543,7 +2664,8 @@ const getAllGroupWiseAccountSummary = async (req, res) => {
             queryObject.acGroupCode = data.group
         }
 
-        let partyList = await partyModel.find(queryObject).select("partyName openBalance openBalanceDRCR acGroupCode").sort("partyName");
+        let pModel = await partyModel()
+        let partyList = await pModel.find(queryObject).select("partyName openBalance openBalanceDRCR acGroupCode").sort("partyName");
 
         partyList = await Promise.all(
             partyList.map(async (x) => {
@@ -2557,9 +2679,11 @@ const getAllGroupWiseAccountSummary = async (req, res) => {
                     queryObjectForParty.date = { $gte: data.startDate, $lte: data.endDate }
                 }
 
-                let partyTransaction = await paymentReceiptEntryModel.find(queryObjectForParty);
+                let prEntryModel = await paymentReceiptEntryModel();
+                let partyTransaction = await prEntryModel.find(queryObjectForParty);
 
-                let accountGroupDetails = await accountGroupModel.findOne({ isDeleted: false, accountGroupCode: x.acGroupCode })
+                let acModel = await accountGroupModel()
+                let accountGroupDetails = await acModel.findOne({ isDeleted: false, accountGroupCode: x.acGroupCode })
 
                 let creditAmount = partyTransaction.reduce((sum, entry) => sum + entry.creditAmount, 0);
                 let debitAmount = partyTransaction.reduce((sum, entry) => sum + entry.debitAmount, 0);
@@ -2622,13 +2746,15 @@ const getAllOpeningBalanceReport = async (req, res) => {
             sort = data.orderBy
         }
 
-        let partyList = await partyModel
+        let pModel = await partyModel()
+        let partyList = await pModel
             .find(queryObject)
             .select("partyName openBalance openBalanceDRCR acGroupCode")
             .sort(sort);
 
         partyList = await Promise.all(partyList.map(async (party) => {
-            let accountGroupDetails = await accountGroupModel.findOne({ isDeleted: false, accountGroupCode: party.acGroupCode });
+            let acModel = await accountGroupModel()
+            let accountGroupDetails = await acModel.findOne({ isDeleted: false, accountGroupCode: party.acGroupCode });
             return {
                 ...party.toObject(),
                 accountGroupName: accountGroupDetails ? accountGroupDetails.accountGroupname : null

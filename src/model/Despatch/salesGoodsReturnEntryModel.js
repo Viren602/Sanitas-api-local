@@ -1,5 +1,9 @@
 
 import mongoose from "mongoose";
+import globals from "../../utils/globals.js";
+import connectToDatabase from "../../utils/dbConnection.js";
+import partyModel from "../partiesModel.js";
+import transportCourierModel from "../transportCourierModel.js";
 
 const salesGoodsReturnEntrySchema = mongoose.Schema({
     serialNo: { type: String, default: 0 },
@@ -20,6 +24,12 @@ const salesGoodsReturnEntrySchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const salesGoodsReturnEntryModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await partyModel()
+    await transportCourierModel()
+    return db.models.SalesGoodsReturnEntry || db.model("SalesGoodsReturnEntry", salesGoodsReturnEntrySchema);
+}
 
-const salesGoodsReturnEntryModel = mongoose.model("SalesGoodsReturnEntry", salesGoodsReturnEntrySchema)
+// const salesGoodsReturnEntryModel = mongoose.model("SalesGoodsReturnEntry", salesGoodsReturnEntrySchema)
 export default salesGoodsReturnEntryModel;

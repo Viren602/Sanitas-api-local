@@ -1,5 +1,16 @@
 
 import mongoose from "mongoose";
+import connectToDatabase from "../../utils/dbConnection.js";
+import globals from "../../utils/globals.js";
+import daybookMasterModel from "../daybookMasterModel.js";
+import partyModel from "../partiesModel.js";
+import gstInvoiceFinishGoodsModel from "../Despatch/gstInvoiceFinishGoods.js";
+import gstInvoiceRMModel from "../Despatch/gstInvoiceRMModel.js";
+import gstInvoicePMModel from "../Despatch/gstInvoicePMModel.js";
+import gstPurchaseEntryRMPMModel from "./gstPurchaseEntryRMPMModel.js";
+import gstPurchaseWithoutInventoryEntryModel from "./gstPurcaseWithoutInventoryEntryModel.js";
+import contraEntryModel from "./contraEntryModel.js";
+import jvEntryModel from "./jvEntryModel.js";
 
 const paymentReceiptEntrySchema = mongoose.Schema({
     voucherNo: { type: String, default: '' },
@@ -27,6 +38,19 @@ const paymentReceiptEntrySchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const paymentReceiptEntryModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await daybookMasterModel()
+    await partyModel()
+    await gstInvoiceFinishGoodsModel()
+    await gstInvoiceRMModel()
+    await gstInvoicePMModel()
+    await gstPurchaseEntryRMPMModel()
+    await gstPurchaseWithoutInventoryEntryModel()
+    await contraEntryModel()
+    await jvEntryModel()
+    return db.models.PaymentReceiptEntry || db.model("PaymentReceiptEntry", paymentReceiptEntrySchema);
+}
 
-const paymentReceiptEntryModel = mongoose.model("PaymentReceiptEntry", paymentReceiptEntrySchema)
+// const paymentReceiptEntryModel = mongoose.model("PaymentReceiptEntry", paymentReceiptEntrySchema)
 export default paymentReceiptEntryModel;

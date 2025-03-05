@@ -8,7 +8,8 @@ const addEditRawMaterial = async (req, res) => {
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
         if (reqData && reqData._id && reqData._id.trim() !== '') {
-            const response = await rawMaterialSchema.findByIdAndUpdate(reqData._id, reqData, { new: true });
+            let rmModel = await rawMaterialSchema()
+            const response = await rmModel.findByIdAndUpdate(reqData._id, reqData, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
                 res.status(200).json({
@@ -25,7 +26,8 @@ const addEditRawMaterial = async (req, res) => {
                 res.status(404).json({ Message: "Item not found" });
             }
         } else {
-            const existingItemByName = await rawMaterialSchema.findOne({ rmName: reqData.rmName.trim(), isDeleted: false });
+            let rmModel = await rawMaterialSchema()
+            const existingItemByName = await rmModel.findOne({ rmName: reqData.rmName.trim(), isDeleted: false });
             if (existingItemByName) {
                 let encryptData = encryptionAPI(existingItemByName, 1)
                 res.status(200).json({
@@ -37,7 +39,8 @@ const addEditRawMaterial = async (req, res) => {
                     },
                 });
             } else {
-                const response = new rawMaterialSchema(reqData);
+                let rmModel = await rawMaterialSchema()
+                const response = new rmModel(reqData);
                 await response.save();
                 let encryptData = encryptionAPI(response, 1)
                 res.status(200).json({
@@ -74,9 +77,11 @@ const getAllRawMaterials = async (req, res) => {
         }
         const skip = (pageNo - 1) * pageLimit;
 
-        const totalCount = await rawMaterialSchema.countDocuments(queryObject);
+        let rmModel = await rawMaterialSchema()
+        const totalCount = await rmModel.countDocuments(queryObject);
 
-        let data = await rawMaterialSchema
+        let rmModel1 = await rawMaterialSchema()
+        let data = await rmModel1
             .find(queryObject)
             .sort("rmName")
             .skip(skip)
@@ -111,7 +116,8 @@ const getRawMaterialById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await rawMaterialSchema.findOne({ _id: reqId });
+            let rmModel = await rawMaterialSchema()
+            response = await rmModel.findOne({ _id: reqId });
         }
 
         let encryptData = encryptionAPI(response, 1)
@@ -139,7 +145,8 @@ const deleteRawMaterialById = async (req, res) => {
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            response = await rawMaterialSchema.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+            let rmModel = await rawMaterialSchema()
+            response = await rmModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         let encryptData = encryptionAPI(response, 1)

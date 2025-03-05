@@ -1,5 +1,9 @@
 
 import mongoose from "mongoose";
+import globals from "../utils/globals.js";
+import connectToDatabase from "../utils/dbConnection.js";
+import productDetailsModel from "./productDetailsModel.js";
+import rawMaterialSchema from "./rawMaterialModel.js";
 
 const rmFormulaSchema = mongoose.Schema({
     productId: { type: mongoose.Schema.Types.ObjectId, ref: "ProductMasters" },
@@ -26,6 +30,12 @@ const rmFormulaSchema = mongoose.Schema({
     rmId: { type: mongoose.Schema.Types.ObjectId, ref: "RawMaterialMasters" }
 }, { timestamps: true })
 
+const rmFormulaModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await productDetailsModel()
+    await rawMaterialSchema()
+    return db.models.RMFormulaMaster || db.model("RMFormulaMaster", rmFormulaSchema);
+}
 
-const rmFormulaModel = mongoose.model("RMFormulaMaster", rmFormulaSchema)
+// const rmFormulaModel = mongoose.model("RMFormulaMaster", rmFormulaSchema)
 export default rmFormulaModel;

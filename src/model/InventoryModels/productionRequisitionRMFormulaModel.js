@@ -1,5 +1,9 @@
 
 import mongoose from "mongoose";
+import globals from "../../utils/globals.js";
+import connectToDatabase from "../../utils/dbConnection.js";
+import productionPlanningEntryModel from "../ProductionModels/productionPlanningEntryModel.js";
+import productDetailsModel from "../productDetailsModel.js";
 
 const ProductionRequisitionRMFormulaSchema = mongoose.Schema({
     productDetialsId: { type: mongoose.Schema.Types.ObjectId, ref: "ProductionEntry" },
@@ -14,6 +18,12 @@ const ProductionRequisitionRMFormulaSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const ProductionRequisitionRMFormulaModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await productionPlanningEntryModel()
+    await productDetailsModel()
+    return db.models.ProductionRequisitionRMFormulaList || db.model("ProductionRequisitionRMFormulaList", ProductionRequisitionRMFormulaSchema);
+}
 
-const ProductionRequisitionRMFormulaModel = mongoose.model("ProductionRequisitionRMFormulaList", ProductionRequisitionRMFormulaSchema)
+// const ProductionRequisitionRMFormulaModel = mongoose.model("ProductionRequisitionRMFormulaList", ProductionRequisitionRMFormulaSchema)
 export default ProductionRequisitionRMFormulaModel;

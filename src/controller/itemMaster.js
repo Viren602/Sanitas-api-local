@@ -9,7 +9,8 @@ const addEditItems = async (req, res) => {
     let data = req.body.data
     let reqData = getRequestData(data, 'PostApi')
     if (reqData._id && reqData._id.trim() !== '') {
-      const response = await companyItems.findByIdAndUpdate(reqData._id, reqData, { new: true });
+      let cIModel = companyItems()
+      const response = await cIModel.findByIdAndUpdate(reqData._id, reqData, { new: true });
       if (response) {
 
         let encryptData = encryptionAPI(response, 1)
@@ -25,7 +26,8 @@ const addEditItems = async (req, res) => {
         res.status(404).json({ Message: "Item not found" });
       }
     } else {
-      const existingItemByName = await companyItems.findOne({ ItemName: reqData.ItemName.trim(), IsDeleted: false });
+      let cIModel = companyItems()
+      const existingItemByName = await cIModel.findOne({ ItemName: reqData.ItemName.trim(), IsDeleted: false });
       if (existingItemByName) {
         let encryptData = encryptionAPI(existingItemByName, 1)
         res.status(200).json({
@@ -37,7 +39,8 @@ const addEditItems = async (req, res) => {
           },
         });
       } else {
-        const response = new companyItems(reqData);
+        let cIModel = companyItems()
+        const response = new cIModel(reqData);
         await response.save();
 
         let encryptData = encryptionAPI(response, 1)
@@ -67,7 +70,8 @@ const getAllItems = async (req, res) => {
       queryObject.ItemName = { $regex: `^${reqId}`, $options: "i" };
     }
 
-    let response = await companyItems.find(queryObject).select('ItemName ItemCategory BasicRate DiscountRate MinimumQty MaximumQty MrpRs HSNCode').sort("ItemName");
+    let cIModel = await companyItems()
+    let response = await cIModel.find(queryObject).select('ItemName ItemCategory BasicRate DiscountRate MinimumQty MaximumQty MrpRs HSNCode').sort("ItemName");
 
     let encryptData = encryptionAPI(response, 1)
     res.status(200).json({
@@ -93,7 +97,8 @@ const getItemById = async (req, res) => {
     let reqId = getRequestData(id)
     let response = {}
     if (reqId) {
-      response = await companyItems.findOne({ _id: reqId });
+      let cIModel = companyItems()
+      response = await cIModel.findOne({ _id: reqId });
     }
 
     let encryptData = encryptionAPI(response, 1)
@@ -121,7 +126,8 @@ const deleteItemById = async (req, res) => {
     let reqId = getRequestData(id)
     let response = {}
     if (reqId) {
-      response = await companyItems.findByIdAndUpdate(reqId, { IsDeleted: true }, { new: true, useFindAndModify: false });
+      let cIModel = companyItems()
+      response = await cIModel.findByIdAndUpdate(reqId, { IsDeleted: true }, { new: true, useFindAndModify: false });
     }
 
     let encryptData = encryptionAPI(response, 1)

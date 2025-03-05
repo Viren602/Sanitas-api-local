@@ -1,5 +1,12 @@
 
 import mongoose from "mongoose";
+import globals from "../../utils/globals.js";
+import connectToDatabase from "../../utils/dbConnection.js";
+import gstPurchaseEntryRMPMModel from "./gstPurchaseEntryRMPMModel.js";
+import grnEntryPartyDetailsModel from "../InventoryModels/grnEntryPartyDetailsModel.js";
+import grnEntryMaterialDetailsModel from "../InventoryModels/grnEntryMaterialDetailsModel.js";
+import rawMaterialSchema from "../rawMaterialModel.js";
+import packingMaterialSchema from "../packingMaterialModel.js";
 
 const gstPurchaseItemListRMPMSchema = mongoose.Schema({
     gstPurchaseEntryRMPMId: { type: mongoose.Schema.Types.ObjectId, ref: "GSTPurchaseEntryRMPM" },
@@ -28,6 +35,15 @@ const gstPurchaseItemListRMPMSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const gstPurchaseItemListRMPMModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await gstPurchaseEntryRMPMModel()
+    await grnEntryPartyDetailsModel()
+    await grnEntryMaterialDetailsModel()
+    await rawMaterialSchema()
+    await packingMaterialSchema()
+    return db.models.GSTPurchaseItemListRMPM || db.model("GSTPurchaseItemListRMPM", gstPurchaseItemListRMPMSchema);
+}
 
-const gstPurchaseItemListRMPMModel = mongoose.model("GSTPurchaseItemListRMPM", gstPurchaseItemListRMPMSchema)
+// const gstPurchaseItemListRMPMModel = mongoose.model("GSTPurchaseItemListRMPM", gstPurchaseItemListRMPMSchema)
 export default gstPurchaseItemListRMPMModel;

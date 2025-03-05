@@ -1,5 +1,8 @@
 
 import mongoose from "mongoose";
+import globals from "../../utils/globals.js";
+import connectToDatabase from "../../utils/dbConnection.js";
+import partyModel from "../partiesModel.js";
 
 const gstPurchaseEntryRMPMSchema = mongoose.Schema({
     srNo: { type: String, default: 0 },
@@ -22,6 +25,11 @@ const gstPurchaseEntryRMPMSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const gstPurchaseEntryRMPMModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await partyModel()
+    return db.models.GSTPurchaseEntryRMPM || db.model("GSTPurchaseEntryRMPM", gstPurchaseEntryRMPMSchema);
+}
 
-const gstPurchaseEntryRMPMModel = mongoose.model("GSTPurchaseEntryRMPM", gstPurchaseEntryRMPMSchema)
+// const gstPurchaseEntryRMPMModel = mongoose.model("GSTPurchaseEntryRMPM", gstPurchaseEntryRMPMSchema)
 export default gstPurchaseEntryRMPMModel;

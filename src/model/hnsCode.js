@@ -1,5 +1,7 @@
 
 import mongoose from "mongoose";
+import globals from "../utils/globals.js";
+import connectToDatabase from "../utils/dbConnection.js";
 
 const hnsCodeSchema = mongoose.Schema({
     HSNCode: { type: String, default: '' },
@@ -11,6 +13,10 @@ const hnsCodeSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const HNSCodesScHema = async () => {
+    const db = await connectToDatabase(globals.Database);
+    return db.models.HSNCodes || db.model("HSNCodes", hnsCodeSchema);
+}
 
-const HNSCodesScHema = mongoose.model("HSNCodes", hnsCodeSchema)
+// const HNSCodesScHema = mongoose.model("HSNCodes", hnsCodeSchema)
 export default HNSCodesScHema;

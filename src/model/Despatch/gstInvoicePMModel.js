@@ -1,5 +1,9 @@
 
 import mongoose from "mongoose";
+import globals from "../../utils/globals.js";
+import connectToDatabase from "../../utils/dbConnection.js";
+import partyModel from "../partiesModel.js";
+import transportCourierModel from '../transportCourierModel.js'
 
 const gstInvoicePMSchema = mongoose.Schema({
     invoiceNo: { type: String, default: 0 },
@@ -31,6 +35,12 @@ const gstInvoicePMSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const gstInvoicePMModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await partyModel()
+    await transportCourierModel
+    return db.models.GSTInvoicePM || db.model("GSTInvoicePM", gstInvoicePMSchema);
+}
 
-const gstInvoicePMModel = mongoose.model("GSTInvoicePM", gstInvoicePMSchema)
+// const gstInvoicePMModel = mongoose.model("GSTInvoicePM", gstInvoicePMSchema)
 export default gstInvoicePMModel;

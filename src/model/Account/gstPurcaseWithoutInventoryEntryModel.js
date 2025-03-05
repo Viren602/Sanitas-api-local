@@ -1,5 +1,8 @@
 
 import mongoose from "mongoose";
+import globals from "../../utils/globals.js";
+import connectToDatabase from "../../utils/dbConnection.js";
+import partyModel from "../partiesModel.js";
 
 const gstPurchaseWithoutInventoryEntrySchema = mongoose.Schema({
     srNo: { type: String, default: 0 },
@@ -28,6 +31,11 @@ const gstPurchaseWithoutInventoryEntrySchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
+const gstPurchaseWithoutInventoryEntryModel = async () => {
+    const db = await connectToDatabase(globals.Database);
+    await partyModel()
+    return db.models.GstPurchaseWithoutInventoryEntry || db.model("GstPurchaseWithoutInventoryEntry", gstPurchaseWithoutInventoryEntrySchema);
+}
 
-const gstPurchaseWithoutInventoryEntryModel = mongoose.model("GstPurchaseWithoutInventoryEntry", gstPurchaseWithoutInventoryEntrySchema)
+// const gstPurchaseWithoutInventoryEntryModel = mongoose.model("GstPurchaseWithoutInventoryEntry", gstPurchaseWithoutInventoryEntrySchema)
 export default gstPurchaseWithoutInventoryEntryModel;
