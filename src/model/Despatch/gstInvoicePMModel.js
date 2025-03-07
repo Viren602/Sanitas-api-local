@@ -38,7 +38,7 @@ const gstInvoicePMSchema = mongoose.Schema({
 const gstInvoicePMModel = async () => {
     const db = await connectToDatabase(globals.Database);
     await partyModel()
-    await transportCourierModel
+    await transportCourierModel()
     return db.models.GSTInvoicePM || db.model("GSTInvoicePM", gstInvoicePMSchema);
 }
 

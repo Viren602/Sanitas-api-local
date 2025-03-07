@@ -6,10 +6,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <style>
+        .invoice-table thead tr th {
+            font-weight: 500 !important;
+            line-height: 14px;
+            padding-top: 3px;
+            padding-bottom: 3px;
+        }
+    </style>
 </head>
 
 <body>
-    <div class="invoice h-[275mm] px-[20px] pt-[20px]">
+    <div class="invoice h-[275mm] px-[10px] pt-[20px]">
         <div class="invoice-inner h-full flex flex-col relative">
             <p class="invoice-mark absolute text-[12px] right-[0] top-[5px]">#CopyType</p>
             <div class="invoice-top shrink-0">
@@ -20,7 +28,7 @@
                         <p>#AdminAddress</p>
                         <p>Email : #AdminEmail</p>
                         <p>Mobile : #AdminMobile</p>
-                        <p>Mfg Lic. No. : #AdminMfgLicNo</p>
+                        <!-- <p>Mfg Lic. No. : #AdminMfgLicNo</p> -->
                         <div class="extra-details flex justify-between">
                             <p>GSTN no : #AdminGSTNNo</p>
                             <p>FSSAI no : #AdminFssaiNo</p>
@@ -73,84 +81,77 @@
                 </div>
             </div>
             <div class="invoice-middle grow">
-                <div class="invoice-table-container h-full flex flex-col justify-between border border-t-[0px]">
-                    <table class="invoice-table w-full table-auto border-collapse">
-                        <thead class="border border-x-[0px] border-t-[0px] border-gray-400 text-[10px] font-semibold">
+                <div
+                    class="invoice-table-container h-full flex flex-col justify-between border border-b-0 border-t-[0px]">
+                    <table class="invoice-table w-full h-full table-auto border-collapse">
+                        <thead class="border border-x-[0px] border-t-[0px] border-gray-400 text-[12px] !font-normal">
                             <tr class="bg-gray-300">
-                                <th class="w-[15%] border border-x-[0px] border-t-[0px] px-[4px] text-start">Item name
+                                <th class="w-[27%] border border-x-[0px] border-t-[0px] px-[4px] text-start">Item name
                                 </th>
-                                <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Packing</th>
-                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">HSN code</th>
-                                <th class="w-[7%] border border-t-[0px] px-[4px] text-start">Batch no</th>
-                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">Mfg. date</th>
-                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">Exp. date</th>
+                                <th class="w-[7%] border border-t-[0px] px-[4px] text-start">Packing</th>
+                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">HSN</th>
+                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">Batch no</th>
+                                <th class="w-[7%] border border-t-[0px] px-[4px] text-start">Mfg.</th>
+                                <th class="w-[7%] border border-t-[0px] px-[4px] text-start">Exp.</th>
                                 <th class="w-[6%] border border-t-[0px] px-[4px] text-start">MRP</th>
-                                <th class="w-[6%] border border-t-[0px] px-[4px] text-start">Qty.</th>
+                                <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Qty.</th>
                                 <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Free</th>
-                                <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Rate</th>
-                                <th class="w-[10%] border border-t-[0px] px-[4px] text-start">Sales amount</th>
-                                <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Dis amount</th>
-                                <th class="w-[12%] border border-l-[0px] border-t-[0px] px-[4px] text-right">Taxable
-                                    amount</th>
+                                <th class="w-[6%] border border-t-[0px] px-[4px] text-start">Rate</th>
+                                <th class="w-[7%] border border-t-[0px] px-[4px] text-start">Sales amount</th>
+                                <!-- <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Dis amount</th> -->
+                                <th class="w-[7%] border border-r-[0px] border-t-[0px] px-[4px] text-right">Amount</th>
                             </tr>
                         </thead>
-                        <tbody class="align-top text-[10px]">
+                        <tbody class="align-top text-[11px]">
                             #ItemListingRows
                             <!-- <tr>
-                                <td class="border border-x-[0px] border-t-[0px] px-[4px] text-start">Hairfix Tablet</td>
-                                <td class="border border-x-[0px] border-t-[0px] px-[4px] text-start">30 Tabl</td>
-                                <td class="border border-x-[0px] border-t-[0px] px-[4px] text-start">21069099</td>
-                                <td class="border border-x-[0px] border-t-[0px] px-[4px] text-start">ST24113</td>
-                                <td class="border border-x-[0px] border-t-[0px] px-[4px] text-start">03-2026</td>
-                                <td class="border border-x-[0px] border-t-[0px] px-[4px] text-start">03-2026</td>
-                                <td class="border border-x-[0px] border-t-[0px] px-[4px] text-start">650.00</td>
-                                <td class="border border-x-[0px] border-t-[0px] px-[4px] text-start">1420.0</td>
-                                <td class="border border-x-[0px] border-t-[0px] px-[4px] text-start">0.0</td>
-                                <td class="border border-x-[0px] border-t-[0px] px-[4px] text-start">46.00</td>
-                                <td class="border border-x-[0px] border-t-[0px] px-[4px] text-start">65320.00</td>
-                                <td class="border border-x-[0px] border-t-[0px] px-[4px] text-start">9</td>
-                                <td class="border border-x-[0px] border-t-[0px] px-[4px] text-right">65320.00</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    Hairfix Tablet</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">30
+                                    Tabl</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    21069099</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    ST24113</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    03-2026</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    03-2026</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    650.00</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    1420.0</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">0.0
+                                </td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">46.00
+                                </td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    65320.00</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-right">
+                                    65320.00</td>
                             </tr> -->
                         </tbody>
                     </table>
                     <table class="invoice-table-total w-full">
-                        <thead
-                            class="collapse border border-x-[0px] border-t-[0px] border-gray-400 text-[10px] font-semibold">
-                            <tr class="bg-gray-300">
-                                <th class="w-[15%] border border-x-[0px] border-t-[0px] px-[4px] text-start">Item name
-                                </th>
-                                <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Packing</th>
-                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">HSN code</th>
-                                <th class="w-[7%] border border-t-[0px] px-[4px] text-start">Batch no</th>
-                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">Mfg. date</th>
-                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">Exp. date</th>
-                                <th class="w-[6%] border border-t-[0px] px-[4px] text-start">MRP</th>
-                                <th class="w-[6%] border border-t-[0px] px-[4px] text-start">Qty.</th>
-                                <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Free</th>
-                                <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Rate</th>
-                                <th class="w-[10%] border border-t-[0px] px-[4px] text-start">Sales amount</th>
-                                <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Dis amount</th>
-                                <th class="w-[12%] border border-x-[0px] border-t-[0px] px-[4px] text-right">Taxable
-                                    amount</th>
-                            </tr>
-                        </thead>
-                        <tbody class="border border-x-[0px] text-[10px]">
+                        <tbody class="border border-x-[0px] border-b-0 text-[12px]">
                             <tr>
                                 <td
-                                    class="w-[15%] border border-t-[0px] border-l-[0px] px-[4px] text-start font-medium">
+                                    class="w-[27%] border border-t-[0px] py-[2px] border-r-0 border-l-[0px] px-[4px] text-start font-medium">
                                     Total</td>
-                                <td class="w-[5%] border border-t-[0px] px-[4px] text-start"></td>
-                                <td class="w-[8%] border border-t-[0px] px-[4px] text-start"></td>
-                                <td class="w-[7%] border border-t-[0px] px-[4px] text-start"></td>
-                                <td class="w-[8%] border border-t-[0px] px-[4px] text-start"></td>
-                                <td class="w-[8%] border border-t-[0px] px-[4px] text-start"></td>
-                                <td class="w-[6%] border border-t-[0px] px-[4px] text-start"></td>
-                                <td class="w-[6%] border border-t-[0px] px-[4px] text-start"></td>
-                                <td class="w-[5%] border border-t-[0px] px-[4px] text-start"></td>
-                                <td class="w-[5%] border border-t-[0px] px-[4px] text-start"></td>
-                                <td class="w-[10%] border border-t-[0px] px-[4px] text-start">#TotalSalesAmount</td>
-                                <td class="w-[5%] border border-t-[0px] px-[4px] text-start">#TotalDisAmount</td>
-                                <td class="w-[12%] border border-t-[0px] border-r-[0px] px-[4px] text-right">#TotalTaxableAmount
+                                <td class="w-[7%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[8%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[8%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[7%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[7%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[6%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[5%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[5%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[6%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[7%] border border-t-[0px] py-[2px] px-[4px] text-start">#TotalSalesAmount
+                                </td>
+                                <!-- <td class="w-[5%] border border-t-[0px] py-[2px] px-[4px] text-start">#TotalDisAmount</td> -->
+                                <td class="w-[7%] border border-t-[0px] py-[2px] border-r-[0px] px-[4px] text-right">
+                                    #TotalTaxableAmount
                                 </td>
                             </tr>
                         </tbody>
@@ -159,18 +160,30 @@
             </div>
             <div class="invoice-bottom shrink-0">
                 <div class="gst-price-table flex h-fit w-full">
-                    <div class="gst-details flex w-[65%] flex-col justify-between border border-t-[0px] border-r-[0px]">
-                        <table class="gst-table w-full">
+                    <div class="gst-details flex w-[65%] flex-col justify-between border border-t-0 border-r-[0px]">
+                        <table class="gst-table w-full h-full table-auto border-collapse">
                             <thead class="border border-x-[0px] border-t-[0px] text-[12px]">
                                 <tr>
-                                    <td class="w-[15%] px-[5px] font-medium">Class</td>
-                                    <td class="w-[20%] px-[5px] font-medium">Total</td>
-                                    <td class="w-[15%] px-[5px] font-medium">SGST</td>
-                                    <td class="w-[15%] px-[5px] font-medium">CGST</td>
-                                    <td class="w-[20%] px-[5px] font-medium">Total GST</td>
+                                    <td
+                                        class="w-[12%] px-[3px] border border-t-0 border-gray-400 border-l-0 font-medium">
+                                        Class</td>
+                                    <td class="w-[10%] px-[3px] border border-t-0 border-gray-400 font-medium">Total
+                                    </td>
+                                    <td class="w-[13%] px-[3px] border border-t-0 border-gray-400 font-medium">SGST Rate
+                                    </td>
+                                    <td class="w-[9%] px-[3px] border border-t-0 border-gray-400 font-medium">SGST</td>
+                                    <td class="w-[13%] px-[3px] border border-t-0 border-gray-400 font-medium">CGST Rate
+                                    </td>
+                                    <td class="w-[9%] px-[3px] border border-t-0 border-gray-400 font-medium">CGST</td>
+                                    <td class="w-[13%] px-[3px] border border-t-0 border-gray-400 font-medium">IGST Rate
+                                    </td>
+                                    <td class="w-[9%] px-[3px] border border-t-0 border-gray-400 font-medium">IGST</td>
+                                    <td
+                                        class="w-[12%] px-[3px] border border-t-0 border-gray-400 border-r-0 font-medium">
+                                        Total GST</td>
                                 </tr>
                             </thead>
-                            <tbody class="border border-x-[0px] border-t-[0px] border-gray-400 text-[12px]">
+                            <tbody class="align-top text-[12px]">
                                 #HSNCodeTableRows
                                 <!-- <tr>
                                     <td class="px-[5px]">GST 9%</td>
@@ -178,18 +191,34 @@
                                     <td class="px-[5px]">5878.80</td>
                                     <td class="px-[5px]">5878.80</td>
                                     <td class="px-[5px]">5878.80</td>
+                                    <td class="px-[5px]">5878.80</td>
+                                    <td class="px-[5px]">5878.80</td>
+                                    <td class="px-[5px]">5878.80</td>
+                                    <td class="px-[5px]">5878.80</td>
                                 </tr> -->
                             </tbody>
                         </table>
-                        <table class="gst-total w-full">
+                        <table class="gst-total w-full table-auto border-collapse">
                             <tbody
-                                class="border border-x-[0px] border-t-[1px] border-b-[0px] border-gray-400 text-[12px]">
+                                class="border border-x border-t-[1px] border-x-0 border-b-[0px] border-gray-400 text-[12px]">
                                 <tr>
-                                    <td class="w-[15%] px-[5px] font-medium">Total</td>
-                                    <td class="w-[20%] px-[5px]">#TaxableAmountTotal</td>
-                                    <td class="w-[15%] px-[5px]">#SGSTTotalAmount</td>
-                                    <td class="w-[15%] px-[5px]">#CGSTTotalAmount</td>
-                                    <td class="w-[20%] px-[5px]">#TotalGSTCalculation</td>
+                                    <td
+                                        class="w-[12%] border border-gray-400 px-[3px] border-y-0 border-l-0 font-medium">
+                                        Total</td>
+                                    <td class="w-[10%] border border-gray-400 px-[3px] border-y-0">
+                                        #TaxableAmountTotal
+                                    </td>
+                                    <td class="w-[13%] border border-gray-400 px-[3px] border-y-0"></td>
+                                    <td class="w-[9%] border border-gray-400 px-[3px] border-y-0">
+                                        #SGSTTotalAmount</td>
+                                    <td class="w-[13%] border border-gray-400 px-[3px] border-y-0"></td>
+                                    <td class="w-[9%] border border-gray-400 px-[3px] border-y-0">
+                                        #CGSTTotalAmount</td>
+                                    <td class="w-[13%] border border-gray-400 px-[3px] border-y-0"></td>
+                                    <td class="w-[9%] border border-gray-400 px-[3px] border-y-0">
+                                        #IGSTTotalAmount</td>
+                                    <td class="w-[12%] border border-gray-400 px-[3px] border-y-0 border-r-0">
+                                        #TotalGSTCalculation</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -214,6 +243,10 @@
                                     <td class="px-[5px] text-right">#CGSTAmount</td>
                                 </tr>
                                 <tr>
+                                    <td class="px-[5px]">IGST payable</td>
+                                    <td class="px-[5px] text-right">#IGSTAmount</td>
+                                </tr>
+                                <tr>
                                     <td class="px-[5px]">Cr/Dr note</td>
                                     <td class="px-[5px] text-right">#CRDRNote</td>
                                 </tr>
@@ -233,7 +266,7 @@
                         </table>
                     </div>
                 </div>
-                <div class="price-words flex h-fit justify-between border">
+                <div class="price-words flex h-fit justify-between border-x">
                     <p class="w-[65%] px-[5px] text-[12px] font-bold"><span></span> </p>
                     <div class="flex w-[35%] justify-between px-[5px] text-[12px]">
                         <p class="font-bold">Grand Total</p>
@@ -250,10 +283,14 @@
                         <div class="bank-details mt-[5px]">
                             <p class="mb-[2px] text-[11px] font-medium underline">Bank details:</p>
                             <div class="bank-info grid grid-cols-2">
-                                <p class="text-[12px] leading-4"><span class="font-medium">Bank name :</span> #AdminBankName</p>
-                                <p class="text-[12px] leading-4"><span class="font-medium">IFSC code :</span> #AdminIFSCCode</p>
-                                <p class="text-[12px] leading-4"><span class="font-medium">A/c No. :</span> #ADMINACNo</p>
-                                <p class="text-[12px] leading-4"><span class="font-medium">Branch :</span> #AdminBankBranch</p>
+                                <p class="text-[12px] leading-4"><span class="font-medium">Bank name :</span>
+                                    #AdminBankName</p>
+                                <p class="text-[12px] leading-4"><span class="font-medium">IFSC code :</span>
+                                    #AdminIFSCCode</p>
+                                <p class="text-[12px] leading-4"><span class="font-medium">A/c No. :</span> #ADMINACNo
+                                </p>
+                                <p class="text-[12px] leading-4"><span class="font-medium">Branch :</span>
+                                    #AdminBankBranch</p>
                             </div>
                         </div>
                     </div>

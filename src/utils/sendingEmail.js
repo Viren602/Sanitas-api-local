@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer"
 
 
-const mailsender = async ({ toMail, html, subject, fromMail }) => {
+const mailsender = async ({ toMail, html, subject, fromMail, filename, pdfBuffer, contentType }) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -15,6 +15,13 @@ const mailsender = async ({ toMail, html, subject, fromMail }) => {
     to: toMail,
     subject: subject,
     html: html,
+    attachments: [
+      {
+          filename: filename,
+          content: pdfBuffer,
+          contentType: contentType
+      }
+  ]
   };
 
   transporter.sendMail(mailOptions, function (error, info) {

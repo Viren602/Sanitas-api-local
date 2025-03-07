@@ -4,6 +4,7 @@ import connectToDatabase from "../../utils/dbConnection.js";
 import globals from "../../utils/globals.js";
 import gstInvoicePMModel from "./gstInvoicePMModel.js";
 import packingMaterialSchema from "../packingMaterialModel.js";
+import HNSCodesScHema from "../hnsCode.js";
 
 const gstInvoicePMItemSchema = mongoose.Schema({
     gstInvoicePMID: { type: mongoose.Schema.Types.ObjectId, ref: "GSTInvoicePM" },

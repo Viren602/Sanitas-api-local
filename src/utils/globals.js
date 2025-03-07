@@ -1,5 +1,5 @@
 const globals = {
-    Database: "",
+    Database: "PharmaSoftware",
   };
   
 export default globals;

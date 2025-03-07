@@ -1,6 +1,5 @@
 
 const showHSNCodes = (itemListing, hsnCodeList) => {
-
     const hsnCodeSummary = itemListing.reduce((acc, item) => {
         if (!acc[item.hsnCodeId]) {
             acc[item.hsnCodeId] = { hsnCodeId: item.hsnCodeId, taxableAmount: 0 };
@@ -27,9 +26,9 @@ const showHSNCodes = (itemListing, hsnCodeList) => {
         const totalAmount = (
             // Number(summary.taxableAmount) +
             Number(sgstAmount) +
-            Number(cgstAmount) 
-            // Number(igstAmount) +
-            // Number(utgstAmount)
+            Number(cgstAmount) +
+            Number(igstAmount) +
+            Number(utgstAmount)
         ).toFixed(2);
 
         return {
