@@ -27,8 +27,8 @@ const showHSNCodes = (itemListing, hsnCodeList) => {
             // Number(summary.taxableAmount) +
             Number(sgstAmount) +
             Number(cgstAmount) +
-            Number(igstAmount) +
-            Number(utgstAmount)
+            Number(igstAmount)
+            // Number(utgstAmount)
         ).toFixed(2);
 
         return {
