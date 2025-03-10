@@ -1310,18 +1310,21 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
         };
 
         if (reqData.endingDate) {
-            queryObject.createdAt = { $lte: new Date(reqData.endingDate) }
+            let endDate = new Date(reqData.endingDate);
+            endDate.setHours(23, 59, 59, 999);
+            queryObject.createdAt = { $lte: endDate };
         }
 
         if (reqData.materialType === 'Raw Material') {
-            queryObject.rawMaterialId = { $exists: true, $ne: null };
+            queryObject.rawMaterialId = reqData.rawMaterialId;
             queryObject.packageMaterialId = null;
         }
 
         if (reqData.materialType === 'Packing Material') {
-            queryObject.packageMaterialId = { $exists: true, $ne: null };
+            queryObject.packageMaterialId = data.packageMaterialId;
             queryObject.rawMaterialId = null;
         }
+        console.log(queryObject)
         let gemDetailsModel = await grnEntryMaterialDetailsModel();
         let response = await gemDetailsModel
             .find(queryObject)
@@ -1342,7 +1345,7 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
                     select: 'partyName _id',
                 },
             });
-
+        console.log(response)
         if (reqData.materialType === 'Raw Material') {
             response = response.sort((a, b) => {
                 const nameA = a.rawMaterialId?.rmName?.toLowerCase() || '';
@@ -1370,7 +1373,6 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
             }
         }
 
-        console.log(response)
         let encryptData = encryptionAPI(response, 1)
 
 
