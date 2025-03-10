@@ -1,5 +1,5 @@
 
-const showHSNCodes = (itemListing, hsnCodeList) => {
+const showHSNCodes = (itemListing, hsnCodeList, state) => {
     const hsnCodeSummary = itemListing.reduce((acc, item) => {
         if (!acc[item.hsnCodeId]) {
             acc[item.hsnCodeId] = { hsnCodeId: item.hsnCodeId, taxableAmount: 0 };
@@ -17,6 +17,8 @@ const showHSNCodes = (itemListing, hsnCodeList) => {
         if (hsnDetails.toObject) {
             hsnDetails = hsnDetails.toObject();
         }
+
+        hsnDetails.IGST = state !== 'GUJARAT' ? hsnDetails.IGST : 0
 
         const sgstAmount = (Number(summary.taxableAmount) * ((hsnDetails.SGST || 0) / 100)).toFixed(2);
         const cgstAmount = (Number(summary.taxableAmount) * ((hsnDetails.CGST || 0) / 100)).toFixed(2);

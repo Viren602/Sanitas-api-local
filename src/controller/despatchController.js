@@ -572,7 +572,7 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
         let hcModel = await HNSCodesScHema()
         let hsnCodeList = await hcModel.find({});
 
-        let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList)
+        let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList, invoiceDetails.partyId.state)
         const hsnCodeTotalCalculation = hsnCodeListForTable.reduce(
             (acc, item) => {
                 acc.taxableAmount += Number(item.taxableAmount);
@@ -797,7 +797,8 @@ const sendGSTInvoiceFinishGoodsToClient = async (req, res) => {
             let hcModel = await HNSCodesScHema()
             let hsnCodeList = await hcModel.find({});
 
-            let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList)
+
+            let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList, invoiceDetails.partyId.state)
             const hsnCodeTotalCalculation = hsnCodeListForTable.reduce(
                 (acc, item) => {
                     acc.taxableAmount += Number(item.taxableAmount);
@@ -809,6 +810,8 @@ const sendGSTInvoiceFinishGoodsToClient = async (req, res) => {
                 },
                 { taxableAmount: 0, sgstAmount: 0, cgstAmount: 0, igstAmount: 0, totalAmount: 0 }
             );
+
+
             const hsnCodeTableRows = hsnCodeListForTable && hsnCodeListForTable.length > 0
                 ? hsnCodeListForTable.map(item => `
                 <tr>
@@ -1470,7 +1473,7 @@ const generateGSTInvoiceForRMById = async (req, res) => {
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
                 path: 'partyId',
-                select: 'partyName address1 address2 address3 address4 corrspAddress1 corrspAddress2 corrspAddress3 corrspAddress4 state pinCode gstnNo mobileNo1 mobileNo2 crdays person dlNo1 dlNo2 fssaiNo bankName city',
+                select: 'email partyName address1 address2 address3 address4 corrspAddress1 corrspAddress2 corrspAddress3 corrspAddress4 state pinCode gstnNo mobileNo1 mobileNo2 crdays person dlNo1 dlNo2 fssaiNo bankName city',
             })
             .populate({
                 path: 'transportId',
@@ -1520,7 +1523,7 @@ const generateGSTInvoiceForRMById = async (req, res) => {
         let hcModel = await HNSCodesScHema()
         let hsnCodeList = await hcModel.find({});
 
-        let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList)
+        let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList, invoiceDetails.partyId.state)
 
         const hsnCodeTotalCalculation = hsnCodeListForTable.reduce(
             (acc, item) => {
@@ -1598,6 +1601,7 @@ const generateGSTInvoiceForRMById = async (req, res) => {
                 .replace('#DisCountAmount', invoiceDetails.discount)
                 .replace('#SGSTAmount', invoiceDetails.sgst)
                 .replace('#CGSTAmount', invoiceDetails.cgst)
+                .replace('#IGSTAmount', invoiceDetails.igst)
                 .replace('#CRDRNote', invoiceDetails.crDrNote)
                 .replace('#Freight', invoiceDetails.freight && invoiceDetails.freight > 0 ? invoiceDetails.freight : 0)
                 .replace('#OtherCharges', invoiceDetails.other && invoiceDetails.other > 0 ? invoiceDetails.other : 0)
@@ -1654,6 +1658,247 @@ const generateGSTInvoiceForRMById = async (req, res) => {
         res.setHeader("Content-Type", "application/pdf");
 
         res.end(pdfBuffer);
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
+const sendGSTInvoiceRMToClient = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        let cgModel = await companyGroupModel()
+        let companyDetails = await cgModel.findOne({});
+        let adminAddress = companyDetails.addressLine1 + ' '
+            + companyDetails.addressLine2 + ' '
+            + companyDetails.addressLine3 + ' '
+            + companyDetails.pinCode + '(' + companyDetails.state + ')'
+
+        let girModel = await gstInvoiceRMModel();
+        let invoiceDetails = await girModel
+            .findOne({ _id: reqId, isDeleted: false })
+            .populate({
+                path: 'partyId',
+                select: 'email partyName address1 address2 address3 address4 corrspAddress1 corrspAddress2 corrspAddress3 corrspAddress4 state pinCode gstnNo mobileNo1 mobileNo2 crdays person dlNo1 dlNo2 fssaiNo bankName city',
+            })
+            .populate({
+                path: 'transportId',
+                select: 'transportName',
+            });
+
+        if (invoiceDetails.partyId.email && invoiceDetails.partyId.email !== '') {
+            let giRMItemModel = await gstinvoiceRMItemModel()
+            let itemListing = await giRMItemModel
+                .find({ gstInvoiceRMID: reqId, isDeleted: false });
+
+            let recipientAddress = invoiceDetails.partyId.address1 + ' '
+                + invoiceDetails.partyId.address2 + ' '
+                + invoiceDetails.partyId.address3 + ' '
+                + invoiceDetails.partyId.address4 + '-'
+                + invoiceDetails.partyId.pinCode
+
+            let shippedToAddress = (invoiceDetails.partyId.corrspAddress1 !== '' ? invoiceDetails.partyId.corrspAddress1 : invoiceDetails.partyId.address1) + ' ' +
+                (invoiceDetails.partyId.corrspAddress2 !== '' ? invoiceDetails.partyId.corrspAddress2 : invoiceDetails.partyId.address2) + ' ' +
+                (invoiceDetails.partyId.corrspAddress3 !== '' ? invoiceDetails.partyId.corrspAddress3 : invoiceDetails.partyId.address3) + ' ' +
+                (invoiceDetails.partyId.corrspAddress4 !== '' ? invoiceDetails.partyId.corrspAddress4 : invoiceDetails.partyId.address4) + '-' +
+                invoiceDetails.partyId.pinCode
+
+            let mobileNo = invoiceDetails.partyId.mobileNo1 + (invoiceDetails.partyId.mobileNo2 !== '' ? ',' + invoiceDetails.partyId.mobileNo2 : '')
+
+            const itemListingTotalCalculation = itemListing.reduce((acc, item) => {
+                acc.amount += Number(item.amount);
+                acc.discAmount += Number(item.discAmount);
+                acc.taxableAmount += Number(item.taxableAmount);
+                return acc;
+            }, { amount: 0, discAmount: 0, taxableAmount: 0 });
+
+            const itemListingRows = itemListing && itemListing.length > 0
+                ? itemListing.map(item => `
+                <tr>
+                    <td class="border border-x border-l-0 border-y-0 px-[4px] text-start">${item.itemName}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.hsnCodeName}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.batchNo}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.qty}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${Number(item.rate).toFixed(2)}</td>
+                    <td class="border border-x border-r-0 border-y-0 px-[4px] text-start">${Number(item.amount).toFixed(2)}</td>
+                </tr>
+            `).join('')
+                : '';
+
+            let hcModel = await HNSCodesScHema()
+            let hsnCodeList = await hcModel.find({});
+
+            let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList, invoiceDetails.partyId.state)
+
+            const hsnCodeTotalCalculation = hsnCodeListForTable.reduce(
+                (acc, item) => {
+                    acc.taxableAmount += Number(item.taxableAmount);
+                    acc.sgstAmount += Number(item.sgstAmount);
+                    acc.cgstAmount += Number(item.cgstAmount);
+                    acc.igstAmount += Number(item.igstAmount);
+                    acc.totalAmount += Number(item.totalAmount);
+                    return acc;
+                },
+                { taxableAmount: 0, sgstAmount: 0, cgstAmount: 0, igstAmount: 0, totalAmount: 0 }
+            );
+            const hsnCodeTableRows = hsnCodeListForTable && hsnCodeListForTable.length > 0
+                ? hsnCodeListForTable.map(item => `
+                            <tr>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x border-l-0">${item.HSNCode}</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.taxableAmount}</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.SGST}%</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.sgstAmount}</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.CGST}%</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.cgstAmount}</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.IGST}%</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.igstAmount}</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x border-r-0">${item.totalAmount}</td>
+                        </tr>
+            `).join('')
+                : '';
+
+
+            let date = new Date(invoiceDetails.invoiceDate);
+            date.setDate(date.getDate() + invoiceDetails.creditDay);
+            let dueDate = date.toDateString()
+
+            let htmlTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "gstInvoiceRMTemplate.html"), "utf8");
+
+            // Injecting CSS for empty pages
+            htmlTemplate = htmlTemplate + `
+                                <style>
+                                    @page {
+                                        size: A4;
+                                        margin: 0;
+                                    }
+                                    .empty-page {
+                                        page-break-before: always;
+                                        height: 100vh;
+                                    }
+                                </style>
+                                `;
+
+            const generatePage = (copyType) => {
+                return htmlTemplate.replace("#CompanyName", invoiceDetails.partyId.partyName)
+                    .replace('#CopyType', copyType)
+                    .replace('#ConCompanyName', invoiceDetails.partyId.partyName)
+                    .replace('#ConRecipientState', invoiceDetails.partyId.state)
+                    .replace('#ConMobielNo', mobileNo)
+                    .replace('#RecipientAddress', recipientAddress)
+                    .replace('#ShippedToAddress', shippedToAddress)
+                    .replace('#RecipientState', invoiceDetails.partyId.state)
+                    .replace('#RecpGSTNNo', invoiceDetails.partyId.gstnNo ? invoiceDetails.partyId.gstnNo : '-')
+                    .replace('#FSSAINo', invoiceDetails.partyId.fssaiNo ? invoiceDetails.partyId.fssaiNo : '-')
+                    .replace('#RecpDLNo', (invoiceDetails.partyId.dlNo1 !== '' ? invoiceDetails.partyId.dlNo1 : '') + (invoiceDetails.partyId.dlNo2 ? (', ' + invoiceDetails.partyId.dlNo2) : ''))
+                    .replace('#MobielNo', mobileNo)
+                    .replace('#TransportName', invoiceDetails.transportId.transportName)
+                    .replace('#Cases', invoiceDetails.cases)
+                    .replace('#Destination', invoiceDetails.partyId.city)
+                    .replace('#Weight', invoiceDetails.weight)
+                    .replace('#LRNo', invoiceDetails.lRNo)
+                    .replace('#LRDate', dayjs(invoiceDetails.lRDate).format("DD-MM-YYYY"))
+                    .replace('#RDPermitNo', invoiceDetails.roadPermitNo)
+                    .replace('#InvoiceNo', invoiceDetails.invoiceNo)
+                    .replace('#InvoiceDate', dayjs(invoiceDetails.invoiceDate).format("DD-MM-YYYY"))
+                    .replace('#DueDate', dayjs(dueDate).format("DD-MM-YYYY"))
+                    .replace('#ItemListingRows', itemListingRows)
+                    .replace('#SubTotalAmount', invoiceDetails.subTotal)
+                    .replace('#DisCountAmount', invoiceDetails.discount)
+                    .replace('#SGSTAmount', invoiceDetails.sgst)
+                    .replace('#CGSTAmount', invoiceDetails.cgst)
+                    .replace('#IGSTAmount', invoiceDetails.igst)
+                    .replace('#CRDRNote', invoiceDetails.crDrNote)
+                    .replace('#Freight', invoiceDetails.freight && invoiceDetails.freight > 0 ? invoiceDetails.freight : 0)
+                    .replace('#OtherCharges', invoiceDetails.other && invoiceDetails.other > 0 ? invoiceDetails.other : 0)
+                    .replace('#RoundOffAmount', invoiceDetails.roundOff)
+                    .replace('#GrandTotal', invoiceDetails.grandTotal)
+                    .replace('#HSNCodeTableRows', hsnCodeTableRows)
+                    .replace('#TotalSalesAmount', itemListingTotalCalculation.amount)
+                    .replace('#TotalDisAmount', itemListingTotalCalculation.discAmount)
+                    .replace('#TotalTaxableAmount', itemListingTotalCalculation.taxableAmount)
+                    .replace('#TaxableAmountTotal', hsnCodeTotalCalculation.taxableAmount)
+                    .replace('#SGSTTotalAmount', hsnCodeTotalCalculation.sgstAmount)
+                    .replace('#CGSTTotalAmount', hsnCodeTotalCalculation.cgstAmount)
+                    .replace('#IGSTTotalAmount', hsnCodeTotalCalculation.igstAmount)
+                    .replace('#TotalGSTCalculation', hsnCodeTotalCalculation.totalAmount)
+                    .replaceAll('#AdminCompanyName', companyDetails.CompanyName)
+                    .replace('#AdminAddress', adminAddress)
+                    .replace('#AdminEmail', companyDetails.email)
+                    .replace('#AdminMobile', companyDetails.mobile)
+                    .replace('#AdminMfgLicNo', companyDetails.mfgLicNo)
+                    .replace('#AdminFssaiNo', companyDetails.fssaiNo)
+                    .replace('#AdminGSTNNo', companyDetails.gstnNo)
+                    .replace('#AdminPanNo', companyDetails.panNo)
+                    .replace('#TermsConditionLine1', companyDetails.termsConditionLine1)
+                    .replace('#TermsConditionLine2', companyDetails.termsConditionLine2)
+                    .replace('#TermsConditionLine3', companyDetails.termsConditionLine3)
+                    .replace('#TermsConditionLine4', companyDetails.termsConditionLine4)
+                    .replace('#AdminBankName', companyDetails.bankName)
+                    .replace('#AdminIFSCCode', companyDetails.ifscCode)
+                    .replace('#ADMINACNo', companyDetails.acNo)
+                    .replace('#AdminBankBranch', companyDetails.branch)
+            }
+
+            htmlTemplate = `
+            <div class="empty-page">${generatePage("Original for Recipient")}</div>
+        `;
+
+            const browser = await puppeteer.launch({
+                headless: "new",
+                args: ["--no-sandbox", "--disable-setuid-sandbox"]
+            });
+            const page = await browser.newPage();
+
+            await page.setContent(htmlTemplate, { waitUntil: "load" });
+
+            const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+
+            await browser.close();
+
+            let etModel = await emailTemplateModel()
+            const EmailTemplate = await etModel.findOne({ emailTemplateId: 3 });
+
+            let html = EmailTemplate.description.replace('#CompanyName', invoiceDetails.partyId.partyName);
+
+            let emaildata = {
+                toMail: invoiceDetails.partyId.email,
+                subject: EmailTemplate.emailSubject,
+                fromMail: FromMail,
+                html: html,
+                filename: 'GSTInvoiceRM',
+                pdfBuffer: pdfBuffer,
+                contentType: "application/pdf"
+            };
+
+            mailsender(emaildata)
+
+
+            let encryptData = encryptionAPI(invoiceDetails, 1);
+
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "Mail Sent Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+
+        } else {
+            let encryptData = encryptionAPI(invoiceDetails, 1);
+            res.status(200).json({
+                data: {
+                    statusCode: 404,
+                    Message: "Email is not available for this company",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+        }
     } catch (error) {
         console.log("Error in Despatch controller", error);
         errorHandler(error, req, res, "Error in Despatch controller")
@@ -2160,7 +2405,7 @@ const generateGSTInvoiceForPMById = async (req, res) => {
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
                 path: 'partyId',
-                select: 'partyName address1 address2 address3 address4 corrspAddress1 corrspAddress2 corrspAddress3 corrspAddress4 state pinCode gstnNo mobileNo1 mobileNo2 crdays person dlNo1 dlNo2 fssaiNo bankName city',
+                select: 'email partyName address1 address2 address3 address4 corrspAddress1 corrspAddress2 corrspAddress3 corrspAddress4 state pinCode gstnNo mobileNo1 mobileNo2 crdays person dlNo1 dlNo2 fssaiNo bankName city',
             })
             .populate({
                 path: 'transportId',
@@ -2210,7 +2455,7 @@ const generateGSTInvoiceForPMById = async (req, res) => {
         let hcModel = await HNSCodesScHema()
         let hsnCodeList = await hcModel.find({});
 
-        let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList)
+        let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList, invoiceDetails.partyId.state)
 
         const hsnCodeTotalCalculation = hsnCodeListForTable.reduce(
             (acc, item) => {
@@ -2289,6 +2534,7 @@ const generateGSTInvoiceForPMById = async (req, res) => {
                 .replace('#DisCountAmount', invoiceDetails.discount)
                 .replace('#SGSTAmount', invoiceDetails.sgst)
                 .replace('#CGSTAmount', invoiceDetails.cgst)
+                .replace('#IGSTAmount', invoiceDetails.igst)
                 .replace('#CRDRNote', invoiceDetails.crDrNote)
                 .replace('#Freight', invoiceDetails.freight && invoiceDetails.freight > 0 ? invoiceDetails.freight : 0)
                 .replace('#OtherCharges', invoiceDetails.other && invoiceDetails.other > 0 ? invoiceDetails.other : 0)
@@ -2345,6 +2591,248 @@ const generateGSTInvoiceForPMById = async (req, res) => {
         res.setHeader("Content-Type", "application/pdf");
 
         res.end(pdfBuffer);
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
+const sendGSTInvoicePMToClient = async (req, res) => {
+    try {
+
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        let cgModel = await companyGroupModel()
+        let companyDetails = await cgModel.findOne({});
+        let adminAddress = companyDetails.addressLine1 + ' '
+            + companyDetails.addressLine2 + ' '
+            + companyDetails.addressLine3 + ' '
+            + companyDetails.pinCode + '(' + companyDetails.state + ')'
+
+        let gipModel = await gstInvoicePMModel();
+        let invoiceDetails = await gipModel
+            .findOne({ _id: reqId, isDeleted: false })
+            .populate({
+                path: 'partyId',
+                select: 'email partyName address1 address2 address3 address4 corrspAddress1 corrspAddress2 corrspAddress3 corrspAddress4 state pinCode gstnNo mobileNo1 mobileNo2 crdays person dlNo1 dlNo2 fssaiNo bankName city',
+            })
+            .populate({
+                path: 'transportId',
+                select: 'transportName',
+            });
+
+        if (invoiceDetails.partyId.email && invoiceDetails.partyId.email !== '') {
+            let giPMItemModel = await gstInvoicePMItemModel()
+            let itemListing = await giPMItemModel
+                .find({ gstInvoicePMID: reqId, isDeleted: false });
+
+            let recipientAddress = invoiceDetails.partyId.address1 + ' '
+                + invoiceDetails.partyId.address2 + ' '
+                + invoiceDetails.partyId.address3 + ' '
+                + invoiceDetails.partyId.address4 + '-'
+                + invoiceDetails.partyId.pinCode
+
+            let shippedToAddress = (invoiceDetails.partyId.corrspAddress1 !== '' ? invoiceDetails.partyId.corrspAddress1 : invoiceDetails.partyId.address1) + ' ' +
+                (invoiceDetails.partyId.corrspAddress2 !== '' ? invoiceDetails.partyId.corrspAddress2 : invoiceDetails.partyId.address2) + ' ' +
+                (invoiceDetails.partyId.corrspAddress3 !== '' ? invoiceDetails.partyId.corrspAddress3 : invoiceDetails.partyId.address3) + ' ' +
+                (invoiceDetails.partyId.corrspAddress4 !== '' ? invoiceDetails.partyId.corrspAddress4 : invoiceDetails.partyId.address4) + '-' +
+                invoiceDetails.partyId.pinCode
+
+            let mobileNo = invoiceDetails.partyId.mobileNo1 + (invoiceDetails.partyId.mobileNo2 !== '' ? ',' + invoiceDetails.partyId.mobileNo2 : '')
+
+            const itemListingTotalCalculation = itemListing.reduce((acc, item) => {
+                acc.amount += Number(item.amount);
+                acc.discAmount += Number(item.discAmount);
+                acc.taxableAmount += Number(item.taxableAmount);
+                return acc;
+            }, { amount: 0, discAmount: 0, taxableAmount: 0 });
+
+            const itemListingRows = itemListing && itemListing.length > 0
+                ? itemListing.map(item => `
+                <tr>
+                    <td class="border border-x border-l-0 border-y-0 px-[4px] text-start">${item.itemName}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.hsnCodeName}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.batchNo}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.qty}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${Number(item.rate).toFixed(2)}</td>
+                    <td class="border border-x border-r-0 border-y-0 px-[4px] text-start">${Number(item.amount).toFixed(2)}</td>
+                </tr>
+            `).join('')
+                : '';
+
+            let hcModel = await HNSCodesScHema()
+            let hsnCodeList = await hcModel.find({});
+
+            let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList, invoiceDetails.partyId.state)
+
+            const hsnCodeTotalCalculation = hsnCodeListForTable.reduce(
+                (acc, item) => {
+                    acc.taxableAmount += Number(item.taxableAmount);
+                    acc.sgstAmount += Number(item.sgstAmount);
+                    acc.cgstAmount += Number(item.cgstAmount);
+                    acc.igstAmount += Number(item.igstAmount);
+                    acc.totalAmount += Number(item.totalAmount);
+                    return acc;
+                },
+                { taxableAmount: 0, sgstAmount: 0, cgstAmount: 0, igstAmount: 0, totalAmount: 0 }
+            );
+
+            const hsnCodeTableRows = hsnCodeListForTable && hsnCodeListForTable.length > 0
+                ? hsnCodeListForTable.map(item => `
+                            <tr>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x border-l-0">${item.HSNCode}</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.taxableAmount}</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.SGST}%</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.sgstAmount}</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.CGST}%</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.cgstAmount}</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.IGST}%</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.igstAmount}</td>
+                        <td class="px-[3px] border-gray-400 border border-y-0 border-x border-r-0">${item.totalAmount}</td>
+        </tr>
+            `).join('')
+                : '';
+
+
+            let date = new Date(invoiceDetails.invoiceDate);
+            date.setDate(date.getDate() + invoiceDetails.creditDay);
+            let dueDate = date.toDateString()
+
+            let htmlTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "gstInvoiceRMTemplate.html"), "utf8");
+
+            // Injecting CSS for empty pages
+            htmlTemplate = htmlTemplate + `
+                                <style>
+                                    @page {
+                                        size: A4;
+                                        margin: 0;
+                                    }
+                                    .empty-page {
+                                        page-break-before: always;
+                                        height: 100vh;
+                                    }
+                                </style>
+                                `;
+
+            const generatePage = (copyType) => {
+                return htmlTemplate.replace("#CompanyName", invoiceDetails.partyId.partyName)
+                    .replace('#CopyType', copyType)
+                    .replace('#ConCompanyName', invoiceDetails.partyId.partyName)
+                    .replace('#ConRecipientState', invoiceDetails.partyId.state)
+                    .replace('#ConMobielNo', mobileNo)
+                    .replace('#RecipientAddress', recipientAddress)
+                    .replace('#ShippedToAddress', shippedToAddress)
+                    .replace('#RecipientState', invoiceDetails.partyId.state)
+                    .replace('#RecpGSTNNo', invoiceDetails.partyId.gstnNo ? invoiceDetails.partyId.gstnNo : '-')
+                    .replace('#FSSAINo', invoiceDetails.partyId.fssaiNo ? invoiceDetails.partyId.fssaiNo : '-')
+                    .replace('#RecpDLNo', (invoiceDetails.partyId.dlNo1 !== '' ? invoiceDetails.partyId.dlNo1 : '') + (invoiceDetails.partyId.dlNo2 ? (', ' + invoiceDetails.partyId.dlNo2) : ''))
+                    .replace('#MobielNo', mobileNo)
+                    .replace('#TransportName', invoiceDetails.transportId.transportName)
+                    .replace('#Cases', invoiceDetails.cases)
+                    .replace('#Destination', invoiceDetails.partyId.city)
+                    .replace('#Weight', invoiceDetails.weight)
+                    .replace('#LRNo', invoiceDetails.lRNo)
+                    .replace('#LRDate', dayjs(invoiceDetails.lRDate).format("DD-MM-YYYY"))
+                    .replace('#RDPermitNo', invoiceDetails.roadPermitNo)
+                    .replace('#InvoiceNo', invoiceDetails.invoiceNo)
+                    .replace('#InvoiceDate', dayjs(invoiceDetails.invoiceDate).format("DD-MM-YYYY"))
+                    .replace('#DueDate', dayjs(dueDate).format("DD-MM-YYYY"))
+                    .replace('#ItemListingRows', itemListingRows)
+                    .replace('#SubTotalAmount', invoiceDetails.subTotal)
+                    .replace('#DisCountAmount', invoiceDetails.discount)
+                    .replace('#SGSTAmount', invoiceDetails.sgst)
+                    .replace('#CGSTAmount', invoiceDetails.cgst)
+                    .replace('#IGSTAmount', invoiceDetails.igst)
+                    .replace('#CRDRNote', invoiceDetails.crDrNote)
+                    .replace('#Freight', invoiceDetails.freight && invoiceDetails.freight > 0 ? invoiceDetails.freight : 0)
+                    .replace('#OtherCharges', invoiceDetails.other && invoiceDetails.other > 0 ? invoiceDetails.other : 0)
+                    .replace('#RoundOffAmount', invoiceDetails.roundOff)
+                    .replace('#GrandTotal', invoiceDetails.grandTotal)
+                    .replace('#HSNCodeTableRows', hsnCodeTableRows)
+                    .replace('#TotalSalesAmount', itemListingTotalCalculation.amount)
+                    .replace('#TotalDisAmount', itemListingTotalCalculation.discAmount)
+                    .replace('#TotalTaxableAmount', itemListingTotalCalculation.taxableAmount)
+                    .replace('#TaxableAmountTotal', hsnCodeTotalCalculation.taxableAmount)
+                    .replace('#SGSTTotalAmount', hsnCodeTotalCalculation.sgstAmount)
+                    .replace('#CGSTTotalAmount', hsnCodeTotalCalculation.cgstAmount)
+                    .replace('#IGSTTotalAmount', hsnCodeTotalCalculation.igstAmount)
+                    .replace('#TotalGSTCalculation', hsnCodeTotalCalculation.totalAmount)
+                    .replaceAll('#AdminCompanyName', companyDetails.CompanyName)
+                    .replace('#AdminAddress', adminAddress)
+                    .replace('#AdminEmail', companyDetails.email)
+                    .replace('#AdminMobile', companyDetails.mobile)
+                    .replace('#AdminMfgLicNo', companyDetails.mfgLicNo)
+                    .replace('#AdminFssaiNo', companyDetails.fssaiNo)
+                    .replace('#AdminGSTNNo', companyDetails.gstnNo)
+                    .replace('#AdminPanNo', companyDetails.panNo)
+                    .replace('#TermsConditionLine1', companyDetails.termsConditionLine1)
+                    .replace('#TermsConditionLine2', companyDetails.termsConditionLine2)
+                    .replace('#TermsConditionLine3', companyDetails.termsConditionLine3)
+                    .replace('#TermsConditionLine4', companyDetails.termsConditionLine4)
+                    .replace('#AdminBankName', companyDetails.bankName)
+                    .replace('#AdminIFSCCode', companyDetails.ifscCode)
+                    .replace('#ADMINACNo', companyDetails.acNo)
+                    .replace('#AdminBankBranch', companyDetails.branch)
+            }
+
+            htmlTemplate = `
+            <div class="empty-page">${generatePage("Original for Recipient")}</div>
+        `;
+
+            const browser = await puppeteer.launch({
+                headless: "new",
+                args: ["--no-sandbox", "--disable-setuid-sandbox"]
+            });
+            const page = await browser.newPage();
+
+            await page.setContent(htmlTemplate, { waitUntil: "load" });
+
+            const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+
+            await browser.close();
+
+            let etModel = await emailTemplateModel()
+            const EmailTemplate = await etModel.findOne({ emailTemplateId: 3 });
+
+            let html = EmailTemplate.description.replace('#CompanyName', invoiceDetails.partyId.partyName);
+
+            let emaildata = {
+                toMail: invoiceDetails.partyId.email,
+                subject: EmailTemplate.emailSubject,
+                fromMail: FromMail,
+                html: html,
+                filename: 'GSTInvoicePM',
+                pdfBuffer: pdfBuffer,
+                contentType: "application/pdf"
+            };
+
+            mailsender(emaildata)
+
+            let encryptData = encryptionAPI(invoiceDetails, 1);
+
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "Mail Sent Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+
+        } else {
+            let encryptData = encryptionAPI(invoiceDetails, 1);
+            res.status(200).json({
+                data: {
+                    statusCode: 404,
+                    Message: "Email is not available for this company",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+        }
     } catch (error) {
         console.log("Error in Despatch controller", error);
         errorHandler(error, req, res, "Error in Despatch controller")
@@ -4120,6 +4608,7 @@ export {
     deletePMItemFromDBById,
     deletePMInvoiceById,
     generateGSTInvoiceForPMById,
+    sendGSTInvoicePMToClient,
     addEditSalesOrderEntry,
     getAllOrderDetailsItemMappingById,
     getAllSalesOrderEntry,
@@ -4152,5 +4641,6 @@ export {
     getAllOutwardPost,
     getOutwardPostById,
     deleteOutwardPostById,
-    getAllInwardOutwardRegister
+    getAllInwardOutwardRegister,
+    sendGSTInvoiceRMToClient
 };

@@ -15,14 +15,17 @@ const mailsender = async ({ toMail, html, subject, fromMail, filename, pdfBuffer
     to: toMail,
     subject: subject,
     html: html,
-    attachments: [
-      {
-          filename: filename,
-          content: pdfBuffer,
-          contentType: contentType
-      }
-  ]
   };
+
+  if (filename && pdfBuffer) {
+    mailOptions.attachments = [
+      {
+        filename: filename,
+        content: pdfBuffer,
+        contentType: contentType,
+      },
+    ];
+  }
 
   transporter.sendMail(mailOptions, function (error, info) {
     if (error) {

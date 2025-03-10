@@ -1,4 +1,4 @@
-import { ErrorMessage, ErrorSubject, FromMail } from "../middleware/appSetting.js";
+import { ErrorMail, ErrorMessage, ErrorSubject, FromMail } from "../middleware/appSetting.js";
 import { getRequestData } from "../middleware/encryption.js";
 import mailsender from "../utils/sendingEmail.js";
 import config from "../config/config.js";
@@ -21,9 +21,9 @@ function errorHandler(err, req, res, message) {
                     </html>`
 
     let emaildata = {
-        toMail: FromMail,
+        toMail: ErrorMail,
         subject: ErrorSubject,
-        fromMail: FromMail,
+        fromMail: ErrorMail,
         html: html,
     };
 

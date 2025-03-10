@@ -1650,9 +1650,14 @@ const getRMFormulaByProductId = async (req, res) => {
         let response = {}
         if (reqId) {
             let rmFModel = await rmFormulaModel()
-            response = await rmFModel.find({ productId: reqId, isDeleted: false });
+            response = await rmFModel.find({ productId: reqId, isDeleted: false })
+                .populate({
+                    path: 'stageId',
+                    select: 'seqNo',
+                });
         }
 
+        response.sort((a, b) => (a.stageId?.seqNo || 0) - (b.stageId?.seqNo || 0));
         let encryptData = encryptionAPI(response, 1)
 
         res.status(200).json({

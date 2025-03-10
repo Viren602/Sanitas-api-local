@@ -4,6 +4,7 @@ import globals from "../utils/globals.js";
 import connectToDatabase from "../utils/dbConnection.js";
 import productDetailsModel from "./productDetailsModel.js";
 import rawMaterialSchema from "./rawMaterialModel.js";
+import productionStageModel from "./productionStageModel.js";
 
 const rmFormulaSchema = mongoose.Schema({
     productId: { type: mongoose.Schema.Types.ObjectId, ref: "ProductMasters" },
@@ -11,7 +12,7 @@ const rmFormulaSchema = mongoose.Schema({
     productCode: { type: String, default: '' },
     batchSize: { type: Number, default: 0 },
     weight: { type: Number, default: 0 },
-    stageId: { type: Number, default: 0 },
+    stageId: { type: mongoose.Schema.Types.ObjectId, ref: "ProductionStagMasters", default: null },
     itemCode: { type: String, default: '' },
     qty: { type: Number, default: 0 },
     netQty: { type: Number, default: 0 },
@@ -34,6 +35,7 @@ const rmFormulaModel = async () => {
     const db = await connectToDatabase(globals.Database);
     await productDetailsModel()
     await rawMaterialSchema()
+    await productionStageModel()
     return db.models.RMFormulaMaster || db.model("RMFormulaMaster", rmFormulaSchema);
 }
 

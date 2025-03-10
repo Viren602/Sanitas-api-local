@@ -1212,10 +1212,10 @@ const getAllGoodsRegistered = async (req, res) => {
                     select: 'partyName _id',
                 },
             });
-
+        // console.log(response)
         if (reqData.partyId && reqData.partyId.trim() !== '') {
             response = response.filter(item =>
-                item.grnEntryPartyDetailId.partyId._id.toString() === reqData.partyId)
+                item.grnEntryPartyDetailId?.partyId?._id.toString() === reqData.partyId)
         }
         let encryptData = encryptionAPI(response, 1)
 

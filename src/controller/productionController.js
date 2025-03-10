@@ -259,10 +259,15 @@ const getRMFormulaForProductionById = async (req, res) => {
     };
 
     let rmFModel = await rmFormulaModel()
-    const formulaResponse = await rmFModel
+    let formulaResponse = await rmFModel
       .find({ productId: reqId, isDeleted: false })
-      .select('qty netQty rmName uom stageName');
+      .select('qty netQty rmName uom stageName')
+      .populate({
+        path: 'stageId',
+        select: 'seqNo',
+      });
 
+    formulaResponse.sort((a, b) => (a.stageId?.seqNo || 0) - (b.stageId?.seqNo || 0));
     let gemDetailsModel = await grnEntryMaterialDetailsModel();
     const grnEntryForStock = await gemDetailsModel
       .find(queryObject)
@@ -456,7 +461,7 @@ const getPMFormulaByPackingItemId = async (req, res) => {
       .find({ itemId: reqId, isDeleted: false })
       .select('qty netQty pmName uom stageName');
 
-      let gemDetailsModel = await grnEntryMaterialDetailsModel();
+    let gemDetailsModel = await grnEntryMaterialDetailsModel();
     const grnEntryForStock = await gemDetailsModel
       .find(queryObject)
       .populate({
