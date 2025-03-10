@@ -9,7 +9,7 @@ const addEditItems = async (req, res) => {
     let data = req.body.data
     let reqData = getRequestData(data, 'PostApi')
     if (reqData._id && reqData._id.trim() !== '') {
-      let cIModel = companyItems()
+      let cIModel = await companyItems()
       const response = await cIModel.findByIdAndUpdate(reqData._id, reqData, { new: true });
       if (response) {
 
@@ -26,7 +26,7 @@ const addEditItems = async (req, res) => {
         res.status(404).json({ Message: "Item not found" });
       }
     } else {
-      let cIModel = companyItems()
+      let cIModel = await companyItems()
       const existingItemByName = await cIModel.findOne({ ItemName: reqData.ItemName.trim(), IsDeleted: false });
       if (existingItemByName) {
         let encryptData = encryptionAPI(existingItemByName, 1)
@@ -39,7 +39,7 @@ const addEditItems = async (req, res) => {
           },
         });
       } else {
-        let cIModel = companyItems()
+        let cIModel = await companyItems()
         const response = new cIModel(reqData);
         await response.save();
 
@@ -97,7 +97,7 @@ const getItemById = async (req, res) => {
     let reqId = getRequestData(id)
     let response = {}
     if (reqId) {
-      let cIModel = companyItems()
+      let cIModel = await companyItems()
       response = await cIModel.findOne({ _id: reqId });
     }
 
@@ -126,7 +126,7 @@ const deleteItemById = async (req, res) => {
     let reqId = getRequestData(id)
     let response = {}
     if (reqId) {
-      let cIModel = companyItems()
+      let cIModel = await companyItems()
       response = await cIModel.findByIdAndUpdate(reqId, { IsDeleted: true }, { new: true, useFindAndModify: false });
     }
 
