@@ -80,7 +80,7 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
         res.status(200).json({
             data: {
                 statusCode: 200,
-                Message: "GRN entry material mapping added/updated successfully",
+                Message: "GRN entry material added/updated successfully",
                 responseData: encryptData,
                 isEnType: true
             },
@@ -805,9 +805,10 @@ const sendPurchaseOrderMail = async (req, res) => {
             } else if (reqData.gstApplicable === 'GST 28%') {
                 gstRate = 28
             }
-            let gstAmount = subTotalAmount * (gstRate / (100 + gstRate))
+            let gstAmount = subTotalAmount * (gstRate / 100)
             let totalAmount = subTotalAmount + gstAmount
 
+            console.log(purchaseMaterial)
             const tableRows = purchaseMaterial && purchaseMaterial.length > 0
                 ? purchaseMaterial.map(material => `
                 <tr>
@@ -1326,7 +1327,7 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
         if (reqData.materialType === 'Packing Material') {
             queryObject.packageMaterialId = { $exists: true, $ne: null };
             queryObject.rawMaterialId = null;
-            if(reqData.packageMaterialId !== '' && reqData.packageMaterialId.trim() !== ''){
+            if (reqData.packageMaterialId !== '' && reqData.packageMaterialId.trim() !== '') {
                 queryObject.packageMaterialId = reqData.packageMaterialId;
             }
         }

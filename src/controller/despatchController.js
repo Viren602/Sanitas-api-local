@@ -3593,7 +3593,8 @@ const getAllPartyWiseDespatchItemById = async (req, res) => {
             invoiceDate: invoiceDetails?.invoiceDate || null,
             transportName: invoiceDetails?.transportId?.transportName || null,
             lRDate: invoiceDetails?.lRDate || null,
-            lRNo: invoiceDetails?.lRNo || null
+            lRNo: invoiceDetails?.lRNo || null,
+            grandTotal: invoiceDetails?.grandTotal || null
         }));
 
         let response = updatedItemListing;
@@ -3686,6 +3687,17 @@ const getAllItemWiseDesptach = async (req, res) => {
                 }
             }
         ]);
+
+        let invoicePromises = gstInvoiceFinishGoodsItemListing.map(async (item) => {
+            if (item.gstInvoiceFinishGoodsId) {
+                let invoice = await gifgModel.findById(item.gstInvoiceFinishGoodsId).select("grandTotal");
+                item.grandTotal = invoice ? invoice.grandTotal : 0;
+            } else {
+                item.grandTotal = 0;
+            }
+            return item;
+        });
+        gstInvoiceFinishGoodsItemListing = await Promise.all(invoicePromises);
 
         let ids = gstInvoiceFinishGoodsItemListing.map(record => record.itemId);
         let gifinishGoodsITemModel1 = await gstInvoiceFinishGoodsItemsModel()
