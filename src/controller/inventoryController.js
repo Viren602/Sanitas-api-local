@@ -1316,15 +1316,20 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
         }
 
         if (reqData.materialType === 'Raw Material') {
-            queryObject.rawMaterialId = reqData.rawMaterialId;
+            queryObject.rawMaterialId = { $exists: true, $ne: null };
             queryObject.packageMaterialId = null;
+            if (reqData.rawMaterialId !== '' && reqData.rawMaterialId.trim() !== '') {
+                queryObject.rawMaterialId = reqData.rawMaterialId;
+            }
         }
 
         if (reqData.materialType === 'Packing Material') {
-            queryObject.packageMaterialId = data.packageMaterialId;
+            queryObject.packageMaterialId = { $exists: true, $ne: null };
             queryObject.rawMaterialId = null;
+            if(reqData.packageMaterialId !== '' && reqData.packageMaterialId.trim() !== ''){
+                queryObject.packageMaterialId = reqData.packageMaterialId;
+            }
         }
-        console.log(queryObject)
         let gemDetailsModel = await grnEntryMaterialDetailsModel();
         let response = await gemDetailsModel
             .find(queryObject)
@@ -1345,7 +1350,6 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
                     select: 'partyName _id',
                 },
             });
-        console.log(response)
         if (reqData.materialType === 'Raw Material') {
             response = response.sort((a, b) => {
                 const nameA = a.rawMaterialId?.rmName?.toLowerCase() || '';
