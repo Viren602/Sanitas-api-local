@@ -230,7 +230,8 @@ const getPurchaseOrderMaterialByPartyId = async (req, res) => {
                         materialAmount: material.amount,
                         isPurchaseOrderEntry: true,
                         purchaseOrderId: item._id,
-                        purchaseOrdermaterialId: material._id
+                        purchaseOrdermaterialId: material._id,
+                        make : material.make
                     }));
                 })
             );
