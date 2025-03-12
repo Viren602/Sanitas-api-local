@@ -265,6 +265,23 @@ const deleteGRNEntryMaterialDetailsById = async (req, res) => {
             response = await gepdModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
+        if (reqId) {
+            let gemDetailsModel = await grnEntryMaterialDetailsModel();
+            await gemDetailsModel.updateMany({ grnEntryPartyDetailId: reqId }, { isDeleted: true });
+
+            let materialDetails = await gemDetailsModel.find({ grnEntryPartyDetailId: reqId });
+
+            if (materialDetails.length > 0) {
+                let pomDetailsModel = await purchaserOrderMaterialDetailsModel();
+
+                await Promise.all(materialDetails.map(async (details) => {
+                    if (details.purchaseOrdermaterialId) {
+                        await pomDetailsModel.findByIdAndUpdate(details.purchaseOrdermaterialId, { isGRNEntryDone: false });
+                    }
+                }));
+            }
+        }
+
         let encryptData = encryptionAPI(response, 1)
 
         res.status(200).json({
@@ -286,7 +303,6 @@ const deleteItemforGRNEntryMaterialById = async (req, res) => {
     try {
         const { id } = req.query;
         let reqId = getRequestData(id)
-        console.log(reqId)
         let response = {}
         if (reqId) {
             let gemDetailsModel = await grnEntryMaterialDetailsModel();
