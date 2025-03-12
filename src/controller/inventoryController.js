@@ -191,13 +191,12 @@ const getPurchaseOrderMaterialByPartyId = async (req, res) => {
         if (data.partyId) {
             let podModel = await purchaseOrderDetailsModel()
             purchaseOrder = await podModel
-                .find({ partyId: data.partyId })
+                .find({ partyId: data.partyId, status: 'Order Approved' })
                 .populate({
                     path: 'partyId',
                     select: 'partyName _id'
                 });
         }
-
         let materialDetails = [];
         if (purchaseOrder.length > 0) {
             let response = await Promise.all(
@@ -277,7 +276,6 @@ const deleteGRNEntryMaterialDetailsById = async (req, res) => {
             },
         });
 
-        // res.status(200).json({ Message: "GRN Party Details deleted successfully", responseContent: response });
     } catch (error) {
         console.log("Error in Inventory controller", error);
         errorHandler(error, req, res, "Error in Inventory controller")
@@ -725,6 +723,9 @@ const deletePurchaseOrderDetailsById = async (req, res) => {
         if (reqId) {
             let podModel = await purchaseOrderDetailsModel()
             response = await podModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            await pomDetailsModel.updateMany({ purchaseOrderId: reqId }, { isDeleted: true });
         }
 
         let encryptData = encryptionAPI(response, 1)
