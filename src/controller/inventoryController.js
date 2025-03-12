@@ -15,6 +15,9 @@ import emailTemplateModel from "../model/emailTemplateModel.js";
 import { FromMail } from "../middleware/appSetting.js";
 import errorHandler from "../server/errorHandle.js";
 import gstinvoiceRMItemModel from "../model/Despatch/gstInvoiceRMItemsModel.js";
+import gstInvoicePMItemModel from "../model/Despatch/gstInvoicePMItemsModel.js";
+import rawMaterialSchema from "../model/rawMaterialModel.js";
+import packingMaterialSchema from "../model/packingMaterialModel.js";
 
 const addEditGRNEntryMaterialMapping = async (req, res) => {
     try {
@@ -231,7 +234,7 @@ const getPurchaseOrderMaterialByPartyId = async (req, res) => {
                         isPurchaseOrderEntry: true,
                         purchaseOrderId: item._id,
                         purchaseOrdermaterialId: material._id,
-                        make : material.make
+                        make: material.make
                     }));
                 })
             );
@@ -1191,7 +1194,9 @@ const getAllGoodsRegistered = async (req, res) => {
         };
 
         if (reqData.startDate && reqData.endDate) {
-            queryObject.createdAt = { $gte: new Date(reqData.startDate), $lte: new Date(reqData.endDate) }
+            let endDate = new Date(reqData.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            queryObject.createdAt = { $gte: new Date(reqData.startDate), $lte: new Date(endDate) }
         }
 
         if (reqData.materialType && reqData.materialType !== 'Both' && reqData.materialType.trim() !== '') {
@@ -1217,11 +1222,11 @@ const getAllGoodsRegistered = async (req, res) => {
             .find(queryObject)
             .populate({
                 path: 'rawMaterialId',
-                select: 'rmName _id',
+                select: 'rmName _id rmUOM',
             })
             .populate({
                 path: 'packageMaterialId',
-                select: 'pmName _id',
+                select: 'pmName _id pmUOM',
             })
             .populate({
                 path: 'grnEntryPartyDetailId',
@@ -1263,7 +1268,9 @@ const getAllMaterialWisePurchaseReport = async (req, res) => {
         };
 
         if (reqData.startDate && reqData.endDate) {
-            queryObject.createdAt = { $gte: new Date(reqData.startDate), $lte: new Date(reqData.endDate) }
+            let endDate = new Date(reqData.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            queryObject.createdAt = { $gte: new Date(reqData.startDate), $lte: new Date(endDate) }
         }
 
         if (reqData.materialType === 'Raw Material') {
@@ -1369,6 +1376,7 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
                     select: 'partyName _id',
                 },
             });
+
         if (reqData.materialType === 'Raw Material') {
             response = response.sort((a, b) => {
                 const nameA = a.rawMaterialId?.rmName?.toLowerCase() || '';
@@ -1396,8 +1404,78 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
             }
         }
 
-        let encryptData = encryptionAPI(response, 1)
+        let processedData = response.reduce((acc, curr) => {
+            if (reqData.materialType === "Raw Material") {
+                const existingItem = acc.find((item) =>
+                    item.rawMaterialId?._id.toString() === curr.rawMaterialId?._id.toString()
+                );
 
+                if (existingItem) {
+                    existingItem.qty += curr.qty || 0;
+                    existingItem.rate = curr.rate || existingItem.rate;
+                    existingItem.totalAmount = existingItem.qty * (existingItem.rate || 0);
+                } else {
+                    acc.push({
+                        rawMaterialId: curr.rawMaterialId,
+                        qty: curr.qty || 0,
+                        rate: curr.rate || 0,
+                        totalAmount: (curr.qty || 0) * (curr.rate || 0)
+                    });
+                }
+            } else {
+                const existingItem = acc.find((item) =>
+                    item.packageMaterialId?._id.toString() === curr.packageMaterialId?._id.toString()
+                );
+
+                if (existingItem) {
+                    existingItem.qty += curr.qty || 0;
+                    existingItem.totalAmount = existingItem.qty * (existingItem.rate || 0);
+                } else {
+                    acc.push({
+                        packageMaterialId: curr.packageMaterialId,
+                        qty: curr.qty || 0,
+                        rate: curr.rate || 0,
+                        totalAmount: (curr.qty || 0) * (curr.rate || 0)
+                    });
+                }
+            }
+            return acc;
+        }, []);
+
+        // Removing Production and GSTInvoice Qty 
+        let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
+        let prPMFormulaModel = await PackingRequisitionPMFormulaModel();
+
+        let giRMItemModel = await gstinvoiceRMItemModel()
+        let giPMItemModel = await gstInvoicePMItemModel()
+
+        processedData = await Promise.all(
+            processedData.map(async (details) => {
+                if (reqData.materialType === 'Raw Material') {
+                    let productionUsedQty = await prRMFormulaModel.find({ isDeleted: false, rmName: details.rawMaterialId.rmName }).select('netQty');
+                    let gstInvoiceUsedQty = await giRMItemModel.find({ itemId: details.rawMaterialId._id, isDeleted: false }).select('qty');
+                    let totalUsedQty = productionUsedQty.reduce((sum, item) => sum + (item.netQty || 0), 0);
+                    let totalGSTInvoiceUsed = gstInvoiceUsedQty.reduce((sum, item) => sum + (item.qty || 0), 0);
+
+                    return {
+                        ...details,
+                        qty: (details.qty || 0) - totalUsedQty - totalGSTInvoiceUsed
+                    };
+                } else {
+                    let productionUsedQty = await prPMFormulaModel.find({ isDeleted: false, pmName: details.packageMaterialId.pmName }).select('netQty');
+                    let gstInvoiceUsedQty = await giPMItemModel.find({ itemId: details.packageMaterialId._id, isDeleted: false }).select('qty');
+                    let totalUsedQty = productionUsedQty.reduce((sum, item) => sum + (item.netQty || 0), 0);
+                    let totalGSTInvoiceUsed = gstInvoiceUsedQty.reduce((sum, item) => sum + (item.qty || 0), 0);
+
+                    return {
+                        ...details,
+                        qty: (details.qty || 0) - totalUsedQty - totalGSTInvoiceUsed
+                    };
+                }
+            })
+        );
+
+        let encryptData = encryptionAPI(processedData, 1)
 
         res.status(200).json({
             data: {
@@ -1516,7 +1594,17 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         if (reqData.materialType === 'Packing Material') {
             queryObject1.pmName = reqData.item.pmName
 
-            // Remaining
+            let giPMItemModel = await gstInvoicePMItemModel()
+            responseFromUsedGSTInvoice = await giPMItemModel
+                .find({ itemId: reqData.item._id, isDeleted: false })
+                .populate({
+                    path: 'GSTInvoicePM',
+                    select: 'invoiceNo invoiceDate partyId',
+                    populate: {
+                        path: 'partyId',
+                        select: 'partyName _id',
+                    },
+                });
         }
         responseFromUsedGSTInvoice = responseFromUsedGSTInvoice.map(x => {
             return {
@@ -1525,8 +1613,6 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
                 isGSTInvoiceRecord: true,
             };
         });
-        // console.log(responseFromUsedQty)
-        // console.log(responseFromUsedGSTInvoice)
 
         let combinedResponse = [...response, ...responseFromUsedQty, ...responseFromUsedGSTInvoice];
         let encryptData = encryptionAPI(combinedResponse, 1)
@@ -1563,7 +1649,7 @@ const getAllShourtageReport = async (req, res) => {
         }
 
         let gemDetailsModel = await grnEntryMaterialDetailsModel();
-        let response = await gemDetailsModel
+        let grnMaterialRecords = await gemDetailsModel
             .find(queryObject)
             .populate({
                 path: 'rawMaterialId',
@@ -1574,36 +1660,60 @@ const getAllShourtageReport = async (req, res) => {
                 select: 'pmName pmUOM pmMinQty pmCategory _id',
             });
 
-        const combinedItems = response.reduce((acc, row) => {
-            const key = reqData.materialType === 'Raw Material'
-                ? row.rawMaterialId?.rmName
-                : row.packageMaterialId?.pmName;
-
-            if (key) {
-                if (!acc[key]) {
-                    acc[key] = {
-                        ...row,
-                        qty: row.qty || 0,
-                    };
-                } else {
-                    acc[key].qty += row.qty || 0;
-                }
-            }
-
-            return acc;
-        }, {});
-
-        const Data = Object.values(combinedItems);
-
-        const processedData = Data.filter(item => {
-            if (reqData.materialType === 'Raw Material') {
-                return item.qty < (item._doc.rawMaterialId?.minQty || 0);
+        let purchasedQtyMap = {};
+        grnMaterialRecords.forEach(record => {
+            let materialId = '';
+            if (reqData.materialType === 'Packing Material') {
+                materialId = record.packageMaterialId?._id?.toString();
             } else {
-                return item.qty < (item._doc.packageMaterialId?.pmMinQty || 0);
+                materialId = record.rawMaterialId?._id?.toString();
+            }
+            let qty = record.qty || 0;
+
+            if (materialId) {
+                purchasedQtyMap[materialId] = (purchasedQtyMap[materialId] || 0) + qty;
             }
         });
 
-        let encryptData = encryptionAPI(processedData, 1)
+        let shortageMaterials = []
+
+        if (reqData.materialType === 'Raw Material') {
+            let rmModel = await rawMaterialSchema();
+            let rawMaterials = await rmModel.find({ isDeleted: false }, 'rmName rmUOM minQty rmCategory _id');
+
+            shortageMaterials = rawMaterials
+                .map(material => {
+                    let materialId = material._id.toString();
+                    let purchasedQty = purchasedQtyMap[materialId] || 0;
+
+                    return {
+                        materialName: material.rmName,
+                        stock: purchasedQty,
+                        minQty: material.minQty,
+                        uom: material.rmUOM
+                    };
+                })
+                .filter(material => material.stock < material.minQty);
+        } else {
+            let pmModel = await packingMaterialSchema();
+            let packingMaterials = await pmModel.find({ isDeleted: false }, 'pmName pmUOM pmMinQty pmCategory _id');
+
+            shortageMaterials = packingMaterials
+                .map(material => {
+                    let materialId = material._id.toString();
+                    let purchasedQty = purchasedQtyMap[materialId] || 0;
+
+                    return {
+                        materialName: material.pmName,
+                        stock: purchasedQty,
+                        minQty: material.pmMinQty,
+                        uom: material.pmUOM
+                    };
+                })
+                .filter(material => material.stock < material.minQty);
+        }
+
+        let encryptData = encryptionAPI(shortageMaterials, 1)
 
         res.status(200).json({
             data: {
@@ -1694,7 +1804,9 @@ const getAllPurchaseOrderRegister = async (req, res) => {
         };
 
         if (reqData.startDate && reqData.endDate) {
-            queryObject.createdAt = { $gte: new Date(reqData.startDate), $lte: new Date(reqData.endDate) }
+            let endDate = new Date(reqData.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            queryObject.createdAt = { $gte: new Date(reqData.startDate), $lte: new Date(endDate) }
         }
 
         if (reqData.materialType && reqData.materialType !== 'Both' && reqData.materialType.trim() !== '') {
