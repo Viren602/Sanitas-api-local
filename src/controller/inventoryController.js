@@ -1829,7 +1829,7 @@ const getAllPurchaseOrderRegister = async (req, res) => {
 
         let status = [];
         if (reqData.isPendingPurchseReport) {
-            status.push('Order Approved');
+            status.push('Order Created', 'Email Sent');
         } else {
             status.push('Order Created', 'Email Sent', 'Order Approved');
         }
