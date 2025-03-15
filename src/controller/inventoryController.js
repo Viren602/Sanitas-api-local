@@ -500,6 +500,11 @@ const deleteAdditionalEntryDetailsById = async (req, res) => {
             response = await prodRequisitionDetModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
+        if (reqId) {
+            let gemDetailsModel = await additionalEntryMaterialDetailsModel();
+            await gemDetailsModel.updateMany({ additionalEntryDetailsId: reqId }, { isDeleted: true });
+        }
+
         let encryptData = encryptionAPI(response, 1)
 
         res.status(200).json({
@@ -834,8 +839,8 @@ const sendPurchaseOrderMail = async (req, res) => {
                 ? purchaseMaterial.map(material => `
                 <tr>
                     <td>${material.packageMaterialId ? material.packageMaterialId.pmName : material.rawMaterialId.rmName}</td>
-                    <td>${material.packageMaterialId ? material.packageMaterialId.pmUOM : material.rawMaterialId.rmUOM}</td>
                     <td>${material.qty}</td>
+                    <td>${material.packageMaterialId ? material.packageMaterialId.pmUOM : material.rawMaterialId.rmUOM}</td>
                     <td>${material.rate}</td>
                     <td>${material.per}</td>
                     <td>${material.amount}</td>
@@ -1138,8 +1143,8 @@ const sendInquiryToCompany = async (req, res) => {
                 ? inquiryMaterialList.map(material => `
                 <tr>
                     <td>${material.packageMaterialId ? material.packageMaterialId.pmName : material.rawMaterialId.rmName}</td>
-                    <td>${material.packageMaterialId ? material.packageMaterialId.pmUOM : material.rawMaterialId.rmUOM}</td>
                     <td>${material.qty}</td>
+                    <td>${material.packageMaterialId ? material.packageMaterialId.pmUOM : material.rawMaterialId.rmUOM}</td>
                 </tr>
             `).join('') : '';
 
@@ -1449,27 +1454,33 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
         let giRMItemModel = await gstinvoiceRMItemModel()
         let giPMItemModel = await gstInvoicePMItemModel()
 
+        let addEntryModel = await additionalEntryMaterialDetailsModel()
+
         processedData = await Promise.all(
             processedData.map(async (details) => {
                 if (reqData.materialType === 'Raw Material') {
                     let productionUsedQty = await prRMFormulaModel.find({ isDeleted: false, rmName: details.rawMaterialId.rmName }).select('netQty');
                     let gstInvoiceUsedQty = await giRMItemModel.find({ itemId: details.rawMaterialId._id, isDeleted: false }).select('qty');
+                    let additionalEntry = await addEntryModel.find({ rawMaterialId: details.rawMaterialId._id, isDeleted: false }).select('qty');
                     let totalUsedQty = productionUsedQty.reduce((sum, item) => sum + (item.netQty || 0), 0);
                     let totalGSTInvoiceUsed = gstInvoiceUsedQty.reduce((sum, item) => sum + (item.qty || 0), 0);
+                    let additionalEntryUsed = additionalEntry.reduce((sum, item) => sum + (item.qty || 0), 0);
 
                     return {
                         ...details,
-                        qty: (details.qty || 0) - totalUsedQty - totalGSTInvoiceUsed
+                        qty: (details.qty || 0) - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed
                     };
                 } else {
                     let productionUsedQty = await prPMFormulaModel.find({ isDeleted: false, pmName: details.packageMaterialId.pmName }).select('netQty');
                     let gstInvoiceUsedQty = await giPMItemModel.find({ itemId: details.packageMaterialId._id, isDeleted: false }).select('qty');
+                    let additionalEntry = await addEntryModel.find({ packageMaterialId: details.packageMaterialId._id, isDeleted: false }).select('qty');
                     let totalUsedQty = productionUsedQty.reduce((sum, item) => sum + (item.netQty || 0), 0);
                     let totalGSTInvoiceUsed = gstInvoiceUsedQty.reduce((sum, item) => sum + (item.qty || 0), 0);
+                    let additionalEntryUsed = additionalEntry.reduce((sum, item) => sum + (item.qty || 0), 0);
 
                     return {
                         ...details,
-                        qty: (details.qty || 0) - totalUsedQty - totalGSTInvoiceUsed
+                        qty: (details.qty || 0) - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed
                     };
                 }
             })
@@ -1531,6 +1542,36 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
             isDeleted: false,
         };
 
+        // Additional Entry 
+        let responseFromAdditionalEntry = [];
+        if (reqData.materialType === 'Raw Material') {
+            let giRMItemModel = await additionalEntryMaterialDetailsModel()
+            responseFromAdditionalEntry = await giRMItemModel
+                .find({ rawMaterialId: reqData.item._id, isDeleted: false }).populate({
+                    path: 'additionalEntryDetailsId',
+                    select: 'batchNo reqDate slipNo productName type'
+                });
+        }
+
+        if (reqData.materialType === 'Packing Material') {
+            let giPMItemModel = await additionalEntryMaterialDetailsModel()
+            responseFromAdditionalEntry = await giPMItemModel
+                .find({ packageMaterialId: reqData.item._id, isDeleted: false })
+                .populate({
+                    path: 'additionalEntryDetailsId',
+                    select: 'batchNo reqDate slipNo productName type',
+                });
+        }
+        responseFromAdditionalEntry = responseFromAdditionalEntry.map(x => {
+            return {
+                ...x._doc,
+                issueQty: x.qty,
+                isAdditionalEntryRecord: true,
+                isIssuedRecord: true,
+            };
+        });
+
+        console.log(responseFromAdditionalEntry)
         //Production Usage
         let responseFromUsedQty = [];
         if (reqData.materialType === 'Raw Material') {
@@ -1614,7 +1655,7 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
             };
         });
 
-        let combinedResponse = [...response, ...responseFromUsedQty, ...responseFromUsedGSTInvoice];
+        let combinedResponse = [...response, ...responseFromUsedQty, ...responseFromUsedGSTInvoice, ...responseFromAdditionalEntry];
         let encryptData = encryptionAPI(combinedResponse, 1)
 
         res.status(200).json({
