@@ -694,20 +694,11 @@ const getAllBatchClearedRecords = async (req, res) => {
         path: "packingItemId",
         select: "JobCharge ItemName UnitQuantity",
       });
-
-    if (data.partyName && data.partyName.trim() !== "") {
-      response = response.filter((item) =>
-        item.partyId?.partyName
-          ?.toLowerCase()
-          .startsWith(data.partyName.toLowerCase())
-      );
-    }
-
     if (data.productName && data.productName.trim() !== "") {
       response = response.filter((item) =>
-        item.productId?.productName
+        item.productDetialsId?.productId?.productName
           ?.toLowerCase()
-          .startsWith(data.productName.toLowerCase())
+          .startsWith(data.productName.toLowerCase()),
       );
     }
 
