@@ -9,6 +9,9 @@ import ProductionStagesModel from "../model/ProductionModels/productionStagesMod
 import rmFormulaModel from "../model/rmFormulaModel.js";
 import mongoose from "mongoose";
 import errorHandler from "../server/errorHandle.js";
+import additionalEntryMaterialDetailsModel from "../model/InventoryModels/additionalEntryMaterialDetailsModel.js";
+import gstinvoiceRMItemModel from "../model/Despatch/gstInvoiceRMItemsModel.js";
+import gstInvoicePMItemModel from "../model/Despatch/gstInvoicePMItemsModel.js";
 
 const addEditProductionPlanningEntry = async (req, res) => {
   try {
@@ -261,7 +264,7 @@ const getRMFormulaForProductionById = async (req, res) => {
     let rmFModel = await rmFormulaModel()
     let formulaResponse = await rmFModel
       .find({ productId: reqId, isDeleted: false })
-      .select('qty netQty rmName uom stageName')
+      .select('qty netQty rmName uom stageName batchSize')
       .populate({
         path: 'stageId',
         select: 'seqNo',
@@ -293,16 +296,48 @@ const getRMFormulaForProductionById = async (req, res) => {
       return acc;
     }, {});
 
-    const enrichedFormulaResponse = formulaResponse.map((item) => {
-      const stock = stockData[item.rmName] || { totalQuantity: 0, rmUOM: null };
-      const convertedNetQty = convertNetQty(item.netQty, item.uom, stock.rmUOM);
-      return {
-        ...item.toObject(),
-        rmUOM: stock.rmUOM,
-        netQty: convertedNetQty,
-        totalStock: stock.totalQuantity,
-      };
-    });
+    // const enrichedFormulaResponse = formulaResponse.map((item) => {
+    //   const stock = stockData[item.rmName] || { totalQuantity: 0, rmUOM: null };
+    //   const convertedNetQty = convertNetQty(item.netQty, item.uom, stock.rmUOM);
+    //   return {
+    //     ...item.toObject(),
+    //     rmUOM: stock.rmUOM,
+    //     netQty: convertedNetQty,
+    //     totalStock: stock.totalQuantity,
+    //   };
+    // });
+
+    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
+    let giRMItemModel = await gstinvoiceRMItemModel();
+    let addEntryModel = await additionalEntryMaterialDetailsModel();
+
+    const enrichedFormulaResponse = await Promise.all(
+      formulaResponse.map(async (item) => {
+        const stock = stockData[item.rmName] || { totalQuantity: 0, rmUOM: null };
+
+        // GST Invoice Qty Remove
+        let gstInvoiceUsedQty = await giRMItemModel.find({ itemId: item.rmId, isDeleted: false }).select('qty');
+        let totalGSTInvoiceUsed = gstInvoiceUsedQty.reduce((sum, gItem) => sum + (gItem.qty || 0), 0);
+
+        // Production Qty Remove
+        let productionUsedQty = await prRMFormulaModel.find({ isDeleted: false, rmName: item.rmName }).select('netQty');
+        let totalUsedQty = productionUsedQty.reduce((sum, pItem) => sum + (pItem.netQty || 0), 0);
+
+        // Additional Qty Remove
+        let additionalEntry = await addEntryModel.find({ rawMaterialId: item.rmId, isDeleted: false }).select('qty');
+        let additionalEntryUsed = additionalEntry.reduce((sum, aItem) => sum + (aItem.qty || 0), 0);
+
+        let finalQty = stock.totalQuantity - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed;
+        const convertedNetQty = convertNetQty(item.netQty, item.uom, stock.rmUOM);
+
+        return {
+          ...item.toObject(),
+          rmUOM: stock.rmUOM,
+          netQty: convertedNetQty,
+          totalStock: finalQty,
+        };
+      })
+    );
 
 
     function convertNetQty(netQty, uom, rmUOM) {
@@ -311,50 +346,30 @@ const getRMFormulaForProductionById = async (req, res) => {
       }
 
       if (uom === 'MCG') {
-        if (rmUOM === 'KGS') {
-          return netQty / 1000000000;
-        }
-        if (rmUOM === 'GM') {
-          return netQty / 1000000;
-        }
-        if (rmUOM === 'MG') {
-          return netQty / 1000;
-        }
+        if (rmUOM === 'KGS') { return netQty / 1000000000; }
+        if (rmUOM === 'GM') { return netQty / 1000000; }
+        if (rmUOM === 'MG') { return netQty / 1000; }
       }
 
       if (uom === 'GM') {
-        if (rmUOM === 'KGS') {
-          return netQty / 1000;
-        }
-        if (rmUOM === 'MG') {
-          return netQty * 1000;
-        }
+        if (rmUOM === 'KGS') { return netQty / 1000; }
+        if (rmUOM === 'MG') { return netQty * 1000; }
       }
 
       if (uom === 'MG') {
-        if (rmUOM === 'KGS') {
-          return netQty / 1000000;
-        }
-        if (rmUOM === 'GM') {
-          return netQty / 1000;
-        }
+        if (rmUOM === 'KGS') { return netQty / 1000000; }
+        if (rmUOM === 'GM') { return netQty / 1000; }
       }
 
       if (uom === 'KGS') {
-        if (rmUOM === 'MG') {
-          return netQty * 1000000;
-        }
-        if (rmUOM === 'GM') {
-          return netQty * 1000;
-        }
-      }
-      if (uom === 'LTR') {
-        return netQty * 1000
+        if (rmUOM === 'MG') { return netQty * 1000000; }
+        if (rmUOM === 'GM') { return netQty * 1000; }
       }
 
-      if (uom === 'ML') {
-        return netQty / 1000
-      }
+      if (uom === 'LTR') { return netQty * 1000 }
+
+      if (uom === 'ML') { return netQty / 1000 }
+
       return netQty;
     }
 
@@ -459,7 +474,7 @@ const getPMFormulaByPackingItemId = async (req, res) => {
     let pmfModel = await pmFormulaModel()
     const formulaResponse = await pmfModel
       .find({ itemId: reqId, isDeleted: false })
-      .select('qty netQty pmName uom stageName');
+      .select('qty netQty pmName uom stageName batchSize');
 
     let gemDetailsModel = await grnEntryMaterialDetailsModel();
     const grnEntryForStock = await gemDetailsModel
@@ -486,14 +501,50 @@ const getPMFormulaByPackingItemId = async (req, res) => {
       return acc;
     }, {});
 
-    const enrichedFormulaResponse = formulaResponse.map((item) => {
-      const stock = stockData[item.pmName] || { totalQuantity: 0, pmUOM: null };
-      return {
-        ...item.toObject(),
-        pmUOM: stock.pmUOM,
-        totalStock: stock.totalQuantity,
-      };
-    });
+    // const enrichedFormulaResponse = formulaResponse.map((item) => {
+    //   const stock = stockData[item.pmName] || { totalQuantity: 0, pmUOM: null };
+    //   return {
+    //     ...item.toObject(),
+    //     pmUOM: stock.pmUOM,
+    //     totalStock: stock.totalQuantity,
+    //   };
+    // });
+
+    let addEntryModel = await additionalEntryMaterialDetailsModel()
+    let giPMItemModel = await gstInvoicePMItemModel()
+    let prPMFormulaModel = await PackingRequisitionPMFormulaModel();
+
+    const enrichedFormulaResponse = await Promise.all(
+      formulaResponse.map(async (item) => {
+        const stock = stockData[item.pmName] || { totalQuantity: 0, pmUOM: null };
+
+        // GST Invoice Qty Remove
+        let gstInvoiceUsedQty = await giPMItemModel.find({ itemId: item.packageMaterialId, isDeleted: false }).select('qty');
+        let totalGSTInvoiceUsed = gstInvoiceUsedQty.reduce((sum, gItem) => sum + (gItem.qty || 0), 0);
+
+        // Production Qty Remove
+        let productionUsedQty = await prPMFormulaModel.find({ isDeleted: false, pmName: item.pmName }).select('netQty');
+        let totalUsedQty = productionUsedQty.reduce((sum, pItem) => sum + (pItem.netQty || 0), 0);
+
+        // Additional Qty Remove
+        let additionalEntry = [];
+        if (!item.packageMaterialId) {
+          additionalEntry = [];
+        } else {
+          additionalEntry = await addEntryModel.find({ packageMaterialId: item.packageMaterialId, isDeleted: false }).select('qty');
+        }
+        console.log(additionalEntry)
+        let additionalEntryUsed = additionalEntry.reduce((sum, aItem) => sum + (aItem.qty || 0), 0);
+
+        console.log(item.pmName, totalUsedQty, totalGSTInvoiceUsed, additionalEntryUsed)
+        let finalQty = stock.totalQuantity - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed;
+
+        return {
+          ...item.toObject(),
+          pmUOM: stock.pmUOM,
+          totalStock: finalQty,
+        };
+      }));
 
 
 
@@ -1209,12 +1260,11 @@ const getAllMaterialRequirementReportForRM = async (req, res) => {
 
     let responseData = await Promise.all(
       data.map(async (item) => {
-        let rmFModel = await rmFormulaModel()
+        let rmFModel = await rmFormulaModel();
         const formulas = await rmFModel
           .find({ productId: item.productId, isDeleted: false })
-          .select('qty netQty rmName uom stageName');
+          .select('qty netQty rmName uom stageName rmId');
 
-        // return formulas
         return formulas.map((formula) => ({
           ...formula._doc,
           netQty: formula.netQty * Number(item.batchSize),
@@ -1222,8 +1272,9 @@ const getAllMaterialRequirementReportForRM = async (req, res) => {
       })
     );
 
-    responseData = responseData.flat();
 
+    responseData = responseData.flat();
+    // Aggregate data based on rmName and uom
     const aggregatedData = responseData.reduce((acc, curr) => {
       const existingItem = acc.find(
         (item) => item.rmName === curr.rmName && item.uom === curr.uom
@@ -1234,7 +1285,6 @@ const getAllMaterialRequirementReportForRM = async (req, res) => {
       } else {
         acc.push({ ...curr });
       }
-
       return acc;
     }, []);
 
@@ -1246,10 +1296,8 @@ const getAllMaterialRequirementReportForRM = async (req, res) => {
         select: 'rmName rmUOM minQty rmCategory _id',
       });
 
-
     const stockData = grnEntryForStock.reduce((acc, entry) => {
-      const rmName = entry.rawMaterialId.rmName;
-      const rmUOM = entry.rawMaterialId.rmUOM;
+      const { rmName, rmUOM } = entry.rawMaterialId;
       const quantity = entry.qty || 0;
 
       if (!acc[rmName]) {
@@ -1264,17 +1312,37 @@ const getAllMaterialRequirementReportForRM = async (req, res) => {
       return acc;
     }, {});
 
+    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
+    let giRMItemModel = await gstinvoiceRMItemModel();
+    let addEntryModel = await additionalEntryMaterialDetailsModel();
 
-    const enrichedFormulaResponse = aggregatedData.map((item) => {
-      const stock = stockData[item.rmName] || { totalQuantity: 0, rmUOM: null };
-      const convertedNetQty = convertNetQty(item.netQty, item.uom, stock.rmUOM);
-      return {
-        ...item,
-        rmUOM: stock.rmUOM,
-        netQty: convertedNetQty,
-        totalStock: stock.totalQuantity,
-      };
-    });
+    const enrichedFormulaResponse = await Promise.all(
+      aggregatedData.map(async (item) => {
+        const stock = stockData[item.rmName] || { totalQuantity: 0, rmUOM: null };
+
+        // GST Invoice Qty Remove
+        let gstInvoiceUsedQty = await giRMItemModel.find({ itemId: item.rmId, isDeleted: false }).select('qty');
+        let totalGSTInvoiceUsed = gstInvoiceUsedQty.reduce((sum, gItem) => sum + (gItem.qty || 0), 0);
+
+        // Production Qty Remove
+        let productionUsedQty = await prRMFormulaModel.find({ isDeleted: false, rmName: item.rmName }).select('netQty');
+        let totalUsedQty = productionUsedQty.reduce((sum, pItem) => sum + (pItem.netQty || 0), 0);
+
+        // Additional Qty Remove
+        let additionalEntry = await addEntryModel.find({ rawMaterialId: item.rmId, isDeleted: false }).select('qty');
+        let additionalEntryUsed = additionalEntry.reduce((sum, aItem) => sum + (aItem.qty || 0), 0);
+
+        let finalQty = stock.totalQuantity - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed;
+        const convertedNetQty = convertNetQty(item.netQty, item.uom, stock.rmUOM);
+
+        return {
+          ...item,
+          rmUOM: stock.rmUOM,
+          netQty: convertedNetQty,
+          totalStock: finalQty,
+        };
+      })
+    );
 
     function convertNetQty(netQty, uom, rmUOM) {
       if (uom === rmUOM) {
@@ -1358,10 +1426,11 @@ const getAllMaterialRequirementReportForPM = async (req, res) => {
 
     let responseData = await Promise.all(
       data.map(async (item) => {
+        console.log(item.batchSize)
         let pmfModel = await pmFormulaModel()
         const formulas = await pmfModel
           .find({ itemId: item.packingId, isDeleted: false })
-          .select('qty netQty pmName uom stageName batchSize');
+          .select('qty netQty pmName uom stageName batchSize packageMaterialId');
 
         return formulas.map((formula) => ({
           ...formula._doc,
@@ -1385,7 +1454,7 @@ const getAllMaterialRequirementReportForPM = async (req, res) => {
 
       return acc;
     }, []);
-
+    console.log(aggregatedData)
     let gemDetailsModel = await grnEntryMaterialDetailsModel();
     const grnEntryForStock = await gemDetailsModel
       .find(queryObject)
@@ -1411,14 +1480,35 @@ const getAllMaterialRequirementReportForPM = async (req, res) => {
       return acc;
     }, {});
 
-    const enrichedFormulaResponse = aggregatedData.map((item) => {
-      const stock = stockData[item.pmName] || { totalQuantity: 0, pmUOM: null };
-      return {
-        ...item,
-        pmUOM: stock.pmUOM,
-        totalStock: stock.totalQuantity,
-      };
-    });
+    let addEntryModel = await additionalEntryMaterialDetailsModel()
+    let giPMItemModel = await gstInvoicePMItemModel()
+    let prPMFormulaModel = await PackingRequisitionPMFormulaModel();
+
+    const enrichedFormulaResponse = await Promise.all(
+      aggregatedData.map(async (item) => {
+        const stock = stockData[item.pmName] || { totalQuantity: 0, pmUOM: null };
+
+        // GST Invoice Qty Remove
+        let gstInvoiceUsedQty = await giPMItemModel.find({ itemId: item.packageMaterialId, isDeleted: false }).select('qty');
+        let totalGSTInvoiceUsed = gstInvoiceUsedQty.reduce((sum, gItem) => sum + (gItem.qty || 0), 0);
+
+        // Production Qty Remove
+        let productionUsedQty = await prPMFormulaModel.find({ isDeleted: false, pmName: item.pmName }).select('netQty');
+        let totalUsedQty = productionUsedQty.reduce((sum, pItem) => sum + (pItem.netQty || 0), 0);
+
+        // Additional Qty Remove
+        let additionalEntry = await addEntryModel.find({ packageMaterialId: item.packageMaterialId, isDeleted: false }).select('qty');
+        let additionalEntryUsed = additionalEntry.reduce((sum, aItem) => sum + (aItem.qty || 0), 0);
+
+        // console.log(item.pmName, stadditionalEntryock.totalQuantity, totalUsedQty, totalGSTInvoiceUsed, additionalEntryUsed)
+        let finalQty = stock.totalQuantity - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed;
+
+        return {
+          ...item,
+          pmUOM: stock.pmUOM,
+          totalStock: finalQty,
+        };
+      }));
 
     let encryptData = encryptionAPI(enrichedFormulaResponse, 1);
 
