@@ -398,23 +398,22 @@ const productionRequisitionRMFormulaListing = async (req, res) => {
 
     let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
     const existingRecords = await prRMFormulaModel.find({
-      productId: reqData.productId,
+      productDetialsId: reqData.productDetialsId,
     });
-
-    let prRMFormulaModel1 = await ProductionRequisitionRMFormulaModel();
     if (existingRecords && existingRecords.length > 0) {
-      await prRMFormulaModel1.deleteMany({
-        productId: reqData.productId,
-      });
-      console.log(`Deleted existing records for productId: ${reqData.productId}`);
+      await prRMFormulaModel.updateMany(
+        { productDetialsId: reqData.productDetialsId },
+        { $set: { isDeleted: true } }
+      );
+      console.log(`Deleted existing records for productDetialsId: ${reqData.productDetialsId}`);
     }
 
-    const newRecords = reqData.rmFormulaArray.map((item) => ({
+    const newRecords = reqData.rmFormulaArray.map(({ _id, ...item }) => ({
       ...item,
       productId: reqData.productId,
     }));
-    let prRMFormulaModel2 = await ProductionRequisitionRMFormulaModel();
-    const result = await prRMFormulaModel2.insertMany(newRecords);
+
+    const result = await prRMFormulaModel.insertMany(newRecords);
 
     responseData = encryptionAPI(result, 1);
 
@@ -573,18 +572,22 @@ const packingRequisitionPMFormulaListing = async (req, res) => {
 
     let prPMFormualModel = await PackingRequisitionPMFormulaModel()
     const existingRecords = await prPMFormualModel.find({
-      packingItemId: reqData.packingItemId,
+      productDetialsId: reqData.productDetialsId,
     });
 
     if (existingRecords && existingRecords.length > 0) {
-      let prPMFormualModel = await PackingRequisitionPMFormulaModel()
-      await prPMFormualModel.deleteMany({
-        packingItemId: reqData.packingItemId,
-      });
-      console.log(`Deleted existing records for packingItemId: ${reqData.packingItemId}`);
+      // let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+      // await prPMFormualModel.deleteMany({
+      //   productDetialsId: reqData.productDetialsId,
+      // });
+      await prPMFormualModel.updateMany(
+        { productDetialsId: reqData.productDetialsId },
+        { $set: { isDeleted: true } }
+      );
+      console.log(`Deleted existing records for productDetialsId: ${reqData.productDetialsId}`);
     }
 
-    const newRecords = reqData.pmFormulaArray.map((item) => ({
+    const newRecords = reqData.pmFormulaArray.map(({ _id, ...item }) => ({
       ...item,
       packingItemId: reqData.packingItemId,
     }));

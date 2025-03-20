@@ -1571,7 +1571,7 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
             };
         });
 
-        console.log(responseFromAdditionalEntry)
+        
         //Production Usage
         let responseFromUsedQty = [];
         if (reqData.materialType === 'Raw Material') {
@@ -1587,6 +1587,10 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
                         path: 'partyId',
                         select: 'partyName _id',
                     },
+                })
+                .populate({
+                    path: 'productId',
+                    select: 'productName',
                 });
         }
 
@@ -1603,6 +1607,10 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
                         path: 'partyId',
                         select: 'partyName _id',
                     },
+                })
+                .populate({
+                    path: 'packingItemId',
+                    select: 'ItemName',
                 });
         }
         responseFromUsedQty = responseFromUsedQty.map(x => {
