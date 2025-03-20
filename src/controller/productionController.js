@@ -723,12 +723,14 @@ const getAllBatchClearedRecords = async (req, res) => {
     let data = getRequestData(apiData, "PostApi");
     let queryObject = {
       isDeleted: false,
+      clearBatch: true
     };
+
+
 
     let batchClrModel = await batchClearingEntryModel()
     let response = await batchClrModel
       .find(queryObject)
-      // .sort(filterBy)
       .populate({
         path: "productDetialsId",
         select: "productionNo productionPlanningDate despDate partyId productId batchNo packing batchSize  mfgDate",
@@ -751,6 +753,12 @@ const getAllBatchClearedRecords = async (req, res) => {
           ?.toLowerCase()
           .startsWith(data.productName.toLowerCase()),
       );
+    }
+
+    if (data.filterBy === "batchNo") {
+      response.sort((a, b) => a.productDetialsId.batchNo.localeCompare(b.productDetialsId.batchNo));
+    } else if (data.filterBy === "slipNo") {
+      response.sort((a, b) => a.productDetialsId.productionNo.localeCompare(b.productDetialsId.productionNo));
     }
 
     let encryptData = encryptionAPI(response, 1);

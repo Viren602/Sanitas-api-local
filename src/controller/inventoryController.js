@@ -1809,16 +1809,26 @@ const getAllNearExpiryReport = async (req, res) => {
 
         const today = new Date();
 
-        const responseWithDayDifference = response.map(item => {
+        const responseWithMonthDifference = response.map(item => {
             const expDate = item.expDate;
-            const dayDifference = expDate
-                ? Math.ceil((expDate - today) / (1000 * 60 * 60 * 24))
-                : null;
-            return { ...item.toObject(), dayDifference };
-        })
-            .filter(item => item.dayDifference !== null && item.dayDifference >= 0 && item.dayDifference <= reqData.days);
 
-        let encryptData = encryptionAPI(responseWithDayDifference, 1)
+            if (!expDate) return null;
+
+            const expYear = expDate.getFullYear();
+            const expMonth = expDate.getMonth();
+
+            const todayYear = today.getFullYear();
+            const todayMonth = today.getMonth();
+
+            // Calculate the month difference
+            const monthDifference = (expYear - todayYear) * 12 + (expMonth - todayMonth);
+
+            return { ...item.toObject(), monthDifference };
+        })
+            .filter(item => item !== null && item.monthDifference >= 0 && item.monthDifference <= reqData.days);
+
+
+        let encryptData = encryptionAPI(responseWithMonthDifference, 1)
 
         res.status(200).json({
             data: {
