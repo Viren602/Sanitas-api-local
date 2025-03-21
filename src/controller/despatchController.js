@@ -1076,6 +1076,7 @@ const getrawMaterialStockByRMId = async (req, res) => {
             mrp: '',
             hsnCode: '',
             name: data.rmName,
+            uom: data.uom,
             isFromGSTInvoiceRecord: isFromGSTInvoiceRecord
 
         }
@@ -2009,6 +2010,7 @@ const getPakcingMaterialStockByPMID = async (req, res) => {
             mrp: '',
             hsnCode: '',
             name: data.pmName,
+            uom: data.uom,
             isFromGSTInvoiceRecord: isFromGSTInvoiceRecord
 
         }
@@ -3320,6 +3322,18 @@ const getAllSalesGoodsReturnEntry = async (req, res) => {
                 select: 'transportName',
             });
 
+        if (data.arrangedBy === 'partyName') {
+            response = response.sort((a, b) => {
+                return a.partyId?.partyName.localeCompare(b.partyId?.partyName);
+            });
+        }
+
+        if (data.partyName && data.partyName.trim() !== '') {
+            response = response.filter(item =>
+                item.partyId?.partyName?.toLowerCase().startsWith(data.partyName.toLowerCase())
+            );
+        }
+
         let encryptData = encryptionAPI(response, 1)
 
         res.status(200).json({
@@ -3647,12 +3661,15 @@ const getAllItemWiseDesptach = async (req, res) => {
             (invoice) => invoice.partyId
         );
 
-        let reqIds = gstInvoiceFinishGoodsResponse.map(record => record._id);
+        let reqIds = gstInvoiceFinishGoodsResponse?.map(record => record._id) || [];
 
         let queryObjectForItem = { isDeleted: false }
 
-        if (reqIds) {
-            queryObjectForItem = { gstInvoiceFinishGoodsId: { $in: reqIds } }
+        if (reqIds.length > 0) {
+            queryObjectForItem = {
+                ...queryObjectForItem,
+                gstInvoiceFinishGoodsId: { $in: reqIds }
+            };
         }
 
         let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
@@ -3660,8 +3677,19 @@ const getAllItemWiseDesptach = async (req, res) => {
             {
                 $match: {
                     ...queryObjectForItem,
-                    itemName: { $regex: data.itemName, $options: 'i' }
+                    itemName: data.itemName ? { $regex: data.itemName, $options: 'i' } : { $exists: true }
                 }
+            },
+            {
+                $lookup: {
+                    from: "gstinvoicefinishgoods", // Collection name of gstInvoiceFinishGoodsModel
+                    localField: "gstInvoiceFinishGoodsId",
+                    foreignField: "_id",
+                    as: "invoice"
+                }
+            },
+            {
+                $unwind: "$invoice"
             },
             {
                 $group: {
@@ -3669,6 +3697,7 @@ const getAllItemWiseDesptach = async (req, res) => {
                     totalQty: { $sum: "$qty" },
                     totalFree: { $sum: "$free" },
                     totalAmount: { $sum: "$amount" },
+                    grandTotal: { $sum: "$invoice.grandTotal" },
                     gstInvoiceFinishGoodsId: { $first: "$gstInvoiceFinishGoodsId" },
                     originalId: { $first: "$_id" },
                     itemId: { $first: "$itemId" }
@@ -3681,23 +3710,25 @@ const getAllItemWiseDesptach = async (req, res) => {
                     totalQty: 1,
                     totalFree: 1,
                     totalAmount: 1,
+                    grandTotal: 1,
                     gstInvoiceFinishGoodsId: 1,
                     originalId: 1,
-                    itemId: 1
+                    itemId: 1,
                 }
             }
         ]);
 
-        let invoicePromises = gstInvoiceFinishGoodsItemListing.map(async (item) => {
-            if (item.gstInvoiceFinishGoodsId) {
-                let invoice = await gifgModel.findById(item.gstInvoiceFinishGoodsId).select("grandTotal");
-                item.grandTotal = invoice ? invoice.grandTotal : 0;
-            } else {
-                item.grandTotal = 0;
-            }
-            return item;
-        });
-        gstInvoiceFinishGoodsItemListing = await Promise.all(invoicePromises);
+        // let invoicePromises = gstInvoiceFinishGoodsItemListing.map(async (item) => {
+        //     if (item.gstInvoiceFinishGoodsId) {
+        //         let invoice = await gifgModel.findById(item.gstInvoiceFinishGoodsId).select("grandTotal");
+        //         console.log(invoice)
+        //         item.grandTotal = invoice ? invoice.grandTotal : 0;
+        //     } else {
+        //         item.grandTotal = 0;
+        //     }
+        //     return item;
+        // });
+        // gstInvoiceFinishGoodsItemListing = await Promise.all(invoicePromises);
 
         let ids = gstInvoiceFinishGoodsItemListing.map(record => record.itemId);
         let gifinishGoodsITemModel1 = await gstInvoiceFinishGoodsItemsModel()

@@ -264,7 +264,7 @@ const getRMFormulaForProductionById = async (req, res) => {
     let rmFModel = await rmFormulaModel()
     let formulaResponse = await rmFModel
       .find({ productId: reqId, isDeleted: false })
-      .select('qty netQty rmName uom stageName batchSize')
+      .select('qty netQty rmName uom stageName batchSize rmId')
       .populate({
         path: 'stageId',
         select: 'seqNo',
@@ -326,6 +326,8 @@ const getRMFormulaForProductionById = async (req, res) => {
         // Additional Qty Remove
         let additionalEntry = await addEntryModel.find({ rawMaterialId: item.rmId, isDeleted: false }).select('qty');
         let additionalEntryUsed = additionalEntry.reduce((sum, aItem) => sum + (aItem.qty || 0), 0);
+
+        console.log(item.rmName, item.rmId)
 
         let finalQty = stock.totalQuantity - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed;
         const convertedNetQty = convertNetQty(item.netQty, item.uom, stock.rmUOM);
@@ -473,7 +475,7 @@ const getPMFormulaByPackingItemId = async (req, res) => {
     let pmfModel = await pmFormulaModel()
     const formulaResponse = await pmfModel
       .find({ itemId: reqId, isDeleted: false })
-      .select('qty netQty pmName uom stageName batchSize');
+      .select('qty netQty pmName uom stageName batchSize packageMaterialId');
 
     let gemDetailsModel = await grnEntryMaterialDetailsModel();
     const grnEntryForStock = await gemDetailsModel
