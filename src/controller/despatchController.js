@@ -186,7 +186,8 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
                     if (existingItemDetails) {
                         const existingQty = (Number(existingItemDetails.qty) || 0) + (Number(existingItemDetails.free) || 0);
                         const updatedQty = existingQty - totalReduceQty;
-
+                        console.log(existingQty, totalReduceQty)
+                        console.log(updatedQty)
                         let batchwiseProdStkModel = await batchWiseProductStockModel()
                         await batchwiseProdStkModel.findByIdAndUpdate(
                             item.stockId,
@@ -490,8 +491,9 @@ const deleteInvoiceById = async (req, res) => {
 const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
     try {
 
-        const { id } = req.query;
+        const { id, id1 } = req.query;
         let reqId = getRequestData(id)
+        let isDeliveryChallanNeed = id1 ? getRequestData(id1) : false
 
         let cgModel = await companyGroupModel()
         let companyDetails = await cgModel.findOne({});
@@ -693,16 +695,22 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
                 .replace('#CompanyLocation', companyDetails.location)
                 .replace('#AdminMobile', companyDetails.mobile);
         };
-
+        
         htmlTemplate = `
-            <div class="empty-page">${generatePage("Original for Recipient")}</div>
-            <div class="page-break"></div>
-            <div class="empty-page">${generatePage("Duplicate for Transporter")}</div>
-            <div class="page-break"></div>
-            <div class="empty-page">${generatePage("Triplicate for Supplier")}</div>
-            <div class="page-break"></div>
-            <div class="empty-page">${generateDeliveryChallanPage()}</div>
-        `;
+                <div class="empty-page">${generatePage("Original for Recipient")}</div>
+                <div class="page-break"></div>
+                
+                <div class="empty-page">${generatePage("Duplicate for Transporter")}</div>
+                <div class="page-break"></div>
+                
+                <div class="empty-page">${generatePage("Triplicate for Supplier")}</div>
+                <div class="page-break"></div>
+                
+                ${(isDeliveryChallanNeed === true || isDeliveryChallanNeed === "true") ? `
+                    <div class="empty-page">${generateDeliveryChallanPage()}</div>
+                    <div class="page-break"></div>
+                ` : ""}
+            `;
 
         const browser = await puppeteer.launch({
             headless: "new",
@@ -3969,6 +3977,19 @@ const getAllStockStatementReport = async (req, res) => {
                 return acc;
             }, {})
         );
+
+        // let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+        // for (const details of groupedResponse) {
+        //     let issuedItemStock = await gifinishGoodsITemModel.find({ batchClearingEntryId: details.batchClearingEntryId, isDeleted: false }).select('qty free');
+        //     console.log("issuedItemStock", issuedItemStock)
+
+        //     let totalReduceQty = issuedItemStock.reduce((sum, item) => {
+        //         return sum + Number(item.qty || 0) + Number(item.free || 0);
+        //     }, 0);
+
+        //     details.totalQty = (Number(details.totalQty) || 0) - totalReduceQty;
+        // }
+
         let encryptData = encryptionAPI(groupedResponse, 1)
         res.status(200).json({
             data: {
@@ -3992,10 +4013,11 @@ const getALLStockStatementByProductId = async (req, res) => {
         let itemId = getRequestData(id)
         let batchClearingEntryId = getRequestData(id2)
 
+        // Batch Cleared Products
         let batchClrModel = await batchClearingEntryModel()
         let productionStock = await batchClrModel
             .find({ packingItemId: itemId, isDeleted: false })
-            .select('quantity productDetialsId')
+            .select('quantity productDetialsId createdAt')
             .populate({
                 path: "productDetialsId",
                 select: "productionNo productId partyId batchNo despDate",
@@ -4005,10 +4027,11 @@ const getALLStockStatementByProductId = async (req, res) => {
                 },
             });
 
+        // Invoice Generated Products
         let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
         let issuedItemStock = await gifinishGoodsITemModel
             .find({ itemId: itemId, isDeleted: false })
-            .select('qty batchNo gstInvoiceFinishGoodsId free')
+            .select('qty batchNo gstInvoiceFinishGoodsId free createdAt')
             .populate({
                 path: "gstInvoiceFinishGoodsId",
                 select: "partyId invoiceNo invoiceDate",
@@ -4018,29 +4041,63 @@ const getALLStockStatementByProductId = async (req, res) => {
                 },
             });
 
+        // Sales Goods Return Products
+        let sgrItemsModel = await salesGoodsReturnItemsModel()
+        let salesGoodsReturnEntry = await sgrItemsModel
+            .find({ itemId: itemId, isDeleted: false })
+            .select('qty batchNo salesGoodsReturnId free createdAt invoiceNo invoiceDate')
+            .populate({
+                path: "salesGoodsReturnId",
+                select: "partyId serialNo returnDate",
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });;
+
         const newArray = [
             ...productionStock.map(item => ({
                 productionStockId: item._id,
                 issuedStockId: null,
+                salesGoodsReturnEntryId: null,
                 partyName: item.productDetialsId.partyId.partyName,
                 refNo: item.productDetialsId.productionNo,
                 batchNo: item.productDetialsId.batchNo,
                 refDate: item.productDetialsId.despDate,
                 produceedQty: item.quantity,
-                issuedQty: null
+                issuedQty: null,
+                createdAt: item.createdAt,
+                from: 'Cleared Batches'
             })),
             ...issuedItemStock.map(item => ({
                 productionStockId: null,
                 issuedStockId: item._id,
+                salesGoodsReturnEntryId: null,
                 partyName: item.gstInvoiceFinishGoodsId.partyId.partyName,
                 refNo: item.gstInvoiceFinishGoodsId.invoiceNo,
                 batchNo: item.batchNo,
                 refDate: item.gstInvoiceFinishGoodsId.invoiceDate,
                 issuedQty: item.qty + item.free,
-                produceedQty: null
+                produceedQty: null,
+                createdAt: item.createdAt,
+                from: 'GST Invoice'
+            })),
+            ...salesGoodsReturnEntry.map(item => ({
+                productionStockId: null,
+                issuedStockId: null,
+                salesGoodsReturnEntryId: item._id,
+                partyName: item.salesGoodsReturnId.partyId.partyName,
+                refNo: item.salesGoodsReturnId.serialNo,
+                batchNo: item.batchNo,
+                refDate: item.salesGoodsReturnId.returnDate,
+                issuedQty: null,
+                produceedQty: item.qty + item.free,
+                createdAt: item.createdAt,
+                from: 'Sales Return'
             }))
         ];
-        const sortedArray = newArray.sort((a, b) => new Date(a.refDate) - new Date(b.refDate));
+        console.log(salesGoodsReturnEntry)
+        const sortedArray = newArray.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
         let encryptData = encryptionAPI(sortedArray, 1)
 
