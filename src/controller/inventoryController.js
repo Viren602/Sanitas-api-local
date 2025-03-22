@@ -158,11 +158,11 @@ const getAllgrnEntryMaterialDetailsById = async (req, res) => {
                 .find({ grnEntryPartyDetailId: reqId, isDeleted: false })
                 .populate({
                     path: 'rawMaterialId',
-                    select: 'rmName _id',
+                    select: 'rmName _id rmUOM',
                 })
                 .populate({
                     path: 'packageMaterialId',
-                    select: 'pmName _id',
+                    select: 'pmName _id pmUOM',
                 });
         }
 

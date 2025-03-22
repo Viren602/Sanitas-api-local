@@ -12,6 +12,7 @@ import errorHandler from "../server/errorHandle.js";
 import additionalEntryMaterialDetailsModel from "../model/InventoryModels/additionalEntryMaterialDetailsModel.js";
 import gstinvoiceRMItemModel from "../model/Despatch/gstInvoiceRMItemsModel.js";
 import gstInvoicePMItemModel from "../model/Despatch/gstInvoicePMItemsModel.js";
+import rawMaterialSchema from "../model/rawMaterialModel.js";
 
 const addEditProductionPlanningEntry = async (req, res) => {
   try {
@@ -24,7 +25,7 @@ const addEditProductionPlanningEntry = async (req, res) => {
       productionStageId: reqData.productionStageId,
       isDeleted: false,
     });
-
+    console.log(stage)
     reqData.productionStageStatusId = stage._id;
 
     if (reqData.productDetialsId && reqData.productDetialsId.trim() !== "") {
@@ -93,7 +94,7 @@ const getAllProductionPlanningEntry = async (req, res) => {
       isDeleted: false,
     };
 
-    let filterBy = "productionNo";
+    let filterBy = "updatedAt";
 
     if (data.filterBy && data.filterBy.trim() !== "") {
       filterBy = data.filterBy;
@@ -271,6 +272,7 @@ const getRMFormulaForProductionById = async (req, res) => {
       });
 
     formulaResponse.sort((a, b) => (a.stageId?.seqNo || 0) - (b.stageId?.seqNo || 0));
+
     let gemDetailsModel = await grnEntryMaterialDetailsModel();
     const grnEntryForStock = await gemDetailsModel
       .find(queryObject)
@@ -296,20 +298,10 @@ const getRMFormulaForProductionById = async (req, res) => {
       return acc;
     }, {});
 
-    // const enrichedFormulaResponse = formulaResponse.map((item) => {
-    //   const stock = stockData[item.rmName] || { totalQuantity: 0, rmUOM: null };
-    //   const convertedNetQty = convertNetQty(item.netQty, item.uom, stock.rmUOM);
-    //   return {
-    //     ...item.toObject(),
-    //     rmUOM: stock.rmUOM,
-    //     netQty: convertedNetQty,
-    //     totalStock: stock.totalQuantity,
-    //   };
-    // });
-
     let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
     let giRMItemModel = await gstinvoiceRMItemModel();
     let addEntryModel = await additionalEntryMaterialDetailsModel();
+    let rmModel = await rawMaterialSchema()
 
     const enrichedFormulaResponse = await Promise.all(
       formulaResponse.map(async (item) => {
@@ -327,14 +319,16 @@ const getRMFormulaForProductionById = async (req, res) => {
         let additionalEntry = await addEntryModel.find({ rawMaterialId: item.rmId, isDeleted: false }).select('qty');
         let additionalEntryUsed = additionalEntry.reduce((sum, aItem) => sum + (aItem.qty || 0), 0);
 
-        console.log(item.rmName, item.rmId)
-
         let finalQty = stock.totalQuantity - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed;
-        const convertedNetQty = convertNetQty(item.netQty, item.uom, stock.rmUOM);
 
+        let rawMaterialUOM = await rmModel.findOne({ _id: item.rmId, isDeleted: false }).select('rmUOM');
+        let itemUOM = stock.rmUOM ? stock.rmUOM : rawMaterialUOM.rmUOM
+
+        const convertedNetQty = convertNetQty(item.netQty, item.uom, itemUOM);
+        console.log(item.rmName, item.netQty, item.uom, itemUOM)
         return {
           ...item.toObject(),
-          rmUOM: stock.rmUOM,
+          rmUOM: itemUOM,
           netQty: convertedNetQty,
           totalStock: finalQty,
         };
@@ -534,10 +528,8 @@ const getPMFormulaByPackingItemId = async (req, res) => {
         } else {
           additionalEntry = await addEntryModel.find({ packageMaterialId: item.packageMaterialId, isDeleted: false }).select('qty');
         }
-        console.log(additionalEntry)
         let additionalEntryUsed = additionalEntry.reduce((sum, aItem) => sum + (aItem.qty || 0), 0);
 
-        console.log(item.pmName, totalUsedQty, totalGSTInvoiceUsed, additionalEntryUsed)
         let finalQty = stock.totalQuantity - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed;
 
         return {
@@ -966,15 +958,18 @@ const getAllJobChargeRecords = async (req, res) => {
       isDeleted: false,
     };
 
+    let endDate = new Date(data.endDate);
+    endDate.setHours(23, 59, 59, 999);
+
     let batchClrModel = await batchClearingEntryModel()
     let response = await batchClrModel
       .find(queryObject)
       // .sort(filterBy)
       .populate({
         path: "productDetialsId",
-        select: "productionNo productionPlanningDate despDate partyId productId batchNo packing",
+        select: "productionNo productionPlanningDate despDate partyId productId batchNo packing createdAt",
         match: {
-          despDate: {
+          createdAt: {
             $gte: new Date(data.startDate),
             $lte: new Date(data.endDate),
           },
@@ -1328,6 +1323,7 @@ const getAllMaterialRequirementReportForRM = async (req, res) => {
     let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
     let giRMItemModel = await gstinvoiceRMItemModel();
     let addEntryModel = await additionalEntryMaterialDetailsModel();
+    let rmModel = await rawMaterialSchema()
 
     const enrichedFormulaResponse = await Promise.all(
       aggregatedData.map(async (item) => {
@@ -1346,11 +1342,14 @@ const getAllMaterialRequirementReportForRM = async (req, res) => {
         let additionalEntryUsed = additionalEntry.reduce((sum, aItem) => sum + (aItem.qty || 0), 0);
 
         let finalQty = stock.totalQuantity - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed;
-        const convertedNetQty = convertNetQty(item.netQty, item.uom, stock.rmUOM);
+
+        let rawMaterialUOM = await rmModel.findOne({ _id: item.rmId, isDeleted: false }).select('rmUOM');
+        let itemUOM = stock.rmUOM ? stock.rmUOM : rawMaterialUOM.rmUOM
+        const convertedNetQty = convertNetQty(item.netQty, item.uom, itemUOM);
 
         return {
           ...item,
-          rmUOM: stock.rmUOM,
+          rmUOM: itemUOM,
           netQty: convertedNetQty,
           totalStock: finalQty,
         };
