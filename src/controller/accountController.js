@@ -2579,8 +2579,8 @@ const getAllMonthWiseCashBankBookReportbyBankId = async (req, res) => {
             const debit = Number(transaction.debitAmount) || 0;
             const credit = Number(transaction.creditAmount) || 0;
 
-            monthlyData[monthIndex].receipt += debit;
-            monthlyData[monthIndex].payment += credit;
+            monthlyData[monthIndex].receipt += credit;
+            monthlyData[monthIndex].payment += debit;
             monthlyData[monthIndex].monthIndex = monthIndex
         });
 
@@ -2744,6 +2744,10 @@ const getAllOpeningBalanceReport = async (req, res) => {
 
         if (data.orderBy && data.orderBy.trim() !== '') {
             sort = data.orderBy
+        }
+
+        if (data.partyName && data.partyName.trim() !== "") {
+            queryObject.partyName = { $regex: `^${data.partyName}`, $options: "i" };
         }
 
         let pModel = await partyModel()

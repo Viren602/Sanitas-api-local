@@ -720,30 +720,117 @@ const getAllBatchClearedRecords = async (req, res) => {
     let data = getRequestData(apiData, "PostApi");
     let queryObject = {
       isDeleted: false,
-      clearBatch: true
+      // clearBatch: true
     };
 
-
+    // let response = await batchClrModel
+    //   .find(queryObject)
+    //   .populate({
+    //     path: "productDetialsId",
+    //     select: "productionNo productionPlanningDate despDate partyId productId batchNo packing batchSize mfgDate",
+    //     populate: {
+    //       path: 'partyId',
+    //       select: 'partyName _id',
+    //     },
+    //     populate: {
+    //       path: 'productId',
+    //       select: 'productName _id',
+    //     },
+    //   })
+    //   .populate({
+    //     path: "packingItemId",
+    //     select: "JobCharge ItemName UnitQuantity",
+    //   });
 
     let batchClrModel = await batchClearingEntryModel()
-    let response = await batchClrModel
-      .find(queryObject)
-      .populate({
-        path: "productDetialsId",
-        select: "productionNo productionPlanningDate despDate partyId productId batchNo packing batchSize  mfgDate",
-        populate: {
-          path: 'partyId',
-          select: 'partyName _id',
+    let response = await batchClrModel.aggregate([
+      {
+        $match: queryObject, // Apply your filter
+      },
+      {
+        $lookup: {
+          from: "productionentries", // Ensure this matches the actual collection name
+          localField: "productDetialsId",
+          foreignField: "_id",
+          as: "productDetails",
         },
-        populate: {
-          path: 'productId',
-          select: 'productName _id',
+      },
+      {
+        $unwind: "$productDetails",
+      },
+      {
+        $lookup: {
+          from: "accountmasters", // Ensure this matches the actual collection name
+          localField: "productDetails.partyId",
+          foreignField: "_id",
+          as: "partyDetails",
         },
-      })
-      .populate({
-        path: "packingItemId",
-        select: "JobCharge ItemName UnitQuantity",
-      });
+      },
+      {
+        $unwind: "$partyDetails",
+      },
+      {
+        $lookup: {
+          from: "productmasters", // Ensure this matches the actual collection name
+          localField: "productDetails.productId",
+          foreignField: "_id",
+          as: "productData",
+        },
+      },
+      {
+        $unwind: "$productData",
+      },
+      {
+        $lookup: {
+          from: "companyitems", // Ensure this matches the actual collection name
+          localField: "packingItemId",
+          foreignField: "_id",
+          as: "packingItems",
+        },
+      },
+      {
+        $group: {
+          _id: "$productDetails.productionNo",
+          despDate: { $first: "$productDetails.despDate" },
+          batchNo: { $first: "$productDetails.batchNo" },
+          productName: { $first: "$productData.productName" },
+          totalQuantity: { $sum: "$quantity" },
+          mrp: { $last: "$mrp" },
+          productDetialsId: { $last: "$productDetails._id" },
+          batchClearId: { $last: "$_id" },
+          batchSize: { $first: "$productDetails.batchSize" },
+          mfgDate: { $first: "$productDetails.mfgDate" },
+          productionPlanningDate: { $first: "$productDetails.productionPlanningDate" },
+          packing: { $first: "$productDetails.packing" },
+          partyId: { $first: "$partyDetails._id" },
+          partyName: { $first: "$partyDetails.partyName" },
+          productId: { $first: "$productData._id" },
+          packingItems: { $push: "$packingItems" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          productionNo: "$_id",
+          despDate: 1,
+          batchNo: 1,
+          productName: 1,
+          totalQuantity: 1,
+          mrp: 1,
+          productDetialsId: 1,
+          batchClearId: 1,
+          batchSize: 1,
+          mfgDate: 1,
+          productionPlanningDate: 1,
+          packing: 1,
+          partyId: 1,
+          partyName: 1,
+          productId: 1,
+          packingItems: 1,
+        },
+      },
+    ]);
+
     if (data.productName && data.productName.trim() !== "") {
       response = response.filter((item) =>
         item.productDetialsId?.productId?.productName
