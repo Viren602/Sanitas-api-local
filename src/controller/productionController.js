@@ -1234,7 +1234,7 @@ const getBatchCostingReportRMFormulaId = async (req, res) => {
 
     const { id } = req.query;
     let reqId = getRequestData(id)
-
+    
     let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
     let response = await prRMFormulaModel.find({ productDetialsId: reqId, isDeleted: false });
 
@@ -1242,12 +1242,12 @@ const getBatchCostingReportRMFormulaId = async (req, res) => {
       response.map(async (item) => {
         let itemObject = item.toObject();
 
-        let rmFModel = await rmFormulaModel()
-        const rmId = await rmFModel.findOne({ rmName: item.rmName, isDeleted: false })
+        let rmFModel = await rawMaterialSchema()
+        const rmId = await rmFModel.findOne({ rmName: item.rmName, isDeleted: false }).select('_id')
 
         let gemDetailsModel = await grnEntryMaterialDetailsModel();
         const grnEntryForMaterial = await gemDetailsModel
-          .find({ rawMaterialId: rmId.rmId })
+          .find({ rawMaterialId: rmId._id })
           .populate({
             path: "grnEntryPartyDetailId",
             select: "grnNo _id",
