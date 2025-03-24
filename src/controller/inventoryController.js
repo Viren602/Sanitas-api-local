@@ -1571,7 +1571,7 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
             };
         });
 
-        
+
         //Production Usage
         let responseFromUsedQty = [];
         if (reqData.materialType === 'Raw Material') {
@@ -1664,6 +1664,8 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         });
 
         let combinedResponse = [...response, ...responseFromUsedQty, ...responseFromUsedGSTInvoice, ...responseFromAdditionalEntry];
+        combinedResponse.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        console.log(combinedResponse)
         let encryptData = encryptionAPI(combinedResponse, 1)
 
         res.status(200).json({
