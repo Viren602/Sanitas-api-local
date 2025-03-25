@@ -807,10 +807,11 @@ const getAllBatchClearedRecords = async (req, res) => {
           partyName: { $first: "$partyDetails.partyName" },
           productId: { $first: "$productData._id" },
           packingItems: { $push: "$packingItems" },
+          updatedAt: { $first: "$productDetails.updatedAt" }
         },
       },
       {
-        $sort: { updatedDate: -1 },
+        $sort: { updatedAt: 1 },
       },
       {
         $project: {
@@ -838,16 +839,16 @@ const getAllBatchClearedRecords = async (req, res) => {
 
     if (data.productName && data.productName.trim() !== "") {
       response = response.filter((item) =>
-        item.productDetialsId?.productId?.productName
+        item?.productName
           ?.toLowerCase()
           .startsWith(data.productName.toLowerCase()),
       );
     }
 
     if (data.filterBy === "batchNo") {
-      response.sort((a, b) => a.productDetialsId.batchNo.localeCompare(b.productDetialsId.batchNo));
+      response.sort((a, b) => a.batchNo.localeCompare(b.batchNo));
     } else if (data.filterBy === "slipNo") {
-      response.sort((a, b) => a.productDetialsId.productionNo.localeCompare(b.productDetialsId.productionNo));
+      response.sort((a, b) => a.productionNo.localeCompare(b.productionNo));
     }
 
     let encryptData = encryptionAPI(response, 1);
@@ -953,7 +954,7 @@ const getAllProductionBatchRegister = async (req, res) => {
         productionStageId: { $in: data.productionStageId },
         isDeleted: false,
       });
-      
+
       const requiredStatusIDs = stages.map(stage => new mongoose.Types.ObjectId(stage._id));
 
       if (stages && stages.length > 0) {
@@ -964,7 +965,7 @@ const getAllProductionBatchRegister = async (req, res) => {
     } else {
       queryObject.productionStageStatusId = { $in: [] };
     }
-    
+
     let ppeModel = await productionPlanningEntryModel()
     let response = await ppeModel
       .find(queryObject)
@@ -1531,7 +1532,7 @@ const getAllMaterialRequirementReportForPM = async (req, res) => {
 
     let responseData = await Promise.all(
       data.map(async (item) => {
-        
+
         let pmfModel = await pmFormulaModel()
         const formulas = await pmfModel
           .find({ itemId: item.packingId, isDeleted: false })
@@ -1559,7 +1560,7 @@ const getAllMaterialRequirementReportForPM = async (req, res) => {
 
       return acc;
     }, []);
-    
+
     let gemDetailsModel = await grnEntryMaterialDetailsModel();
     const grnEntryForStock = await gemDetailsModel
       .find(queryObject)
