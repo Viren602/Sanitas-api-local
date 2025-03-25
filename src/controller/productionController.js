@@ -25,7 +25,8 @@ const addEditProductionPlanningEntry = async (req, res) => {
       productionStageId: reqData.productionStageId,
       isDeleted: false,
     });
-    console.log(stage)
+    console.log('stage -----> ', stage)
+    console.log('reqData.productDetialsId -----> ', reqData.productDetialsId)
     reqData.productionStageStatusId = stage._id;
 
     if (reqData.productDetialsId && reqData.productDetialsId.trim() !== "") {
@@ -325,7 +326,6 @@ const getRMFormulaForProductionById = async (req, res) => {
         let itemUOM = stock.rmUOM ? stock.rmUOM : rawMaterialUOM.rmUOM
 
         const convertedNetQty = convertNetQty(item.netQty, item.uom, itemUOM);
-        console.log(item.rmName, item.netQty, item.uom, itemUOM)
         return {
           ...item.toObject(),
           rmUOM: itemUOM,
@@ -745,11 +745,11 @@ const getAllBatchClearedRecords = async (req, res) => {
     let batchClrModel = await batchClearingEntryModel()
     let response = await batchClrModel.aggregate([
       {
-        $match: queryObject, // Apply your filter
+        $match: queryObject,
       },
       {
         $lookup: {
-          from: "productionentries", // Ensure this matches the actual collection name
+          from: "productionentries",
           localField: "productDetialsId",
           foreignField: "_id",
           as: "productDetails",
@@ -760,7 +760,7 @@ const getAllBatchClearedRecords = async (req, res) => {
       },
       {
         $lookup: {
-          from: "accountmasters", // Ensure this matches the actual collection name
+          from: "accountmasters",
           localField: "productDetails.partyId",
           foreignField: "_id",
           as: "partyDetails",
@@ -771,7 +771,7 @@ const getAllBatchClearedRecords = async (req, res) => {
       },
       {
         $lookup: {
-          from: "productmasters", // Ensure this matches the actual collection name
+          from: "productmasters",
           localField: "productDetails.productId",
           foreignField: "_id",
           as: "productData",
@@ -782,7 +782,7 @@ const getAllBatchClearedRecords = async (req, res) => {
       },
       {
         $lookup: {
-          from: "companyitems", // Ensure this matches the actual collection name
+          from: "companyitems",
           localField: "packingItemId",
           foreignField: "_id",
           as: "packingItems",
@@ -796,6 +796,7 @@ const getAllBatchClearedRecords = async (req, res) => {
           productName: { $first: "$productData.productName" },
           totalQuantity: { $sum: "$quantity" },
           mrp: { $last: "$mrp" },
+          netQuantity: { $last: "$netQuantity" },
           productDetialsId: { $last: "$productDetails._id" },
           batchClearId: { $last: "$_id" },
           batchSize: { $first: "$productDetails.batchSize" },
@@ -809,6 +810,9 @@ const getAllBatchClearedRecords = async (req, res) => {
         },
       },
       {
+        $sort: { updatedDate: -1 },
+      },
+      {
         $project: {
           _id: 0,
           productionNo: "$_id",
@@ -817,6 +821,7 @@ const getAllBatchClearedRecords = async (req, res) => {
           productName: 1,
           totalQuantity: 1,
           mrp: 1,
+          netQuantity: 1,
           productDetialsId: 1,
           batchClearId: 1,
           batchSize: 1,
@@ -948,6 +953,7 @@ const getAllProductionBatchRegister = async (req, res) => {
         productionStageId: { $in: data.productionStageId },
         isDeleted: false,
       });
+      
       const requiredStatusIDs = stages.map(stage => new mongoose.Types.ObjectId(stage._id));
 
       if (stages && stages.length > 0) {
@@ -958,7 +964,7 @@ const getAllProductionBatchRegister = async (req, res) => {
     } else {
       queryObject.productionStageStatusId = { $in: [] };
     }
-
+    
     let ppeModel = await productionPlanningEntryModel()
     let response = await ppeModel
       .find(queryObject)
@@ -1058,7 +1064,7 @@ const getAllJobChargeRecords = async (req, res) => {
         match: {
           createdAt: {
             $gte: new Date(data.startDate),
-            $lte: new Date(data.endDate),
+            $lte: new Date(endDate),
           },
         },
         populate: [
@@ -1234,7 +1240,7 @@ const getBatchCostingReportRMFormulaId = async (req, res) => {
 
     const { id } = req.query;
     let reqId = getRequestData(id)
-    
+
     let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
     let response = await prRMFormulaModel.find({ productDetialsId: reqId, isDeleted: false });
 
@@ -1525,7 +1531,7 @@ const getAllMaterialRequirementReportForPM = async (req, res) => {
 
     let responseData = await Promise.all(
       data.map(async (item) => {
-        console.log(item.batchSize)
+        
         let pmfModel = await pmFormulaModel()
         const formulas = await pmfModel
           .find({ itemId: item.packingId, isDeleted: false })
@@ -1553,7 +1559,7 @@ const getAllMaterialRequirementReportForPM = async (req, res) => {
 
       return acc;
     }, []);
-    console.log(aggregatedData)
+    
     let gemDetailsModel = await grnEntryMaterialDetailsModel();
     const grnEntryForStock = await gemDetailsModel
       .find(queryObject)

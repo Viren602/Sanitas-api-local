@@ -834,7 +834,7 @@ const sendPurchaseOrderMail = async (req, res) => {
             let gstAmount = subTotalAmount * (gstRate / 100)
             let totalAmount = subTotalAmount + gstAmount
 
-            console.log(purchaseMaterial)
+            
             const tableRows = purchaseMaterial && purchaseMaterial.length > 0
                 ? purchaseMaterial.map(material => `
                 <tr>
@@ -1241,7 +1241,7 @@ const getAllGoodsRegistered = async (req, res) => {
                     select: 'partyName _id',
                 },
             });
-        // console.log(response)
+            
         if (reqData.partyId && reqData.partyId.trim() !== '') {
             response = response.filter(item =>
                 item.grnEntryPartyDetailId?.partyId?._id.toString() === reqData.partyId)
@@ -1664,8 +1664,7 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         });
 
         let combinedResponse = [...response, ...responseFromUsedQty, ...responseFromUsedGSTInvoice, ...responseFromAdditionalEntry];
-        combinedResponse.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-        console.log(combinedResponse)
+        combinedResponse.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
         let encryptData = encryptionAPI(combinedResponse, 1)
 
         res.status(200).json({
