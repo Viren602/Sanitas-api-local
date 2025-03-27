@@ -258,10 +258,12 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
 
             responseData.invoiceDetails = response;
 
-            const items = data.itemListing.map(item => ({
-                ...item,
-                gstInvoiceFinishGoodsId: response._id
-            }));
+            // Dhruvi
+            const items = data.itemListing.map(item => {
+                const newItem = { ...item, gstInvoiceFinishGoodsId: response._id };
+                delete newItem._id; // Properly deleting _id
+                return newItem;
+            });
 
             // Add Edit For Invoice Item Details
             let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
