@@ -2791,7 +2791,8 @@ const getAllGSTSalesRegister = async (req, res) => {
 
         let queryObject = {
             isDeleted: false,
-            invoiceDate: { $gte: data.startDate, $lte: endDate }
+            invoiceDate: { $gte: data.startDate, $lte: endDate },
+            subTotal: { $gt: 0 }
         }
 
         if (data.partyId && data.partyId.trim() !== '') {
@@ -2855,7 +2856,8 @@ const getAllGSTPurchaseRegister = async (req, res) => {
 
         let queryObject = {
             isDeleted: false,
-            invoiceDate: { $gte: data.startDate, $lte: endDate }
+            invoiceDate: { $gte: data.startDate, $lte: endDate },
+            subTotal: { $gt: 0 }
         }
 
         if (data.partyId && data.partyId.trim() !== '') {
