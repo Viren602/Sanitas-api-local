@@ -2781,6 +2781,127 @@ const getAllOpeningBalanceReport = async (req, res) => {
     }
 };
 
+const getAllGSTSalesRegister = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        let endDate = new Date(data.endDate);
+        endDate.setHours(23, 59, 59, 999);
+
+        let queryObject = {
+            isDeleted: false,
+            invoiceDate: { $gte: data.startDate, $lte: endDate }
+        }
+
+        if (data.partyId && data.partyId.trim() !== '') {
+            queryObject.partyId = data.partyId
+        }
+
+        if (data.invoiceType === 'sgst') {
+            queryObject.sgst = { $gt: 0 };
+        } else if (data.invoiceType === 'cgst') {
+            queryObject.cgst = { $gt: 0 };
+        } else if (data.invoiceType === 'igst') {
+            queryObject.igst = { $gt: 0 };
+        }
+
+        let gifgModel = await gstInvoiceFinishGoodsModel();
+        const finishGoodsData = await gifgModel.find(queryObject)
+            .populate({
+                path: 'partyId',
+                select: 'partyName',
+            })
+
+        let gipModel = await gstInvoicePMModel();
+        const pmData = await gipModel.find(queryObject)
+            .populate({
+                path: 'partyId',
+                select: 'partyName',
+            })
+
+        let girModel = await gstInvoiceRMModel();
+        const rmData = await girModel.find(queryObject)
+            .populate({
+                path: 'partyId',
+                select: 'partyName',
+            })
+
+        let response = [...finishGoodsData, ...pmData, ...rmData]
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "GST Sales Register Fetched Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
+const getAllGSTPurchaseRegister = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        let endDate = new Date(data.endDate);
+        endDate.setHours(23, 59, 59, 999);
+
+        let queryObject = {
+            isDeleted: false,
+            invoiceDate: { $gte: data.startDate, $lte: endDate }
+        }
+
+        if (data.partyId && data.partyId.trim() !== '') {
+            queryObject.partyId = data.partyId
+        }
+
+        if (data.invoiceType === 'sgst') {
+            queryObject.sgst = { $gt: 0 };
+        } else if (data.invoiceType === 'cgst') {
+            queryObject.cgst = { $gt: 0 };
+        } else if (data.invoiceType === 'igst') {
+            queryObject.igst = { $gt: 0 };
+        }
+
+        let gpeModel = await gstPurchaseEntryRMPMModel();
+        const gstPurchaseEntryList = await gpeModel.find(queryObject)
+            .populate({
+                path: 'partyId',
+                select: 'partyName',
+            })
+
+        let gpilRMPMModel = await gstPurchaseItemListRMPMModel();
+        const gstPurchaseEntryWOInventoryList = await gpilRMPMModel.find(queryObject)
+            .populate({
+                path: 'partyId',
+                select: 'partyName',
+            })
+
+        let response = [...gstPurchaseEntryList, ...gstPurchaseEntryWOInventoryList]
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "GST Sales Register Fetched Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
 export {
     getReceiptEntryVoucherNo,
     getAllPendingInvoiceByPartyId,
@@ -2832,5 +2953,7 @@ export {
     getAllMonthWiseCashBankBookReportbyBankId,
     getAllDateWiseCashBankBookReportbyBankId,
     getAllGroupWiseAccountSummary,
-    getAllOpeningBalanceReport
+    getAllOpeningBalanceReport,
+    getAllGSTSalesRegister,
+    getAllGSTPurchaseRegister
 };

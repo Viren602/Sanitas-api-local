@@ -34,6 +34,7 @@ import companyGroupModel from "../model/companyGroup.js";
 import mailsender from "../utils/sendingEmail.js";
 import emailTemplateModel from "../model/emailTemplateModel.js";
 import { FromMail } from "../middleware/appSetting.js";
+import additionalEntryMaterialDetailsModel from "../model/InventoryModels/additionalEntryMaterialDetailsModel.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -96,7 +97,7 @@ const getProductionStockByProductId = async (req, res) => {
         let batchwiseProdStkModel = await batchWiseProductStockModel()
         let response = await batchwiseProdStkModel.find({
             productId: reqId,
-            quantity: { $gt: 0 }
+            // quantity: { $gt: 0 }
         });
 
 
@@ -695,7 +696,7 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
                 .replace('#CompanyLocation', companyDetails.location)
                 .replace('#AdminMobile', companyDetails.mobile);
         };
-        
+
         htmlTemplate = `
                 <div class="empty-page">${generatePage("Original for Recipient")}</div>
                 <div class="page-break"></div>
@@ -1062,8 +1063,7 @@ const getrawMaterialStockByRMId = async (req, res) => {
 
         // From Invoice Used Qty
         let iRMStock = await InvoiceRMStockModel();
-        const responseFromUsedQtyGSTInvoice = await iRMStock
-            .find({ rmId: data.id, isDeleted: false });
+        const responseFromUsedQtyGSTInvoice = await iRMStock.find({ rmId: data.id, isDeleted: false });
 
         const totalUsedQtyInGSTInvoice = responseFromUsedQtyGSTInvoice.reduce((sum, item) => sum + item.qty, 0);
 
@@ -1073,6 +1073,11 @@ const getrawMaterialStockByRMId = async (req, res) => {
             isFromGSTInvoiceRecord = true
         }
 
+        // From Additional Entry
+        let addEntryModel = await additionalEntryMaterialDetailsModel();
+        let additionalEntry = await addEntryModel.find({ rawMaterialId: data.id, isDeleted: false }).select('qty');
+        const totalUsedQtyInAdditionalEntry = additionalEntry.reduce((sum, item) => sum + item.qty, 0);
+
         let totalStock = {
             productionNo: '',
             batchClearingEntryId: null,
@@ -1080,7 +1085,7 @@ const getrawMaterialStockByRMId = async (req, res) => {
             batchNo: '',
             expDate: '',
             mfgDate: '',
-            quantity: totalPurchaseQty - totalUsedQtyInProduction - (Number(totalUsedQtyInGSTInvoice) || 0),
+            quantity: totalPurchaseQty - totalUsedQtyInProduction - (Number(totalUsedQtyInGSTInvoice) || 0) - (Number(totalUsedQtyInAdditionalEntry) || 0),
             mrp: '',
             hsnCode: '',
             name: data.rmName,
@@ -2007,6 +2012,11 @@ const getPakcingMaterialStockByPMID = async (req, res) => {
             isFromGSTInvoiceRecord = true
         }
 
+        // From Additional Entry
+        let addEntryModel = await additionalEntryMaterialDetailsModel();
+        let additionalEntry = await addEntryModel.find({ packageMaterialId: data.id, isDeleted: false }).select('qty');
+        const totalUsedQtyInAdditionalEntry = additionalEntry.reduce((sum, item) => sum + item.qty, 0);
+
         let totalStock = {
             productionNo: '',
             batchClearingEntryId: null,
@@ -2014,7 +2024,7 @@ const getPakcingMaterialStockByPMID = async (req, res) => {
             batchNo: '',
             expDate: '',
             mfgDate: '',
-            quantity: totalPurchaseQty - totalUsedQtyInProduction - (Number(totalUsedQtyInGSTInvoice) || 0),
+            quantity: totalPurchaseQty - totalUsedQtyInProduction - (Number(totalUsedQtyInGSTInvoice) || 0) - (Number(totalUsedQtyInAdditionalEntry) || 0),
             mrp: '',
             hsnCode: '',
             name: data.pmName,
