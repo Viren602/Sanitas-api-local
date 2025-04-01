@@ -834,7 +834,7 @@ const sendPurchaseOrderMail = async (req, res) => {
             let gstAmount = subTotalAmount * (gstRate / 100)
             let totalAmount = subTotalAmount + gstAmount
 
-            
+
             const tableRows = purchaseMaterial && purchaseMaterial.length > 0
                 ? purchaseMaterial.map(material => `
                 <tr>
@@ -1222,6 +1222,9 @@ const getAllGoodsRegistered = async (req, res) => {
             }
 
         }
+
+        // queryObject["grnEntryPartyDetailId.partyId"] = { $exists: true, $ne: null };
+
         let gemDetailsModel = await grnEntryMaterialDetailsModel();
         let response = await gemDetailsModel
             .find(queryObject)
@@ -1241,7 +1244,8 @@ const getAllGoodsRegistered = async (req, res) => {
                     select: 'partyName _id',
                 },
             });
-            
+        response = response.filter(item => item.grnEntryPartyDetailId?.partyId);
+
         if (reqData.partyId && reqData.partyId.trim() !== '') {
             response = response.filter(item =>
                 item.grnEntryPartyDetailId?.partyId?._id.toString() === reqData.partyId)

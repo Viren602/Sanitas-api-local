@@ -9,6 +9,7 @@ const companySelectionMasterModel = async () => {
     const db = await connectToDatabase(MasterDB);
     return db.models.CompanyMasters || db.model("CompanyMasters", new mongoose.Schema({
         CompanyName: { type: String, default: '' },
+        companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },
     }));
 };
 

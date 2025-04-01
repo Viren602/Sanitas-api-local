@@ -24,8 +24,10 @@ const getClientIp = (req) => {
 
 const getCompanyForCompanySelection = async (req, res) => {
     try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
         const CompanyMaster = await companySelectionMasterModel();
-        const companySelection = await CompanyMaster.find({});
+        const companySelection = await CompanyMaster.find({ companyId: reqId});
 
         let responseData = encryptionAPI(companySelection, 1)
         res.status(200).json({
@@ -79,6 +81,7 @@ const getCompanyDataWithCompanyNameAndYear = async (req, res) => {
         });
 
         const databaseName = dbDetails.databaseName;
+        console.log(databaseName)
         globals.Database = databaseName;
         await connectToDatabase(databaseName);
 
@@ -102,7 +105,7 @@ const userAuthentication = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let comModel = await companyAdminModel();
-        let user = await comModel.findOne({ UserName: data.userName });
+        let user = await comModel.findOne({ email: data.email });
 
         if (user !== null) {
             const isPasswordValid = await bcrypt.compare(data.password, user.hashPassword);
@@ -129,7 +132,10 @@ const userAuthentication = async (req, res) => {
                     status: user.Status,
                     sessionTimeout: config.Session_TimeOut,
                     expires: expiry,
-                    roleId: user.roleId
+                    roleId: user.roleId,
+                    companyId: user.companyId,
+                    email : user.email,
+                    isTradingAccount : user.isTradingAccount
                 }
 
                 const currentDevice = req?.headers['user-agent'];
