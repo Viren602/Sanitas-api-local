@@ -14,6 +14,7 @@ const companyGroup = mongoose.Schema({
     branch: { type: String, default: '' },
     email: { type: String, default: '' },
     fssaiNo: { type: String, default: '' },
+    msmeNo: { type: String, default: '' },
     gstnNo: { type: String, default: '' },
     ifscCode: { type: String, default: '' },
     mfgLicNo: { type: String, default: '' },

@@ -13,6 +13,10 @@
             padding-top: 3px;
             padding-bottom: 3px;
         }
+
+        .invoice-table tbody tr:not(:last-child) {
+            height: 20px;
+        }
     </style>
 </head>
 
@@ -31,8 +35,8 @@
                         <!-- <p>Mfg Lic. No. : #AdminMfgLicNo</p> -->
                         <div class="extra-details flex justify-between">
                             <p>GSTN no : #AdminGSTNNo</p>
-                            <p>FSSAI no : #AdminFssaiNo</p>
-                            <p>PAN No. : #AdminPanNo</p>
+                            <p class="pl-[30px]">FSSAI no : #AdminFssaiNo</p>
+                            <p>MSME No. : #AdminMSMENo</p>
                         </div>
                     </div>
                     <div class="invoice-details flex border border-t-0 text-[12px]">
@@ -80,9 +84,9 @@
                     </div>
                 </div>
             </div>
-            <div class="invoice-middle grow">
+            <div class="invoice-middle" style="height: calc(100% - 550px);">
                 <div
-                    class="invoice-table-container h-full flex flex-col justify-between border border-b-0 border-t-[0px]">
+                    class="invoice-table-container h-full flex flex-col grow justify-between border border-b-0 border-t-[0px]">
                     <table class="invoice-table w-full h-full table-auto border-collapse">
                         <thead class="border border-x-[0px] border-t-[0px] border-gray-400 text-[12px] !font-normal">
                             <tr class="bg-gray-300">
@@ -102,9 +106,35 @@
                                 <th class="w-[7%] border border-r-[0px] border-t-[0px] px-[4px] text-right">Amount</th>
                             </tr>
                         </thead>
-                        <tbody class="align-top text-[11px]">
+                        <tbody class="align-top h-auto text-[11px]">
                             #ItemListingRows
                             <!-- <tr>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    Hairfix Tablet</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">30
+                                    Tabl</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    21069099</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    ST24113</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    03-2026</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    03-2026</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    650.00</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    1420.0</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">0.0
+                                </td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">46.00
+                                </td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    65320.00</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-right">
+                                    65320.00</td>
+                            </tr>
+                            <tr>
                                 <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
                                     Hairfix Tablet</td>
                                 <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">30

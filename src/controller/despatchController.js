@@ -98,7 +98,8 @@ const getProductionStockByProductId = async (req, res) => {
         let response = await batchwiseProdStkModel.find({
             productId: reqId,
             // quantity: { $gt: 0 }
-        });
+        })
+        .sort({ updatedAt: -1 });
 
 
         let encryptData = encryptionAPI(response, 1);
@@ -676,6 +677,7 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
                 .replace('#AdminMobile', companyDetails.mobile)
                 .replace('#AdminMfgLicNo', companyDetails.mfgLicNo)
                 .replace('#AdminFssaiNo', companyDetails.fssaiNo)
+                .replace('#AdminMSMENo', companyDetails.msmeNo)
                 .replace('#AdminGSTNNo', companyDetails.gstnNo)
                 .replace('#AdminPanNo', companyDetails.panNo)
                 .replace('#TermsConditionLine1', companyDetails.termsConditionLine1)
@@ -909,6 +911,7 @@ const sendGSTInvoiceFinishGoodsToClient = async (req, res) => {
                     .replace('#AdminMobile', companyDetails.mobile)
                     .replace('#AdminMfgLicNo', companyDetails.mfgLicNo)
                     .replace('#AdminFssaiNo', companyDetails.fssaiNo)
+                    .replace('#AdminMSMENo', companyDetails.msmeNo)
                     .replace('#AdminGSTNNo', companyDetails.gstnNo)
                     .replace('#AdminPanNo', companyDetails.panNo)
                     .replace('#TermsConditionLine1', companyDetails.termsConditionLine1)
@@ -1638,6 +1641,7 @@ const generateGSTInvoiceForRMById = async (req, res) => {
                 .replace('#AdminMobile', companyDetails.mobile)
                 .replace('#AdminMfgLicNo', companyDetails.mfgLicNo)
                 .replace('#AdminFssaiNo', companyDetails.fssaiNo)
+                .replace('#AdminMSMENo', companyDetails.msmeNo)
                 .replace('#AdminGSTNNo', companyDetails.gstnNo)
                 .replace('#AdminPanNo', companyDetails.panNo)
                 .replace('#TermsConditionLine1', companyDetails.termsConditionLine1)
@@ -1847,6 +1851,7 @@ const sendGSTInvoiceRMToClient = async (req, res) => {
                     .replace('#AdminMobile', companyDetails.mobile)
                     .replace('#AdminMfgLicNo', companyDetails.mfgLicNo)
                     .replace('#AdminFssaiNo', companyDetails.fssaiNo)
+                    .replace('#AdminMSMENo', companyDetails.msmeNo)
                     .replace('#AdminGSTNNo', companyDetails.gstnNo)
                     .replace('#AdminPanNo', companyDetails.panNo)
                     .replace('#TermsConditionLine1', companyDetails.termsConditionLine1)
@@ -2577,6 +2582,7 @@ const generateGSTInvoiceForPMById = async (req, res) => {
                 .replace('#AdminMobile', companyDetails.mobile)
                 .replace('#AdminMfgLicNo', companyDetails.mfgLicNo)
                 .replace('#AdminFssaiNo', companyDetails.fssaiNo)
+                .replace('#AdminMSMENo', companyDetails.msmeNo)
                 .replace('#AdminGSTNNo', companyDetails.gstnNo)
                 .replace('#AdminPanNo', companyDetails.panNo)
                 .replace('#TermsConditionLine1', companyDetails.termsConditionLine1)
@@ -2788,6 +2794,7 @@ const sendGSTInvoicePMToClient = async (req, res) => {
                     .replace('#AdminMobile', companyDetails.mobile)
                     .replace('#AdminMfgLicNo', companyDetails.mfgLicNo)
                     .replace('#AdminFssaiNo', companyDetails.fssaiNo)
+                    .replace('#AdminMSMENo', companyDetails.msmeNo)
                     .replace('#AdminGSTNNo', companyDetails.gstnNo)
                     .replace('#AdminPanNo', companyDetails.panNo)
                     .replace('#TermsConditionLine1', companyDetails.termsConditionLine1)

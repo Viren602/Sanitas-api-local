@@ -27,7 +27,7 @@ const getCompanyForCompanySelection = async (req, res) => {
         const { id } = req.query;
         let reqId = getRequestData(id)
         const CompanyMaster = await companySelectionMasterModel();
-        const companySelection = await CompanyMaster.find({ companyId: reqId});
+        const companySelection = await CompanyMaster.find({ companyId: reqId });
 
         let responseData = encryptionAPI(companySelection, 1)
         res.status(200).json({
@@ -106,7 +106,7 @@ const userAuthentication = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
         let comModel = await companyAdminModel();
         let user = await comModel.findOne({ email: data.email });
-
+        console.log(user)
         if (user !== null) {
             const isPasswordValid = await bcrypt.compare(data.password, user.hashPassword);
             if (!isPasswordValid) {
@@ -134,8 +134,8 @@ const userAuthentication = async (req, res) => {
                     expires: expiry,
                     roleId: user.roleId,
                     companyId: user.companyId,
-                    email : user.email,
-                    isTradingAccount : user.isTradingAccount
+                    email: user.email,
+                    isTradingAccount: user.isTradingAccount
                 }
 
                 const currentDevice = req?.headers['user-agent'];
