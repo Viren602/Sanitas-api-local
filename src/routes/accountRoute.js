@@ -1,6 +1,6 @@
 import express from "express";
 import checkAuth from "../middleware/checkAuth.js";
-import { addEditContraEntry, addEditGeneralCreditNoteEntry, addEditGeneralDebitNoteEntry, addEditGSTPurchaseEntryRMPM, addEditGSTPurchaseEntryWithoutInventory, addEditJVEntry, addEditPaymentEntry, addEditReceiptEntry, deleteContraEntryById, deleteGeneralCreditNoteEntryById, deleteGeneralDebitNoteEntryById, deleteGSTPurchaseEntryRMPMById, deleteGSTPurchaseEntryWithoutInventoryById, deleteJVEntryById, deletePaymentDetailsByPaymentReceiptId, deleteReceiptDetailsByReceiptId, getAllAccountLedger, getAllBankWiseCashBankBookReport, getAllContraEntry, getAllDateWiseCashBankBookReportbyBankId, getAllGeneralCreditNoteEntry, getAllGeneralDebitNoteEntry, getAllGroupWiseAccountSummary, getAllGSTPurchaseEntryRMPM, getAllGSTPurchaseRegister, getAllGSTSalesRegister, getAllJVEntry, getAllMonthWiseCashBankBookReportbyBankId, getAllOpeningBalanceReport, getAllPaymnetEntry, getAllPendingGRNPurchaseEntry, getAllPendingInvoiceByPartyId, getAllPendingInvoiceForPaymentEntryByPartyId, getAllPurchaseEntryWithoutInventory, getAllReceiptEntry, getContraEntryById, getContraEntryVoucherNo, getGeneralCreditNoteEntryById, getGeneralCreditNoteEntrySRNo, getGeneralDebitNoteEntryById, getGeneralDebitNoteEntrySRNo, getGSTPurchaseEntryRMPMById, getGSTPurchaseEntryWithoutInventoryById, getGSTPurchseEntrySRNo, getGSTPurchseWithoutInventoryEntrySRNo, getJVEntryById, getJVEntryVoucherNo, getPaymentDetailsByPaymnetReceiptId, getPaymentEntryVoucherNo, getReceiptDetailsByReceiptId, getReceiptEntryVoucherNo, getRunningBalanceByPartyId, updateGRNEntryToPurchaseEntry } from "../controller/accountController.js";
+import { addEditContraEntry, addEditGeneralCreditNoteEntry, addEditGeneralDebitNoteEntry, addEditGSTPurchaseEntryRMPM, addEditGSTPurchaseEntryWithoutInventory, addEditJVEntry, addEditPaymentEntry, addEditReceiptEntry, deleteContraEntryById, deleteGeneralCreditNoteEntryById, deleteGeneralDebitNoteEntryById, deleteGSTPurchaseEntryRMPMById, deleteGSTPurchaseEntryWithoutInventoryById, deleteJVEntryById, deletePaymentDetailsByPaymentReceiptId, deleteReceiptDetailsByReceiptId, getAllAccountLedger, getAllBankWiseCashBankBookReport, getAllContraEntry, getAllDateWiseCashBankBookReportbyBankId, getAllGeneralCreditNoteEntry, getAllGeneralDebitNoteEntry, getAllGroupWiseAccountSummary, getAllGSTPurchaseEntryRMPM, getAllGSTPurchaseRegister, getAllGSTSalesRegister, getAllJVEntry, getAllMonthWiseCashBankBookReportbyBankId, getAllOpeningBalanceReport, getAllPaymnetEntry, getAllPendingGRNPurchaseEntry, getAllPendingInvoiceByPartyId, getAllPendingInvoiceForPaymentEntryByPartyId, getAllPurchaseEntryWithoutInventory, getAllReceiptEntry, getBankBalanceByBankId, getContraEntryById, getContraEntryVoucherNo, getGeneralCreditNoteEntryById, getGeneralCreditNoteEntrySRNo, getGeneralDebitNoteEntryById, getGeneralDebitNoteEntrySRNo, getGSTPurchaseEntryRMPMById, getGSTPurchaseEntryWithoutInventoryById, getGSTPurchseEntrySRNo, getGSTPurchseWithoutInventoryEntrySRNo, getJVEntryById, getJVEntryVoucherNo, getPaymentDetailsByPaymnetReceiptId, getPaymentEntryVoucherNo, getReceiptDetailsByReceiptId, getReceiptEntryVoucherNo, getRunningBalanceByPartyId, updateGRNEntryToPurchaseEntry } from "../controller/accountController.js";
 
 const accountRoute = express.Router();
 
@@ -12,7 +12,7 @@ accountRoute.post("/Account/GetAllReceiptEntry", checkAuth, getAllReceiptEntry);
 accountRoute.get("/Account/GetReceiptDetailsByReceiptId", checkAuth, getReceiptDetailsByReceiptId);
 accountRoute.get("/Account/DeleteReceiptDetailsByReceiptId", checkAuth, deleteReceiptDetailsByReceiptId);
 
-// Receipt Entry
+// Payment Entry
 accountRoute.get("/Account/GetPaymentEntryVoucherNo", checkAuth, getPaymentEntryVoucherNo);
 accountRoute.get("/Account/GetAllPendingInvoiceForPaymentEntryByPartyId", checkAuth, getAllPendingInvoiceForPaymentEntryByPartyId);
 accountRoute.post("/Account/AddEditPaymentEntry", checkAuth, addEditPaymentEntry);
@@ -20,12 +20,13 @@ accountRoute.post("/Account/GetAllPaymnetEntry", checkAuth, getAllPaymnetEntry);
 accountRoute.get("/Account/GetPaymentDetailsByPaymnetReceiptId", checkAuth, getPaymentDetailsByPaymnetReceiptId);
 accountRoute.get("/Account/DeletePaymentDetailsByPaymentReceiptId", checkAuth, deletePaymentDetailsByPaymentReceiptId);
 
-// Receipt Entry
+// Contra Entry
 accountRoute.get("/Account/GetContraEntryVoucherNo", checkAuth, getContraEntryVoucherNo);
 accountRoute.post("/Account/AddEditContraEntry", checkAuth, addEditContraEntry);
 accountRoute.post("/Account/GetAllContraEntry", checkAuth, getAllContraEntry);
 accountRoute.get("/Account/GetContraEntryById", checkAuth, getContraEntryById);
 accountRoute.get("/Account/DeleteContraEntryById", checkAuth, deleteContraEntryById);
+accountRoute.get("/Account/GetBankBalanceByBankId", checkAuth, getBankBalanceByBankId);
 
 // GST Purchase Entry RM PM
 accountRoute.get("/Account/GetGSTPurchseEntrySRNo", checkAuth, getGSTPurchseEntrySRNo);

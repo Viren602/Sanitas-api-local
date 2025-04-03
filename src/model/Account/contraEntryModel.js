@@ -13,6 +13,8 @@ const contraEntrySchema = mongoose.Schema({
     chqNo: { type: String, default: '' },
     narration1: { type: String, default: '' },
     narration2: { type: String, default: '' },
+    fromBankBalance: { type: Number, default: 0 },
+    toBankBalance: { type: Number, default: 0 },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 

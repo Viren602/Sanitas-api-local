@@ -1651,7 +1651,7 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
             responseFromUsedGSTInvoice = await giPMItemModel
                 .find({ itemId: reqData.item._id, isDeleted: false })
                 .populate({
-                    path: 'GSTInvoicePM',
+                    path: 'gstInvoicePMID',
                     select: 'invoiceNo invoiceDate partyId',
                     populate: {
                         path: 'partyId',
@@ -1667,7 +1667,12 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
             };
         });
 
-        let combinedResponse = [...response, ...responseFromUsedQty, ...responseFromUsedGSTInvoice, ...responseFromAdditionalEntry];
+        let combinedResponse = [
+            ...response,
+            ...responseFromUsedQty,
+            ...responseFromUsedGSTInvoice,
+            ...responseFromAdditionalEntry
+        ];
         combinedResponse.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
         let encryptData = encryptionAPI(combinedResponse, 1)
 

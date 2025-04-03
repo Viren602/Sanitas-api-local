@@ -99,7 +99,7 @@ const getProductionStockByProductId = async (req, res) => {
             productId: reqId,
             // quantity: { $gt: 0 }
         })
-        .sort({ updatedAt: -1 });
+            .sort({ updatedAt: -1 });
 
 
         let encryptData = encryptionAPI(response, 1);
@@ -1082,7 +1082,7 @@ const getrawMaterialStockByRMId = async (req, res) => {
         let addEntryModel = await additionalEntryMaterialDetailsModel();
         let additionalEntry = await addEntryModel.find({ rawMaterialId: data.id, isDeleted: false }).select('qty');
         const totalUsedQtyInAdditionalEntry = additionalEntry.reduce((sum, item) => sum + item.qty, 0);
-
+        
         let totalStock = {
             productionNo: '',
             batchClearingEntryId: null,
@@ -1148,8 +1148,7 @@ const addEditInvoiceRM = async (req, res) => {
                     let id = item._id ? item._id : null
                     let giRMItemModel = await gstinvoiceRMItemModel()
                     const existingItemDetails = await giRMItemModel.findOne({ _id: id, isDeleted: false });
-                    console.log(existingItemDetails)
-                    console.log(item.qty)
+                    
                     if (existingItemDetails) {
                         let iRMStock = await InvoiceRMStockModel();
                         await iRMStock.findOneAndUpdate(
@@ -2023,6 +2022,7 @@ const getPakcingMaterialStockByPMID = async (req, res) => {
         let addEntryModel = await additionalEntryMaterialDetailsModel();
         let additionalEntry = await addEntryModel.find({ packageMaterialId: data.id, isDeleted: false }).select('qty');
         const totalUsedQtyInAdditionalEntry = additionalEntry.reduce((sum, item) => sum + item.qty, 0);
+
 
         let totalStock = {
             productionNo: '',
@@ -3827,7 +3827,7 @@ const getALLItemWiseMonthlySales = async (req, res) => {
                     },
                     totalSold: { $sum: "$qty" },
                     totalFree: { $sum: "$free" },
-                    totalAmount: { $sum: "$amount" }
+                    totalAmount: { $sum: "$invoice.grandTotal" }
                 }
             },
             {
@@ -4173,7 +4173,7 @@ const getAllStockLedgerReport = async (req, res) => {
         let batchClrModel = await batchClearingEntryModel()
         let productionStock = await batchClrModel
             .find({ packingItemId: data.itemId, isDeleted: false })
-            .select('quantity productDetialsId')
+            .select('quantity productDetialsId updatedAt')
             .populate({
                 path: "productDetialsId",
                 select: "productionNo productId partyId batchNo despDate",
@@ -4186,7 +4186,7 @@ const getAllStockLedgerReport = async (req, res) => {
         let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
         let issuedItemStock = await gifinishGoodsITemModel
             .find({ itemId: data.itemId, isDeleted: false })
-            .select('qty batchNo gstInvoiceFinishGoodsId free')
+            .select('qty batchNo gstInvoiceFinishGoodsId free updatedAt')
             .populate({
                 path: "gstInvoiceFinishGoodsId",
                 select: "partyId invoiceNo invoiceDate",
@@ -4205,6 +4205,7 @@ const getAllStockLedgerReport = async (req, res) => {
                 refNo: item.productDetialsId.productionNo,
                 batchNo: item.productDetialsId.batchNo,
                 refDate: item.productDetialsId.despDate,
+                updatedAt: item.updatedAt,
                 produceedQty: item.quantity,
                 issuedQty: null,
                 isFreeQty: null
@@ -4217,12 +4218,13 @@ const getAllStockLedgerReport = async (req, res) => {
                 refNo: item.gstInvoiceFinishGoodsId.invoiceNo,
                 batchNo: item.batchNo,
                 refDate: item.gstInvoiceFinishGoodsId.invoiceDate,
+                updatedAt: item.updatedAt,
                 issuedQty: item.qty,
                 produceedQty: null,
                 isFreeQty: item.free
             }))
         ];
-        const sortedArray = newArray.sort((a, b) => new Date(a.refDate) - new Date(b.refDate));
+        const sortedArray = newArray.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
 
         let encryptData = encryptionAPI(sortedArray, 1)
 
@@ -4255,7 +4257,8 @@ const getAllStockLedgerReportBatchStock = async (req, res) => {
             .populate({
                 path: 'productId',
                 select: 'ItemName',
-            });
+            })
+            .sort({ updatedAt: -1 });;
 
 
         let encryptData = encryptionAPI(response, 1)

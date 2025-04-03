@@ -60,7 +60,8 @@ const getAllPendingInvoiceByPartyId = async (req, res) => {
         let reqId = getRequestData(id)
         let queryObject = {
             isDeleted: false,
-            partyId: reqId
+            partyId: reqId,
+            pendingAmount: { $gt: 0 }
         }
         let response = []
 
@@ -511,7 +512,8 @@ const getAllPendingInvoiceForPaymentEntryByPartyId = async (req, res) => {
         let reqId = getRequestData(id)
         let queryObject = {
             isDeleted: false,
-            partyId: reqId
+            partyId: reqId,
+            pendingAmount: { $gt: 0 }
         }
         let response = []
 
@@ -1246,6 +1248,14 @@ const addEditGSTPurchaseEntryRMPM = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
         let responseData = {}
 
+        if (data.itemListing && data.itemListing.length > 0) {
+            let gemDetailsModel = await grnEntryMaterialDetailsModel();
+
+            await Promise.all(data.itemListing.map(async (item) => {
+                await gemDetailsModel.findByIdAndUpdate(item.grnMaterialId, { isGSTPurchaseEntryRMPM: true });
+            }));
+        }
+
         if (data.invoiceDetails.gstPurchaseEntryRMPMId && data.invoiceDetails.gstPurchaseEntryRMPMId.trim() !== '') {
             // Edit For Purchase Details
             let gpeRMPMModel = await gstPurchaseEntryRMPMModel();
@@ -1264,7 +1274,7 @@ const addEditGSTPurchaseEntryRMPM = async (req, res) => {
 
             // Payment Receipt Entry
             let request = {
-                voucherNo: data.invoiceDetails.invoiceNo,
+                voucherNo: data.invoiceDetails.srNo,
                 date: data.invoiceDetails.invoiceDate,
                 partyId: data.invoiceDetails.partyId,
                 creditAmount: data.invoiceDetails.grandTotal,
@@ -1316,7 +1326,7 @@ const addEditGSTPurchaseEntryRMPM = async (req, res) => {
 
             // Payment Receipt Entry
             let request = {
-                voucherNo: data.invoiceDetails.invoiceNo,
+                voucherNo: data.invoiceDetails.srNo,
                 bankName: 'PURCHASE',
                 date: data.invoiceDetails.invoiceDate,
                 partyId: data.invoiceDetails.partyId,
@@ -1548,7 +1558,7 @@ const addEditGSTPurchaseEntryWithoutInventory = async (req, res) => {
 
             // Payment Receipt Entry
             let request = {
-                voucherNo: data.invoiceNo,
+                voucherNo: data.srNo,
                 date: data.invoiceDate,
                 partyId: data.partyId,
                 creditAmount: data.grandTotal,
@@ -1578,7 +1588,7 @@ const addEditGSTPurchaseEntryWithoutInventory = async (req, res) => {
 
             // Payment Receipt Entry
             let request = {
-                voucherNo: data.invoiceNo,
+                voucherNo: data.srNo,
                 bankName: 'PURCHASE',
                 date: data.invoiceDate,
                 partyId: data.partyId,
@@ -2224,12 +2234,12 @@ const addEditJVEntry = async (req, res) => {
             let jvEModel = await jvEntryModel();
             const response = new jvEModel(data.jvDetails);
             await response.save();
-
+            
             const items = data.jvEntryItemList.map(item => ({
                 ...item,
                 jvEntryId: response._id
             }));
-
+            
             // Add Items In Receipt Entry Model
             let prEntryModel = await paymentReceiptEntryModel();
             await prEntryModel.insertMany(items);
@@ -2342,7 +2352,7 @@ const deleteJVEntryById = async (req, res) => {
         res.status(200).json({
             data: {
                 statusCode: 200,
-                Message: "Receipt details fetched successfully",
+                Message: "JV Entry Deleted Successfully",
                 responseData: encryptData,
                 isEnType: true
             },
@@ -2461,22 +2471,96 @@ const getRunningBalanceByPartyId = async (req, res) => {
     }
 };
 
+const getBankBalanceByBankId = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        let queryObject = {
+            isDeleted: false,
+            _id: reqId
+        }
+
+        let dbMasterModel = await daybookMasterModel()
+        let response = await dbMasterModel.findOne(queryObject)
+
+        const getFinancialYear = () => {
+            const currentDate = dayjs();
+            const currentYear = currentDate.year();
+            const currentMonth = currentDate.month() + 1;
+
+            return currentMonth >= 4 ? currentYear : currentYear - 1;
+        };
+
+        let financialYear = getFinancialYear()
+
+        const startDateOfYear = dayjs(`${financialYear}-04-01`).startOf("day").toDate();
+        const endDateOfYear = dayjs(`${financialYear + 1}-03-31`).endOf("day").toDate();
+
+
+
+        let prEntryModel = await paymentReceiptEntryModel();
+        let totalCreditDebitAmount = await prEntryModel.find({ isDeleted: false, bankId: reqId, date: { $gte: startDateOfYear, $lte: endDateOfYear } }).select('creditAmount debitAmount');
+
+        // Summing up the credit and debit amounts
+        let totalCreditAmount = totalCreditDebitAmount.reduce((sum, record) => sum + (record.creditAmount || 0), 0);
+        let totalDebitAmount = totalCreditDebitAmount.reduce((sum, record) => sum + (record.debitAmount || 0), 0);
+        let closingBalance = (response.openBalance + totalCreditAmount) - totalDebitAmount;
+
+        let finalclosingBalance = {
+            closingBalance: closingBalance
+        }
+
+        let encryptData = encryptionAPI(finalclosingBalance, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Bank Balance Feteched Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
 const getAllBankWiseCashBankBookReport = async (req, res) => {
     try {
         // let apiData = req.body.data
         // let data = getRequestData(apiData, 'PostApi')
         let queryObject = {
             isDeleted: false,
-            bookType: { $in: ['Bank Book', 'Cash Book'] }
+            bookType: { $in: ['Bank Book', 'Cash Book'] },
+            // daybookName: 'GUJARAT AMBUJA CO-OP BANK'
         }
 
         let dbMasterModel = await daybookMasterModel()
         let response = await dbMasterModel
             .find(queryObject)
 
+        const getFinancialYear = () => {
+            const currentDate = dayjs();
+            const currentYear = currentDate.year();
+            const currentMonth = currentDate.month() + 1;
+
+            return currentMonth >= 4 ? currentYear : currentYear - 1;
+        };
+
+        let financialYear = getFinancialYear()
+
+        const startDateOfYear = dayjs(`${financialYear}-04-01`).startOf("day").toDate();
+        const endDateOfYear = dayjs(`${financialYear + 1}-03-31`).endOf("day").toDate();
+
+
         let finalResponse = await Promise.all(response.map(async (x) => {
+
             let prEntryModel = await paymentReceiptEntryModel();
-            let totalCreditDebitAmount = await prEntryModel.find({ isDeleted: false, bankId: x._id }).select('creditAmount debitAmount');
+
+            let totalCreditDebitAmount = await prEntryModel.find({ isDeleted: false, bankId: x._id, date: { $gte: startDateOfYear, $lte: endDateOfYear } }).select('creditAmount debitAmount date');
 
             // Summing up the credit and debit amounts
             let totalCreditAmount = totalCreditDebitAmount.reduce((sum, record) => sum + (record.creditAmount || 0), 0);
@@ -2957,5 +3041,6 @@ export {
     getAllGroupWiseAccountSummary,
     getAllOpeningBalanceReport,
     getAllGSTSalesRegister,
-    getAllGSTPurchaseRegister
+    getAllGSTPurchaseRegister,
+    getBankBalanceByBankId
 };
