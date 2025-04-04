@@ -1473,6 +1473,16 @@ const deleteGSTPurchaseEntryRMPMById = async (req, res) => {
         let reqId = getRequestData(id)
 
         let gpitemListRMPMModel = await gstPurchaseItemListRMPMModel();
+        let list = await gpitemListRMPMModel.find({ gstPurchaseEntryRMPMId: reqId, isDeleted: false });
+
+        console.log(list)
+        if (list && list.length > 0) {
+            let gemDetailsModel = await grnEntryMaterialDetailsModel();
+
+            await Promise.all(list.map(async (item) => {
+                await gemDetailsModel.findByIdAndUpdate(item.grnMaterialId, { isGSTPurchaseEntryRMPM: false });
+            }));
+        }
         await gpitemListRMPMModel.updateMany({ gstPurchaseEntryRMPMId: reqId }, { isDeleted: true });
 
         let gpeRMPMModel = await gstPurchaseEntryRMPMModel();
@@ -1601,7 +1611,7 @@ const addEditGSTPurchaseEntryWithoutInventory = async (req, res) => {
                 narration3: '',
                 entryType: 'Payment',
                 from: 'GSTPurchaseWithoutInventory',
-                gstpurchaseInvoiceRMPMId: response._id,
+                gstPurchaseEntryWithoutInventoryId: response._id,
             }
             let prEntryModel = await paymentReceiptEntryModel();
             let paymentEntry = new prEntryModel(request);
@@ -2234,12 +2244,12 @@ const addEditJVEntry = async (req, res) => {
             let jvEModel = await jvEntryModel();
             const response = new jvEModel(data.jvDetails);
             await response.save();
-            
+
             const items = data.jvEntryItemList.map(item => ({
                 ...item,
                 jvEntryId: response._id
             }));
-            
+
             // Add Items In Receipt Entry Model
             let prEntryModel = await paymentReceiptEntryModel();
             await prEntryModel.insertMany(items);
@@ -2944,8 +2954,18 @@ const getAllGSTPurchaseRegister = async (req, res) => {
             subTotal: { $gt: 0 }
         }
 
+        let queryObjectForWithOutInventory = {
+            isDeleted: false,
+            invoiceDate: { $gte: data.startDate, $lte: endDate },
+            amount: { $gt: 0 }
+        }
+
         if (data.partyId && data.partyId.trim() !== '') {
             queryObject.partyId = data.partyId
+        }
+
+        if (data.partyId && data.partyId.trim() !== '') {
+            queryObjectForWithOutInventory.partyId = data.partyId
         }
 
         if (data.invoiceType === 'sgst') {
@@ -2956,6 +2976,14 @@ const getAllGSTPurchaseRegister = async (req, res) => {
             queryObject.igst = { $gt: 0 };
         }
 
+        if (data.invoiceType === 'sgst') {
+            queryObjectForWithOutInventory.sgst = { $gt: 0 };
+        } else if (data.invoiceType === 'cgst') {
+            queryObjectForWithOutInventory.cgst = { $gt: 0 };
+        } else if (data.invoiceType === 'igst') {
+            queryObjectForWithOutInventory.igst = { $gt: 0 };
+        }
+
         let gpeModel = await gstPurchaseEntryRMPMModel();
         const gstPurchaseEntryList = await gpeModel.find(queryObject)
             .populate({
@@ -2963,14 +2991,28 @@ const getAllGSTPurchaseRegister = async (req, res) => {
                 select: 'partyName',
             })
 
-        let gpilRMPMModel = await gstPurchaseItemListRMPMModel();
-        const gstPurchaseEntryWOInventoryList = await gpilRMPMModel.find(queryObject)
+        let gpilRMPMModel = await gstPurchaseWithoutInventoryEntryModel();
+        const gstPurchaseEntryWOInventoryList = await gpilRMPMModel.find(queryObjectForWithOutInventory)
             .populate({
                 path: 'partyId',
                 select: 'partyName',
             })
 
-        let response = [...gstPurchaseEntryList, ...gstPurchaseEntryWOInventoryList]
+        const modifiedListForWithoutInvenotory = gstPurchaseEntryWOInventoryList.map(entry => {
+            const obj = entry.toObject();
+            obj.sgst = obj.sgstAmount;
+            obj.cgst = obj.cgstAmount;
+            obj.igst = obj.igstAmount;
+            obj.ugst = obj.ugstAmount;
+            obj.subTotal = obj.taxableAmount;
+            delete obj.sgstAmount;
+            delete obj.cgstAmount;
+            delete obj.igstAmount;
+            delete obj.ugstAmount;
+            return obj;
+        });
+
+        let response = [...gstPurchaseEntryList, ...modifiedListForWithoutInvenotory]
         let encryptData = encryptionAPI(response, 1)
 
         res.status(200).json({
