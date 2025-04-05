@@ -423,7 +423,7 @@ const getAllItem = async (req, res) => {
     try {
         let queryObject = { IsDeleted: false }
         let cIModel = await companyItems()
-        let response = await cIModel.find(queryObject).select("ItemName Packing UnitQuantity JobCharge TestingCharge ProdLoss BasicRate UOM").sort("ItemName");
+        let response = await cIModel.find(queryObject).select("ItemName Packing UnitQuantity JobCharge TestingCharge ProdLoss BasicRate UOM NonInventoryItem").sort("ItemName");
 
         let encryptData = encryptionAPI(response, 1)
 

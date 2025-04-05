@@ -381,7 +381,7 @@ const getGSTInvoiceFinishGoodsById = async (req, res) => {
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
                 path: "partyId",
-                select: "partyName",
+                select: "partyName state",
             })
             .populate({
                 path: "transportId",
@@ -549,11 +549,11 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
             ? itemListing.map(item => `
                 <tr>
                     <td class="border border-x border-y-0 border-l-0 border-t-[0px] px-[4px] py-[2px] text-[12px] text-start">${item.itemName}</td>
-                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.packing}</td>
+                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.packing ? item.packing : '-'}</td>
                     <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.hsnCodeName}</td>
-                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.batchNo}</td>
-                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
-                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
+                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.batchNo ? item.batchNo : '-'}</td>
+                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.mfgDate ? dayjs(item.mfgDate).format('MM-YYYY') : '-'}</td>
+                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.expDate ? dayjs(item.expDate).format('MM-YYYY') : '-'}</td>
                     <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${Number(item.mrp).toFixed(2)}</td>
                     <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.qty}</td>
                     <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.free}</td>
@@ -568,10 +568,10 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
             ? itemListing.map(item => `
                 <tr>
                     <td class="text-start px-[5px] py-[2px]">${item.itemName}</td>
-                    <td class="text-center px-[5px] py-[2px]">${item.packing}</td>
-                    <td class="text-center px-[5px] py-[2px]">${item.batchNo}</td>
-                    <td class="text-center px-[5px] py-[2px]">${dayjs(item.expDate).format('MM-YYYY')}</td>
-                    <td class="text-center px-[5px] py-[2px]">${dayjs(item.expDate).format('MM-YYYY')}</td>
+                    <td class="text-center px-[5px] py-[2px]">${item.packing ? item.packing : '-'}</td>
+                    <td class="text-center px-[5px] py-[2px]">${item.batchNo ? item.batchNo : ''}</td>
+                    <td class="text-center px-[5px] py-[2px]">${item.mfgDate ? dayjs(item.mfgDate).format('MM-YYYY') : ''}</td>
+                    <td class="text-center px-[5px] py-[2px]">${item.expDate ? dayjs(item.expDate).format('MM-YYYY') : ''}</td>
                     <td class="text-end px-[5px] py-[2px]">${item.qty}</td>
                 </tr>
             `).join('')
@@ -794,11 +794,11 @@ const sendGSTInvoiceFinishGoodsToClient = async (req, res) => {
                 ? itemListing.map(item => `
                 <tr>
                     <td class="border border-x border-y-0 border-l-0 border-t-[0px] px-[4px] py-[2px] text-[12px] text-start">${item.itemName}</td>
-                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.packing}</td>
+                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.packing ? item.packing : '-'}</td>
                     <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.hsnCodeName}</td>
-                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.batchNo}</td>
-                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
-                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
+                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.batchNo ? item.batchNo : ''}</td>
+                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.mfgDate ? dayjs(item.mfgDate).format('MM-YYYY') : ''}</td>
+                    <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.expDate ? dayjs(item.expDate).format('MM-YYYY') : ''}</td>
                     <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${Number(item.mrp).toFixed(2)}</td>
                     <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.qty}</td>
                     <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.free}</td>
@@ -1530,9 +1530,9 @@ const generateGSTInvoiceForRMById = async (req, res) => {
                 <tr>
                     <td class="border border-x border-l-0 border-y-0 px-[4px] text-start">${item.itemName}</td>
                     <td class="border border-x border-y-0 px-[4px] text-start">${item.hsnCodeName}</td>
-                    <td class="border border-x border-y-0 px-[4px] text-start">${item.batchNo}</td>
-                    <td class="border border-x border-y-0 px-[4px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
-                    <td class="border border-x border-y-0 px-[4px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.batchNo ? item.batchNo : ''}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.mfgDate ? dayjs(item.mfgDate).format('MM-YYYY') : ''}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.expDate ? dayjs(item.expDate).format('MM-YYYY') : ''}</td>
                     <td class="border border-x border-y-0 px-[4px] text-start">${item.qty}</td>
                     <td class="border border-x border-y-0 px-[4px] text-start">${Number(item.rate).toFixed(2)}</td>
                     <td class="border border-x border-r-0 border-y-0 px-[4px] text-start">${Number(item.amount).toFixed(2)}</td>
@@ -1740,9 +1740,9 @@ const sendGSTInvoiceRMToClient = async (req, res) => {
                 <tr>
                     <td class="border border-x border-l-0 border-y-0 px-[4px] text-start">${item.itemName}</td>
                     <td class="border border-x border-y-0 px-[4px] text-start">${item.hsnCodeName}</td>
-                    <td class="border border-x border-y-0 px-[4px] text-start">${item.batchNo}</td>
-                    <td class="border border-x border-y-0 px-[4px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
-                    <td class="border border-x border-y-0 px-[4px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.batchNo ? item.batchNo : ''}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.mfgDate ? dayjs(item.mfgDate).format('MM-YYYY') : ''}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.expDate ? dayjs(item.expDate).format('MM-YYYY') : ''}</td>
                     <td class="border border-x border-y-0 px-[4px] text-start">${item.qty}</td>
                     <td class="border border-x border-y-0 px-[4px] text-start">${Number(item.rate).toFixed(2)}</td>
                     <td class="border border-x border-r-0 border-y-0 px-[4px] text-start">${Number(item.amount).toFixed(2)}</td>
@@ -2471,9 +2471,9 @@ const generateGSTInvoiceForPMById = async (req, res) => {
                 <tr>
                     <td class="border border-x border-l-0 border-y-0 px-[4px] text-start">${item.itemName}</td>
                     <td class="border border-x border-y-0 px-[4px] text-start">${item.hsnCodeName}</td>
-                    <td class="border border-x border-y-0 px-[4px] text-start">${item.batchNo}</td>
-                    <td class="border border-x border-y-0 px-[4px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
-                    <td class="border border-x border-y-0 px-[4px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.batchNo ? item.batchNo : ''}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.mfgDate ? dayjs(item.mfgDate).format('MM-YYYY') : ''}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.expDate ? dayjs(item.expDate).format('MM-YYYY') : ''}</td>
                     <td class="border border-x border-y-0 px-[4px] text-start">${item.qty}</td>
                     <td class="border border-x border-y-0 px-[4px] text-start">${Number(item.rate).toFixed(2)}</td>
                     <td class="border border-x border-r-0 border-y-0 px-[4px] text-start">${Number(item.amount).toFixed(2)}</td>
@@ -2683,9 +2683,9 @@ const sendGSTInvoicePMToClient = async (req, res) => {
                 <tr>
                     <td class="border border-x border-l-0 border-y-0 px-[4px] text-start">${item.itemName}</td>
                     <td class="border border-x border-y-0 px-[4px] text-start">${item.hsnCodeName}</td>
-                    <td class="border border-x border-y-0 px-[4px] text-start">${item.batchNo}</td>
-                    <td class="border border-x border-y-0 px-[4px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
-                    <td class="border border-x border-y-0 px-[4px] text-start">${dayjs(item.expDate).format('MM-YYYY')}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.batchNo ? item.batchNo : ''}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.mfgDate ? dayjs(item.mfgDate).format('MM-YYYY') : ''}</td>
+                    <td class="border border-x border-y-0 px-[4px] text-start">${item.expDate ? dayjs(item.expDate).format('MM-YYYY') : ''}</td>
                     <td class="border border-x border-y-0 px-[4px] text-start">${item.qty}</td>
                     <td class="border border-x border-y-0 px-[4px] text-start">${Number(item.rate).toFixed(2)}</td>
                     <td class="border border-x border-r-0 border-y-0 px-[4px] text-start">${Number(item.amount).toFixed(2)}</td>
