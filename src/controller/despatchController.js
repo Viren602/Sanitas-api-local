@@ -69,28 +69,30 @@ const getProductionStockByProductId = async (req, res) => {
             });
 
         const totalStock = batchClearingData.map(item => ({
-            productionNo: item.productDetialsId.productionNo,
+            productionNo: item?.productDetialsId?.productionNo,
             batchClearingEntryId: item._id,
-            productId: item.packingItemId._id,
-            batchNo: item.productDetialsId.batchNo,
-            expDate: item.productDetialsId.expDate,
-            mfgDate: item.productDetialsId.mfgDate,
+            productId: item?.packingItemId?._id,
+            batchNo: item?.productDetialsId?.batchNo,
+            expDate: item?.productDetialsId?.expDate,
+            mfgDate: item?.productDetialsId?.mfgDate,
             quantity: item.quantity,
             mrp: item.mrp,
-            hsnCode: item.packingItemId.HSNCode,
+            hsnCode: item?.packingItemId?.HSNCode,
+            isFromOpeningStock: item?.isFromOpeningStock,
         }));
 
         for (let stockItem of totalStock) {
             let batchwiseProdStkModel = await batchWiseProductStockModel()
-            const existingStock = await batchwiseProdStkModel.findOne({
-                batchNo: stockItem.batchNo,
-                batchClearingEntryId: stockItem.batchClearingEntryId,
-                productId: stockItem.productId,
-            });
-
-            if (!existingStock) {
-                let batchwiseProdStkModel = await batchWiseProductStockModel()
-                await batchwiseProdStkModel.create(stockItem);
+            if (stockItem.isFromOpeningStock !== true && stockItem?.batchClearingEntryId !== null && stockItem?.batchClearingEntryId !== undefined && stockItem?.batchClearingEntryId !== '' && stockItem?.batchNo !== null && stockItem?.batchNo !== undefined && stockItem?.batchNo !== '' && stockItem?.productId !== null && stockItem?.productId !== undefined && stockItem?.productId !== '') {
+                const existingStock = await batchwiseProdStkModel.findOne({
+                    batchNo: stockItem?.batchNo,
+                    batchClearingEntryId: stockItem?.batchClearingEntryId,
+                    productId: stockItem?.productId,
+                });
+                if (!existingStock) {
+                    let batchwiseProdStkModel = await batchWiseProductStockModel()
+                    await batchwiseProdStkModel.create(stockItem);
+                }
             }
         }
 
@@ -1082,7 +1084,7 @@ const getrawMaterialStockByRMId = async (req, res) => {
         let addEntryModel = await additionalEntryMaterialDetailsModel();
         let additionalEntry = await addEntryModel.find({ rawMaterialId: data.id, isDeleted: false }).select('qty');
         const totalUsedQtyInAdditionalEntry = additionalEntry.reduce((sum, item) => sum + item.qty, 0);
-        
+
         let totalStock = {
             productionNo: '',
             batchClearingEntryId: null,
@@ -1148,7 +1150,7 @@ const addEditInvoiceRM = async (req, res) => {
                     let id = item._id ? item._id : null
                     let giRMItemModel = await gstinvoiceRMItemModel()
                     const existingItemDetails = await giRMItemModel.findOne({ _id: id, isDeleted: false });
-                    
+
                     if (existingItemDetails) {
                         let iRMStock = await InvoiceRMStockModel();
                         await iRMStock.findOneAndUpdate(
@@ -4036,7 +4038,7 @@ const getALLStockStatementByProductId = async (req, res) => {
         let batchClrModel = await batchClearingEntryModel()
         let productionStock = await batchClrModel
             .find({ packingItemId: itemId, isDeleted: false })
-            .select('quantity productDetialsId createdAt')
+            .select('quantity productDetialsId createdAt isFromOpeningStock')
             .populate({
                 path: "productDetialsId",
                 select: "productionNo productId partyId batchNo despDate",
@@ -4079,23 +4081,23 @@ const getALLStockStatementByProductId = async (req, res) => {
                 productionStockId: item._id,
                 issuedStockId: null,
                 salesGoodsReturnEntryId: null,
-                partyName: item.productDetialsId.partyId.partyName,
-                refNo: item.productDetialsId.productionNo,
-                batchNo: item.productDetialsId.batchNo,
-                refDate: item.productDetialsId.despDate,
+                partyName: item?.productDetialsId?.partyId.partyName,
+                refNo: item?.productDetialsId?.productionNo,
+                batchNo: item?.productDetialsId?.batchNo,
+                refDate: item?.productDetialsId?.despDate,
                 produceedQty: item.quantity,
                 issuedQty: null,
                 createdAt: item.createdAt,
-                from: 'Cleared Batches'
+                from: (item?.isFromOpeningStock && item?.isFromOpeningStock === true) ? 'Opening Stock' : 'Cleared Batches'
             })),
             ...issuedItemStock.map(item => ({
                 productionStockId: null,
                 issuedStockId: item._id,
                 salesGoodsReturnEntryId: null,
-                partyName: item.gstInvoiceFinishGoodsId.partyId.partyName,
-                refNo: item.gstInvoiceFinishGoodsId.invoiceNo,
+                partyName: item?.gstInvoiceFinishGoodsId?.partyId?.partyName,
+                refNo: item?.gstInvoiceFinishGoodsId?.invoiceNo,
                 batchNo: item.batchNo,
-                refDate: item.gstInvoiceFinishGoodsId.invoiceDate,
+                refDate: item?.gstInvoiceFinishGoodsId?.invoiceDate,
                 issuedQty: item.qty + item.free,
                 produceedQty: null,
                 createdAt: item.createdAt,
@@ -4105,10 +4107,10 @@ const getALLStockStatementByProductId = async (req, res) => {
                 productionStockId: null,
                 issuedStockId: null,
                 salesGoodsReturnEntryId: item._id,
-                partyName: item.salesGoodsReturnId.partyId.partyName,
-                refNo: item.salesGoodsReturnId.serialNo,
+                partyName: item?.salesGoodsReturnId?.partyId?.partyName,
+                refNo: item?.salesGoodsReturnId?.serialNo,
                 batchNo: item.batchNo,
-                refDate: item.salesGoodsReturnId.returnDate,
+                refDate: item?.salesGoodsReturnId?.returnDate,
                 issuedQty: null,
                 produceedQty: item.qty + item.free,
                 createdAt: item.createdAt,

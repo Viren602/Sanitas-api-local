@@ -10,6 +10,7 @@ import grnEntryMaterialDetailsModel from '../model/InventoryModels/grnEntryMater
 import partyModel from '../model/partiesModel.js';
 import batchClearingEntryModel from '../model/ProductionModels/batchClearingEntryModel.js';
 import batchWiseProductStockModel from '../model/Despatch/batchWiseProductStockModel.js';
+import productionStageModel from '../model/productionStageModel.js';
 
 const importRMFormula = async (req, res) => {
     try {
@@ -24,6 +25,9 @@ const importRMFormula = async (req, res) => {
                     let pdModel = await productDetailsModel()
                     const product = await pdModel.findOne({ productCode: response[x].productCode });
 
+                    let stagModel = await productionStageModel()
+                    const stageDetails = await stagModel.findOne({ seqNo: Number(response[x].stageId) });
+
                     if (product) {
                         rmFormulaList.push({
                             ID: response[x].ID,
@@ -31,7 +35,7 @@ const importRMFormula = async (req, res) => {
                             productId: product._id,
                             batchSize: response[x].batchSize,
                             weight: response[x].weight,
-                            stageId: response[x].stageId,
+                            stageId: stageDetails?._id || null,
                             itemCode: response[x].itemCode,
                             qty: response[x].qty,
                             netQty: response[x].netQty,
@@ -212,7 +216,7 @@ const rawMaterialOpeningStock = async (req, res) => {
                             openingStockDate: new Date(),
                             isDeleted: false,
                         })
-                        // console.log(`Inserted`)
+                        console.log(`Inserted ${x + 1}`)
                     } else {
                         console.log(`${x + 1} raw material name ${response[x].rmName} not found in ItemModel`);
                     }
@@ -260,6 +264,7 @@ const packingMaterialOpeningStock = async (req, res) => {
                             openingStockDate: new Date(),
                             isDeleted: false,
                         })
+                        console.log(`Inserted ${x + 1}`)
                     } else {
                         console.log(`${x + 1} Packing material name ${response[x].pmName} not found in ItemModel`);
                     }
@@ -321,17 +326,36 @@ const productOpeningStock = async (req, res) => {
                             quantity: response[x].quantity,
                             mrp: response[x].mrp,
                         }
+
+                        let batchClearingData = {
+                            productDetialsId: null,
+                            packingItemId: item._id,
+                            packing: '',
+                            quantity: response[x].quantity,
+                            retainSample: 0,
+                            testQty: 0,
+                            mrp: response[x].mrp,
+                            pending: 0,
+                            netQuantity: response[x].quantity,
+                            clearBatch: true,
+                            isFromOpeningStock: true,
+                        }
+
                         let batchClrModel = await batchWiseProductStockModel()
                         const BatchData = new batchClrModel(data);
                         await BatchData.save();
+
+                        let batchClearingModel = await batchClearingEntryModel()
+                        const BatchClearData = new batchClearingModel(batchClearingData);
+                        await BatchClearData.save();
                         console.log('found')
                     } else {
-                        console.log(`${x + 1} Party Name ${response[x].itemName} not found`);
+                        console.log(`${x + 1} Item Name ${response[x].itemName} not found`);
                     }
                 }
                 console.log('Updated')
             })
-        res.send({ status: 200, success: true, msg: 'Opening Stock PM CSV Imported Successfully' })
+        res.send({ status: 200, success: true, msg: 'Product CSV Imported Successfully' })
     } catch (error) {
         res.send({ status: 400, success: false, msg: error.message })
     }
