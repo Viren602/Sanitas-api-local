@@ -134,9 +134,9 @@ const getGSTInvoiceFinishGoodsInvoiceNo = async (req, res) => {
             let lastNumber = parseInt(gstNoRecord.invoiceNo.replace('SI', ''), 10);
             let newNumber = lastNumber + 1;
 
-            response.invoiceNo = `SI${newNumber.toString().padStart(4, '0')}`;
+            response.invoiceNo = `SI${newNumber.toString().padStart(3, '0')}`;
         } else {
-            response.invoiceNo = 'SI0001';
+            response.invoiceNo = 'SI001';
         }
 
         let encryptData = encryptionAPI(response, 1);
