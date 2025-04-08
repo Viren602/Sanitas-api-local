@@ -11,6 +11,7 @@ import partyModel from '../model/partiesModel.js';
 import batchClearingEntryModel from '../model/ProductionModels/batchClearingEntryModel.js';
 import batchWiseProductStockModel from '../model/Despatch/batchWiseProductStockModel.js';
 import productionStageModel from '../model/productionStageModel.js';
+import { getRequestData } from '../middleware/encryption.js';
 
 const importRMFormula = async (req, res) => {
     try {
@@ -361,6 +362,17 @@ const productOpeningStock = async (req, res) => {
     }
 }
 
+const showEntryptedData = async (req, res) => {
+    try {
+
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        res.send({ status: 200, success: true, data: data })
+    } catch (error) {
+        res.send({ status: 400, success: false, msg: error.message })
+    }
+}
+
 export {
     importRMFormula,
     importPMFormula,
@@ -369,5 +381,6 @@ export {
     rawMaterialOpeningStock,
     packingMaterialOpeningStock,
     partyOpeningBalance,
-    productOpeningStock
+    productOpeningStock,
+    showEntryptedData
 };

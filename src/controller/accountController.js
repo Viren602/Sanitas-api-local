@@ -2726,7 +2726,8 @@ const getAllDateWiseCashBankBookReportbyBankId = async (req, res) => {
             .populate({
                 path: 'partyId',
                 select: 'partyName'
-            });
+            })
+            .sort({ date: 1 });
 
         let encryptData = encryptionAPI(transactions, 1)
 
