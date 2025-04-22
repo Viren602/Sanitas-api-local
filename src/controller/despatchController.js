@@ -35,6 +35,10 @@ import mailsender from "../utils/sendingEmail.js";
 import emailTemplateModel from "../model/emailTemplateModel.js";
 import { FromMail } from "../middleware/appSetting.js";
 import additionalEntryMaterialDetailsModel from "../model/InventoryModels/additionalEntryMaterialDetailsModel.js";
+import productionPlanningEntryModel from "../model/ProductionModels/productionPlanningEntryModel.js";
+import ProductionStagesModel from "../model/ProductionModels/productionStagesModel.js";
+import otherDeliveryChallanModel from "../model/Despatch/otherDeliveryChallanModel.js";
+import itemOtherDeliveryChalanModel from "../model/Despatch/itemOtherDeliveryChallanModel.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,56 +56,77 @@ const getProductionStockByProductId = async (req, res) => {
             packingItemId: reqId
         };
 
-        let batchClrModel = await batchClearingEntryModel()
-        let batchClearingData = await batchClrModel
-            .find(queryObject)
-            .populate({
-                path: "productDetialsId",
-                select: "productionNo productId batchNo packing batchSize mfgDate expDate",
-                populate: {
-                    path: 'partyId',
-                    select: 'partyName _id',
-                },
-            })
-            .populate({
-                path: "packingItemId",
-                select: "HSNCode",
-            });
+        // let batchClrModel = await batchClearingEntryModel()
+        // let batchClearingData = await batchClrModel
+        //     .find(queryObject)
+        //     .populate({
+        //         path: "productDetialsId",
+        //         select: "productionNo productId batchNo packing batchSize mfgDate expDate",
+        //         populate: {
+        //             path: 'partyId',
+        //             select: 'partyName _id',
+        //         },
+        //     })
+        //     .populate({
+        //         path: "packingItemId",
+        //         select: "HSNCode",
+        //     });
 
-        const totalStock = batchClearingData.map(item => ({
-            productionNo: item?.productDetialsId?.productionNo,
-            batchClearingEntryId: item._id,
-            productId: item?.packingItemId?._id,
-            batchNo: item?.productDetialsId?.batchNo,
-            expDate: item?.productDetialsId?.expDate,
-            mfgDate: item?.productDetialsId?.mfgDate,
-            quantity: item.quantity,
-            mrp: item.mrp,
-            hsnCode: item?.packingItemId?.HSNCode,
-            isFromOpeningStock: item?.isFromOpeningStock,
-        }));
+        // const totalStock = batchClearingData.map(item => ({
+        //     productionNo: item?.productDetialsId?.productionNo,
+        //     batchClearingEntryId: item._id,
+        //     productId: item?.packingItemId?._id,
+        //     batchNo: item?.productDetialsId?.batchNo,
+        //     expDate: item?.productDetialsId?.expDate,
+        //     mfgDate: item?.productDetialsId?.mfgDate,
+        //     quantity: item.quantity,
+        //     mrp: item.mrp,
+        //     hsnCode: item?.packingItemId?.HSNCode,
+        //     isFromOpeningStock: item?.isFromOpeningStock,
+        // }));
 
-        for (let stockItem of totalStock) {
-            let batchwiseProdStkModel = await batchWiseProductStockModel()
-            if (stockItem.isFromOpeningStock !== true && stockItem?.batchClearingEntryId !== null && stockItem?.batchClearingEntryId !== undefined && stockItem?.batchClearingEntryId !== '' && stockItem?.batchNo !== null && stockItem?.batchNo !== undefined && stockItem?.batchNo !== '' && stockItem?.productId !== null && stockItem?.productId !== undefined && stockItem?.productId !== '') {
-                const existingStock = await batchwiseProdStkModel.findOne({
-                    batchNo: stockItem?.batchNo,
-                    batchClearingEntryId: stockItem?.batchClearingEntryId,
-                    productId: stockItem?.productId,
-                });
-                if (!existingStock) {
-                    let batchwiseProdStkModel = await batchWiseProductStockModel()
-                    await batchwiseProdStkModel.create(stockItem);
-                }
-            }
+        // for (let stockItem of totalStock) {
+        //     let batchwiseProdStkModel = await batchWiseProductStockModel()
+        //     if (stockItem.isFromOpeningStock !== true && stockItem?.batchClearingEntryId !== null && stockItem?.batchClearingEntryId !== undefined && stockItem?.batchClearingEntryId !== '' && stockItem?.batchNo !== null && stockItem?.batchNo !== undefined && stockItem?.batchNo !== '' && stockItem?.productId !== null && stockItem?.productId !== undefined && stockItem?.productId !== '') {
+        //         const existingStock = await batchwiseProdStkModel.findOne({
+        //             batchNo: stockItem?.batchNo,
+        //             batchClearingEntryId: stockItem?.batchClearingEntryId,
+        //             productId: stockItem?.productId,
+        //         });
+        //         if (!existingStock) {
+        //             let batchwiseProdStkModel = await batchWiseProductStockModel()
+        //             await batchwiseProdStkModel.create(stockItem);
+        //         } else {
+        //             console.log(stockItem)
+        //             await batchwiseProdStkModel.findOneAndUpdate(
+        //                 { batchClearingEntryId: stockItem?.batchClearingEntryId },
+        //                 stockItem,
+        //                 { new: true }
+        //             )
+        //         }
+        //     }
+        // }
+
+        let psModel = await ProductionStagesModel()
+        const stage = await psModel.findOne({
+            productionStageId: 5,
+            isDeleted: false,
+        });
+
+        if (stage) {
+            queryObject.productionStageStatusId = stage._id
         }
+
+        let ppeModel = await productionPlanningEntryModel()
+        let batchNos = await ppeModel.find(queryObject).select('batchNo');
+        let batchNoList = batchNos.map(item => item.batchNo);
+
 
         let batchwiseProdStkModel = await batchWiseProductStockModel()
         let response = await batchwiseProdStkModel.find({
             productId: reqId,
-            // quantity: { $gt: 0 }
-        })
-            .sort({ updatedAt: -1 });
+            batchNo: { $in: batchNoList }
+        }).sort({ updatedAt: -1 });
 
 
         let encryptData = encryptionAPI(response, 1);
@@ -124,6 +149,11 @@ const getProductionStockByProductId = async (req, res) => {
 const getGSTInvoiceFinishGoodsInvoiceNo = async (req, res) => {
     try {
         let response = {}
+
+        let cgModel = await companyGroupModel()
+        let companyDetails = await cgModel.findOne({}).select('CompanyName');
+        let firstLetterOfCompany = companyDetails.CompanyName[0]
+
         let gifgModel = await gstInvoiceFinishGoodsModel();
         let gstNoRecord = await gifgModel
             .findOne({ isDeleted: false })
@@ -131,12 +161,12 @@ const getGSTInvoiceFinishGoodsInvoiceNo = async (req, res) => {
             .select('invoiceNo');
 
         if (gstNoRecord && gstNoRecord.invoiceNo) {
-            let lastNumber = parseInt(gstNoRecord.invoiceNo.replace('SI', ''), 10);
+            let lastNumber = parseInt(gstNoRecord.invoiceNo.replace(`${firstLetterOfCompany}I`, ''), 10);
             let newNumber = lastNumber + 1;
 
-            response.invoiceNo = `SI${newNumber.toString().padStart(3, '0')}`;
+            response.invoiceNo = `${firstLetterOfCompany}I${newNumber.toString().padStart(3, '0')}`;
         } else {
-            response.invoiceNo = 'SI001';
+            response.invoiceNo = `${firstLetterOfCompany}I001`;
         }
 
         let encryptData = encryptionAPI(response, 1);
@@ -948,9 +978,9 @@ const sendGSTInvoiceFinishGoodsToClient = async (req, res) => {
             let html = EmailTemplate.description.replace('#CompanyName', invoiceDetails.partyId.partyName);
 
             let emaildata = {
-                toMail: invoiceDetails.partyId.email,
+                toMail: invoiceDetails.partyId.email.toLowerCase(),
                 subject: EmailTemplate.emailSubject,
-                fromMail: FromMail,
+                fromMail: companyDetails.email,
                 html: html,
                 filename: 'GSTInvoiceFinishGoods',
                 pdfBuffer: pdfBuffer,
@@ -3528,6 +3558,419 @@ const getCompanyAddressByCompanyId = async (req, res) => {
     }
 };
 
+// Other Delivery Challan
+const getSerialNoForDeliveryChallan = async (req, res) => {
+    try {
+        let response = {}
+
+        let odcModel = await otherDeliveryChallanModel();
+        let dcRecords = await odcModel
+            .findOne({ isDeleted: false })
+            .sort({ _id: -1 })
+            .select('serialNo');
+
+        if (dcRecords && dcRecords.serialNo) {
+            let lastNumber = parseInt(dcRecords.serialNo, 10);
+            let newNumber = lastNumber + 1;
+
+            response.serialNo = newNumber.toString().padStart(4, '0');
+        } else {
+            response.serialNo = '0001';
+        }
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
+const addEditDeliveryChallan = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        let responseData = {}
+        if (data.challanDetails.otherDeliveryChallanId && data.challanDetails.otherDeliveryChallanId.trim() !== '') {
+            // Add Edit For Invoice Details
+            let gifgModel = await otherDeliveryChallanModel();
+            const response = await gifgModel.findByIdAndUpdate(data.challanDetails.otherDeliveryChallanId, data.challanDetails, { new: true });
+            if (!response) {
+                responseData.challanDetails = 'Challan details not found';
+                res.status(200).json({
+                    data: {
+                        statusCode: 404,
+                        Message: "Invoice Details Not found",
+                        responseData: encryptData,
+                        isEnType: true,
+                    },
+                });
+            }
+            responseData.challanDetails = response
+            data.itemChallanDetails.otherDeliveryChallanId = data.challanDetails.otherDeliveryChallanId
+            if (data.itemChallanDetails.itemChallanDetialsId && data.itemChallanDetails.itemChallanDetialsId.trim() !== '') {
+                let iodcModel = await itemOtherDeliveryChalanModel()
+                const itemDetails = iodcModel.find({ _id: data.itemChallanDetails.itemChallanDetialsId, isDeleted: false })
+
+                // Stock Update
+                const UpdatedQty = itemDetails.qty - Number(data.itemChallanDetails.qty || 0)
+                let batchwiseProdStkModel = await batchWiseProductStockModel()
+                await batchwiseProdStkModel.findByIdAndUpdate(
+                    data.itemChallanDetails.stockId,
+                    { $inc: { quantity: UpdatedQty } },
+                    { new: true }
+                );
+
+                // Item Details Update For Challan
+                let iodcModel1 = await itemOtherDeliveryChalanModel();
+                await iodcModel1.findByIdAndUpdate(data.itemChallanDetails.itemChallanDetialsId, data.itemChallanDetails, { new: true });
+
+            } else {
+                // Add For Delivery Challan Item
+                let iodcModel = await itemOtherDeliveryChalanModel()
+                const IODCModel = new iodcModel(data.itemChallanDetails);
+                await IODCModel.save();
+
+                // Stock Updating
+                let totalQty = (Number(data.itemChallanDetails.qty) || 0)
+                let batchwiseProdStkModel = await batchWiseProductStockModel()
+                await batchwiseProdStkModel.findByIdAndUpdate(
+                    data.itemChallanDetails.stockId,
+                    { $inc: { quantity: -totalQty } },
+                    { new: true });
+            }
+
+
+            let encryptData = encryptionAPI(responseData, 1);
+
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "Challan Details Updated Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+        } else {
+            // Add For Delivery Challan
+            let odcModel = await otherDeliveryChallanModel();
+            const response = new odcModel(data.challanDetails);
+            await response.save();
+
+            responseData.challanDetails = response;
+            data.itemChallanDetails.otherDeliveryChallanId = response._id
+
+            // Add For Delivery Challan Item
+            let iodcModel = await itemOtherDeliveryChalanModel()
+            const IODCModel = new iodcModel(data.itemChallanDetails);
+            await IODCModel.save();
+
+            let encryptData = encryptionAPI(responseData, 1);
+
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "Challan Details Inserted Successfully",
+                    responseData: encryptData,
+                    isEnType: true,
+                },
+            });
+
+
+            // Stock Updating
+            let totalQty = (Number(data.itemChallanDetails.qty) || 0)
+            let batchwiseProdStkModel = await batchWiseProductStockModel()
+            await batchwiseProdStkModel.findByIdAndUpdate(
+                data.itemChallanDetails.stockId,
+                { $inc: { quantity: -totalQty } },
+                { new: true });
+        }
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
+const getallOtherDeliveryChallanList = async (req, res) => {
+    try {
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = { isDeleted: false }
+
+        // let sortBy = 'invoiceNo'
+
+        // if (data.invoiceNo && data.invoiceNo.trim() !== "") {
+        //     queryObject.invoiceNo = { $regex: `^${data.invoiceNo}`, $options: "i" };
+        // }
+
+        // if (data.arrangedBy && data.arrangedBy.trim() !== "") {
+        //     sortBy = data.arrangedBy;
+        // }
+
+        let response = []
+        let odcModel = await otherDeliveryChallanModel();
+        response = await odcModel
+            .find(queryObject)
+            // .sort(sortBy)
+            .populate({
+                path: 'partyId',
+                select: 'partyName',
+            });
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch Controller", error);
+        errorHandler(error, req, res, "Error in Despatch Controller")
+    }
+};
+
+const getOtherDeliveryChallanDetailsById = async (req, res) => {
+    try {
+        const { id } = req.query;
+
+        let reqId = getRequestData(id)
+
+        let odcModel = await otherDeliveryChallanModel();
+        let challanDetails = await odcModel
+            .findOne({ _id: reqId, isDeleted: false })
+            .populate({
+                path: "partyId",
+                select: "partyName",
+            });
+
+        let iodcModel = await itemOtherDeliveryChalanModel()
+        let itemChallanDetailsList = await iodcModel
+            .find({ otherDeliveryChallanId: reqId, isDeleted: false })
+            .populate({
+                path: "itemId",
+                select: "ItemName",
+            });
+
+        let response = {
+            challanDetails: challanDetails,
+            itemChallanDetailsList: itemChallanDetailsList
+        }
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
+const deleteItemDeliveryChallanById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let iodcModel = await itemOtherDeliveryChalanModel()
+        const itemDetails = await iodcModel.findOne({ _id: reqId, isDeleted: false })
+
+        // Stock Update
+        const UpdatedQty = itemDetails.qty
+        let batchwiseProdStkModel = await batchWiseProductStockModel()
+        await batchwiseProdStkModel.findByIdAndUpdate(
+            itemDetails.stockId,
+            { $inc: { quantity: UpdatedQty } },
+            { new: true }
+        );
+
+        // Item Details Update For Challan
+        let iodcModel1 = await itemOtherDeliveryChalanModel();
+        let response = await iodcModel1.findByIdAndUpdate(reqId, { isDeleted: true });
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Item Deleted successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
+const deleteOtherDeliveryChallanById = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        // Delete Delivery Challan
+        let odcModel = await otherDeliveryChallanModel()
+        await odcModel.findByIdAndUpdate(reqId, { isDeleted: true });
+
+        let iodcModel = await itemOtherDeliveryChalanModel()
+        const itemDetails = await iodcModel.find({ otherDeliveryChallanId: reqId, isDeleted: false })
+
+        let batchwiseProdStkModel = await batchWiseProductStockModel();
+
+        await Promise.all(itemDetails.map(async (item) => {
+            // Stock Update
+            const UpdatedQty = item.qty;
+            await batchwiseProdStkModel.findByIdAndUpdate(
+                item.stockId,
+                { $inc: { quantity: UpdatedQty } },
+                { new: true }
+            );
+
+            // Update Item as Deleted
+            await iodcModel.findByIdAndUpdate(item._id, { isDeleted: true });
+        }));
+
+        let response = {
+            otherDeliveryChallanId: reqId
+        }
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Item Deleted successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
+const printOtherDeliveryChallanById = async (req, res) => {
+    try {
+
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        let cgModel = await companyGroupModel()
+        let companyDetails = await cgModel.findOne({});
+        let adminAddress = companyDetails.addressLine1 + ' '
+            + companyDetails.addressLine2 + ' '
+            + companyDetails.addressLine3 + ' '
+            + companyDetails.pinCode + '(' + companyDetails.state + ')'
+
+
+        let odcModel = await otherDeliveryChallanModel();
+        let challanDetails = await odcModel
+            .findOne({ _id: reqId, isDeleted: false })
+            .populate({
+                path: "partyId",
+                select: "partyName",
+            });
+
+        let iodcModel = await itemOtherDeliveryChalanModel()
+        let itemChallanDetailsList = await iodcModel
+            .find({ otherDeliveryChallanId: reqId, isDeleted: false })
+            .populate({
+                path: "itemId",
+                select: "ItemName Packing",
+            });
+
+        const deliveryChallanRowLsting = itemChallanDetailsList && itemChallanDetailsList.length > 0
+            ? itemChallanDetailsList.map(item => `
+                <tr>
+                    <td class="text-start px-[5px] py-[2px]">${item.itemId.ItemName}</td>
+                    <td class="text-center px-[5px] py-[2px]">${item.itemId.Packing ? item.itemId.Packing : '-'}</td>
+                    <td class="text-center px-[5px] py-[2px]">${item.batchNo ? item.batchNo : ''}</td>
+                    <td class="text-center px-[5px] py-[2px]">${item.mfgDate ? dayjs(item.mfgDate).format('MM-YYYY') : ''}</td>
+                    <td class="text-center px-[5px] py-[2px]">${item.expDate ? dayjs(item.expDate).format('MM-YYYY') : ''}</td>
+                    <td class="text-end px-[5px] py-[2px]">${item.qty}</td>
+                </tr>
+            `).join('')
+            : '';
+
+
+        let deliveryChallanTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "deliveryChallanTemplate.html"), "utf8");
+
+        // Injecting CSS for empty pages
+        deliveryChallanTemplate = deliveryChallanTemplate + `
+                                <style>
+                                    @page {
+                                        size: A4;
+                                        margin: 0;
+                                    }
+                                    .empty-page {
+                                        page-break-before: always;
+                                        height: 100vh;
+                                    }
+                                </style>
+                                `;
+
+
+        const generateDeliveryChallanPage = () => {
+            return deliveryChallanTemplate.replace('#InvoiceNo', challanDetails.serialNo)
+                .replace('#InvoiceDate', dayjs(challanDetails.returnDate).format("DD-MM-YYYY"))
+                .replace('#DeliveryChallanRowLsting', deliveryChallanRowLsting)
+                .replaceAll('#AdminCompanyName', companyDetails.CompanyName)
+                .replace('#AdminAddress', adminAddress)
+                .replace('#AdminEmail', companyDetails.email)
+                .replace('#CompanyLocation', companyDetails.location)
+                .replace('#AdminMobile', companyDetails.mobile);
+        };
+
+        deliveryChallanTemplate = `
+                    <div class="empty-page">${generateDeliveryChallanPage()}</div>
+                    <div class="page-break"></div>
+            `;
+
+        const browser = await puppeteer.launch({
+            headless: "new",
+            args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        });
+        const page = await browser.newPage();
+
+        await page.setContent(deliveryChallanTemplate, { waitUntil: "load" });
+
+        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+
+        await browser.close();
+
+        res.setHeader("Content-Disposition", 'inline; filename="document.pdf"');
+        res.setHeader("Content-Type", "application/pdf");
+
+        res.end(pdfBuffer);
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller")
+    }
+};
+
 // Reports - Party Wise Despatch Report
 const getAllPartyWiseDespatchItem = async (req, res) => {
     try {
@@ -4074,13 +4517,28 @@ const getALLStockStatementByProductId = async (req, res) => {
                     path: 'partyId',
                     select: 'partyName _id',
                 },
-            });;
+            });
+
+        // Other Delivery Challan
+        let iodcModel = await itemOtherDeliveryChalanModel()
+        let itemOtherDeliveryChallanEntry = await iodcModel
+            .find({ itemId: itemId, isDeleted: false })
+            .select('qty batchNo otherDeliveryChallanId createdAt')
+            .populate({
+                path: "otherDeliveryChallanId",
+                select: "partyId serialNo returnDate",
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });
 
         const newArray = [
             ...productionStock.map(item => ({
                 productionStockId: item._id,
                 issuedStockId: null,
                 salesGoodsReturnEntryId: null,
+                otherDeliveryChallanId: null,
                 partyName: item?.productDetialsId?.partyId.partyName,
                 refNo: item?.productDetialsId?.productionNo,
                 batchNo: item?.productDetialsId?.batchNo,
@@ -4094,6 +4552,7 @@ const getALLStockStatementByProductId = async (req, res) => {
                 productionStockId: null,
                 issuedStockId: item._id,
                 salesGoodsReturnEntryId: null,
+                otherDeliveryChallanId: null,
                 partyName: item?.gstInvoiceFinishGoodsId?.partyId?.partyName,
                 refNo: item?.gstInvoiceFinishGoodsId?.invoiceNo,
                 batchNo: item.batchNo,
@@ -4107,6 +4566,7 @@ const getALLStockStatementByProductId = async (req, res) => {
                 productionStockId: null,
                 issuedStockId: null,
                 salesGoodsReturnEntryId: item._id,
+                otherDeliveryChallanId: null,
                 partyName: item?.salesGoodsReturnId?.partyId?.partyName,
                 refNo: item?.salesGoodsReturnId?.serialNo,
                 batchNo: item.batchNo,
@@ -4115,9 +4575,23 @@ const getALLStockStatementByProductId = async (req, res) => {
                 produceedQty: item.qty + item.free,
                 createdAt: item.createdAt,
                 from: 'Sales Return'
+            })),
+            ...itemOtherDeliveryChallanEntry.map(item => ({
+                productionStockId: null,
+                issuedStockId: null,
+                salesGoodsReturnEntryId: null,
+                otherDeliveryChallanId: item._id,
+                partyName: item?.otherDeliveryChallanId?.partyId?.partyName,
+                refNo: item?.otherDeliveryChallanId?.serialNo,
+                batchNo: item.batchNo,
+                refDate: item?.otherDeliveryChallanId?.returnDate,
+                issuedQty: item.qty,
+                produceedQty: null,
+                createdAt: item.createdAt,
+                from: 'Other Delivery Challan'
             }))
         ];
-        console.log(salesGoodsReturnEntry)
+
         const sortedArray = newArray.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
         let encryptData = encryptionAPI(sortedArray, 1)
@@ -4198,10 +4672,25 @@ const getAllStockLedgerReport = async (req, res) => {
                 },
             });
 
+        // Other Delivery Challan
+        let iodcModel = await itemOtherDeliveryChalanModel()
+        let itemOtherDeliveryChallanEntry = await iodcModel
+            .find({ itemId: data.itemId, isDeleted: false })
+            .select('qty batchNo otherDeliveryChallanId updatedAt')
+            .populate({
+                path: "otherDeliveryChallanId",
+                select: "partyId serialNo returnDate",
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });
+
         const newArray = [
             ...productionStock.map(item => ({
                 productionStockId: item._id,
                 issuedStockId: null,
+                otherDeliveryChallanId: null,
                 partyName: 'SELF PRODUCTION',
                 partyId: '1',
                 refNo: item.productDetialsId.productionNo,
@@ -4215,6 +4704,7 @@ const getAllStockLedgerReport = async (req, res) => {
             ...issuedItemStock.map(item => ({
                 productionStockId: null,
                 issuedStockId: item._id,
+                otherDeliveryChallanId: null,
                 partyName: item.gstInvoiceFinishGoodsId.partyId.partyName,
                 partyId: item.gstInvoiceFinishGoodsId.partyId._id,
                 refNo: item.gstInvoiceFinishGoodsId.invoiceNo,
@@ -4224,6 +4714,20 @@ const getAllStockLedgerReport = async (req, res) => {
                 issuedQty: item.qty,
                 produceedQty: null,
                 isFreeQty: item.free
+            })),
+            ...itemOtherDeliveryChallanEntry.map(item => ({
+                productionStockId: null,
+                issuedStockId: null,
+                otherDeliveryChallanId: item._id,
+                partyName: item?.otherDeliveryChallanId?.partyId?.partyName,
+                partyId: item.otherDeliveryChallanId.partyId._id,
+                refNo: item?.otherDeliveryChallanId?.serialNo,
+                batchNo: item.batchNo,
+                refDate: item?.otherDeliveryChallanId?.returnDate,
+                issuedQty: item.qty,
+                produceedQty: null,
+                updatedAt: item.updatedAt,
+                isFreeQty: null
             }))
         ];
         const sortedArray = newArray.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
@@ -4766,5 +5270,12 @@ export {
     getOutwardPostById,
     deleteOutwardPostById,
     getAllInwardOutwardRegister,
-    sendGSTInvoiceRMToClient
+    sendGSTInvoiceRMToClient,
+    getSerialNoForDeliveryChallan,
+    addEditDeliveryChallan,
+    getallOtherDeliveryChallanList,
+    getOtherDeliveryChallanDetailsById,
+    deleteItemDeliveryChallanById,
+    deleteOtherDeliveryChallanById,
+    printOtherDeliveryChallanById
 };

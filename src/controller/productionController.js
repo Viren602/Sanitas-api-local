@@ -13,6 +13,7 @@ import additionalEntryMaterialDetailsModel from "../model/InventoryModels/additi
 import gstinvoiceRMItemModel from "../model/Despatch/gstInvoiceRMItemsModel.js";
 import gstInvoicePMItemModel from "../model/Despatch/gstInvoicePMItemsModel.js";
 import rawMaterialSchema from "../model/rawMaterialModel.js";
+import batchWiseProductStockModel from "../model/Despatch/batchWiseProductStockModel.js";
 
 const addEditProductionPlanningEntry = async (req, res) => {
   try {
@@ -25,8 +26,7 @@ const addEditProductionPlanningEntry = async (req, res) => {
       productionStageId: reqData.productionStageId,
       isDeleted: false,
     });
-    console.log('stage -----> ', stage)
-    console.log('reqData.productDetialsId -----> ', reqData.productDetialsId)
+
     reqData.productionStageStatusId = stage._id;
 
     if (reqData.productDetialsId && reqData.productDetialsId.trim() !== "") {
@@ -455,6 +455,74 @@ const getProductionRMFOrmulaByProductionDetailsId = async (req, res) => {
   }
 };
 
+const removeProductionPlanningEntryFromProductionRequisition = async (req, res) => {
+  try {
+    const { id } = req.query;
+    let reqId = getRequestData(id);
+    let productionResponse = {};
+    if (reqId) {
+
+      // Change Stage Id from 5 to 4
+      let prodPlaningModel = await productionPlanningEntryModel()
+      let psModel = await ProductionStagesModel()
+
+      const stage = await psModel.findOne({
+        productionStageId: 1,
+        isDeleted: false,
+      });
+
+      if (stage) {
+        productionResponse = await prodPlaningModel.findByIdAndUpdate(
+          reqId,
+          { productionStageStatusId: stage._id },
+          { new: true, useFindAndModify: false })
+      }
+
+      // Delete Used Qty from Production Requisition
+      let prPMFormualModel = await ProductionRequisitionRMFormulaModel()
+      await prPMFormualModel.updateMany({ productDetialsId: reqId }, { isDeleted: true });
+
+      // Delete Used Qty from Packing Requisition
+      // let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+      // await prPMFormualModel.updateMany({ productDetialsId: reqId }, { isDeleted: true });
+
+      // Delete From BatchClearing & Stock
+      // let batchwiseProdStkModel = await batchWiseProductStockModel()
+      // let batchClrModel = await batchClearingEntryModel()
+      // let batchClearRecords = await batchClrModel.find({
+      //   productDetialsId: reqId,
+      //   isDeleted: false,
+      // })
+
+      // if (batchClearRecords.length > 0) {
+      //   for (const item of batchClearRecords) {
+      //     await batchwiseProdStkModel.findOneAndUpdate(
+      //       { batchNo: productionResponse.batchNo, productId: item?.packingItemId, },
+      //       { $inc: { quantity: -item.quantity }, },
+      //       { new: true, }
+      //     );
+      //   }
+      // }
+
+      // await batchClrModel.updateMany({ productDetialsId: reqId }, { isDeleted: true });
+    }
+    let encryptData = encryptionAPI(productionResponse, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Items deleted successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+  } catch (error) {
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
+  }
+};
+
+
 const getPMFormulaByPackingItemId = async (req, res) => {
   try {
 
@@ -633,6 +701,69 @@ const getProductionPMFOrmulaByProductionDetailsId = async (req, res) => {
   }
 };
 
+const removeProductionPlanningEntryFromPackingRequisition = async (req, res) => {
+  try {
+    const { id } = req.query;
+    let reqId = getRequestData(id);
+    let productionResponse = {};
+    if (reqId) {
+
+      // Change Stage Id from 5 to 4
+      let prodPlaningModel = await productionPlanningEntryModel()
+      let psModel = await ProductionStagesModel()
+
+      const stage = await psModel.findOne({
+        productionStageId: 2,
+        isDeleted: false,
+      });
+
+      if (stage) {
+        productionResponse = await prodPlaningModel.findByIdAndUpdate(
+          reqId,
+          { productionStageStatusId: stage._id },
+          { new: true, useFindAndModify: false })
+      }
+
+      // Delete Used Qty from Packing Requisition
+      let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+      await prPMFormualModel.updateMany({ productDetialsId: reqId }, { isDeleted: true });
+
+      // Delete From BatchClearing & Stock
+      // let batchwiseProdStkModel = await batchWiseProductStockModel()
+      // let batchClrModel = await batchClearingEntryModel()
+      // let batchClearRecords = await batchClrModel.find({
+      //   productDetialsId: reqId,
+      //   isDeleted: false,
+      // })
+
+      // if (batchClearRecords.length > 0) {
+      //   for (const item of batchClearRecords) {
+      //     await batchwiseProdStkModel.findOneAndUpdate(
+      //       { batchNo: productionResponse.batchNo, productId: item?.packingItemId, },
+      //       { $inc: { quantity: -item.quantity }, },
+      //       { new: true, }
+      //     );
+      //   }
+      // }
+
+      // await batchClrModel.updateMany({ productDetialsId: reqId }, { isDeleted: true });
+    }
+    let encryptData = encryptionAPI(productionResponse, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Items deleted successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+  } catch (error) {
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
+  }
+};
+
 const addEditBatchClearingEntry = async (req, res) => {
   try {
     let apiData = req.body.data;
@@ -642,6 +773,21 @@ const addEditBatchClearingEntry = async (req, res) => {
     if (reqData.batchClearingId && reqData.batchClearingId.trim() !== "") {
 
       let batchClrModel = await batchClearingEntryModel()
+      let batchwiseProdStkModel = await batchWiseProductStockModel()
+      let oldRecord = await batchClrModel.findOne({ _id: reqData.batchClearingId })
+      console.log(oldRecord)
+      if (oldRecord) {
+        const oldQty = oldRecord.quantity
+        const updatedQty = reqData.quantity
+        const finalQty = oldQty - updatedQty
+
+        await batchwiseProdStkModel.findOneAndUpdate(
+          { batchNo: reqData?.batchNo, productId: reqData?.packingItemId, },
+          { $inc: { quantity: -finalQty } },
+          { new: true }
+        );
+      }
+
       const response = await batchClrModel.findByIdAndUpdate(
         reqData.batchClearingId,
         reqData,
@@ -663,6 +809,36 @@ const addEditBatchClearingEntry = async (req, res) => {
       let batchClrModel = await batchClearingEntryModel()
       const response = new batchClrModel(reqData);
       await response.save();
+
+      // Check Existing Stock And Add
+      let batchwiseProdStkModel = await batchWiseProductStockModel()
+      const existingStock = await batchwiseProdStkModel.findOne({
+        batchNo: reqData?.batchNo,
+        productId: reqData?.packingItemId,
+      });
+
+      const stockItem = {
+        productionNo: reqData?.productionNo,
+        batchClearingEntryId: response._id,
+        productId: reqData?.packingItemId,
+        batchNo: reqData?.batchNo,
+        expDate: reqData?.expDate,
+        mfgDate: reqData?.mfgDate,
+        quantity: reqData?.quantity,
+        mrp: reqData?.mrp,
+        hsnCode: '',
+      }
+
+      if (!existingStock) {
+        let batchwiseProdStkModel = await batchWiseProductStockModel()
+        await batchwiseProdStkModel.create(stockItem);
+      } else {
+        await batchwiseProdStkModel.findByIdAndUpdate(
+          existingStock._id,
+          { $inc: { quantity: reqData?.quantity } },
+          { new: true }
+        );
+      }
 
       responseData = encryptionAPI(response, 1);
 
@@ -704,6 +880,64 @@ const getBatchClearingEntryByProductId = async (req, res) => {
       data: {
         statusCode: 200,
         Message: "Items fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+  } catch (error) {
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
+  }
+};
+
+const removeProductionPlanningEntryFromBatchCLearingEntryById = async (req, res) => {
+  try {
+    const { id } = req.query;
+    let reqId = getRequestData(id);
+    let productionResponse = {};
+    if (reqId) {
+
+      let prodPlaningModel = await productionPlanningEntryModel()
+      let batchwiseProdStkModel = await batchWiseProductStockModel()
+      let psModel = await ProductionStagesModel()
+      let batchClrModel = await batchClearingEntryModel()
+
+      const stage = await psModel.findOne({
+        productionStageId: 3,
+        isDeleted: false,
+      });
+
+
+      // Change Stage Id from 5 to 4
+      if (stage) {
+        productionResponse = await prodPlaningModel.findByIdAndUpdate(
+          reqId,
+          { productionStageStatusId: stage._id },
+          { new: true, useFindAndModify: false })
+      }
+
+      // Get Batch Clear Records and Reduce Stock
+      let batchClearRecords = await batchClrModel.find({
+        productDetialsId: reqId,
+        isDeleted: false,
+      })
+
+      for (const item of batchClearRecords) {
+        await batchwiseProdStkModel.findOneAndUpdate(
+          { batchNo: productionResponse.batchNo, productId: item?.packingItemId, },
+          { $inc: { quantity: -item.quantity }, },
+          { new: true, }
+        );
+      }
+
+      await batchClrModel.updateMany({ productDetialsId: reqId }, { isDeleted: true });
+    }
+    let encryptData = encryptionAPI(productionResponse, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Items deleted successfully",
         responseData: encryptData,
         isEnType: true,
       },
@@ -857,6 +1091,52 @@ const getAllBatchClearedRecords = async (req, res) => {
       data: {
         statusCode: 200,
         Message: "Production Planning Details fetched successfully",
+        responseData: encryptData,
+        isEnType: true,
+      },
+    });
+  } catch (error) {
+    console.log("Error in Production controller", error);
+    errorHandler(error, req, res, "Error in Production controller")
+  }
+};
+
+const deleteBatchCLearingEntryById = async (req, res) => {
+  try {
+    let apiData = req.body.data;
+    let data = getRequestData(apiData, "PostApi");
+    let response = [];
+    if (data.batchClearingId) {
+      let batchClrModel = await batchClearingEntryModel()
+      let batchwiseProdStkModel = await batchWiseProductStockModel()
+      let oldRecord = await batchClrModel.findOne({ _id: data.batchClearingId })
+
+
+      // Update Stock
+      if (oldRecord) {
+        console.log(oldRecord)
+        const oldQty = oldRecord.quantity
+
+        await batchwiseProdStkModel.findOneAndUpdate(
+          { batchNo: data.batchNo, productId: oldRecord?.packingItemId, },
+          { $inc: { quantity: -oldQty } },
+          { new: true }
+        );
+
+        // Remove Record from Batch
+        await batchClrModel.findByIdAndUpdate(
+          data.batchClearingId,
+          { isDeleted: true },
+          { new: true, useFindAndModify: false })
+      }
+
+    }
+    let encryptData = encryptionAPI(response, 1);
+
+    res.status(200).json({
+      data: {
+        statusCode: 200,
+        Message: "Items deleted successfully",
         responseData: encryptData,
         isEnType: true,
       },
@@ -1642,12 +1922,16 @@ export {
   getRMFormulaForProductionById,
   productionRequisitionRMFormulaListing,
   getProductionRMFOrmulaByProductionDetailsId,
+  removeProductionPlanningEntryFromProductionRequisition,
   getPMFormulaByPackingItemId,
   packingRequisitionPMFormulaListing,
   getProductionPMFOrmulaByProductionDetailsId,
+  removeProductionPlanningEntryFromPackingRequisition,
   addEditBatchClearingEntry,
   getBatchClearingEntryByProductId,
+  removeProductionPlanningEntryFromBatchCLearingEntryById,
   getAllBatchClearedRecords,
+  deleteBatchCLearingEntryById,
   getAllPendingProductionPlanningReport,
   getAllProductionBatchRegister,
   getAllJobChargeRecords,

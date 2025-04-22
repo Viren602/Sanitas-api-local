@@ -51,7 +51,8 @@ const getFinancialYearByCompanyName = async (req, res) => {
         const CompanyMaster = await companyFinancialYearModel();
         const companyFinancialYear = await CompanyMaster
             .find({ CompanyName: id })
-            .sort('CompanyYear');
+            .sort('CompanyYear')
+            .sort({ CompanyYear: -1 });;
 
         let responseData = encryptionAPI(companyFinancialYear, 1)
         res.status(200).json({
