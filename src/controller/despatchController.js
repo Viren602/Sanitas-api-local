@@ -3718,15 +3718,51 @@ const getallOtherDeliveryChallanList = async (req, res) => {
         //     sortBy = data.arrangedBy;
         // }
 
-        let response = []
+        // let response = []
+        // let odcModel = await otherDeliveryChallanModel();
+        // response = await odcModel
+        //     .find(queryObject)
+        //     // .sort(sortBy)
+        //     .populate({
+        //         path: 'partyId',
+        //         select: 'partyName',
+        //     });
+
+
+        let sortOption = { serialNo: 1 };
+        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+            sortOption = { [data.arrangedBy]: 1 };
+        }
+
         let odcModel = await otherDeliveryChallanModel();
-        response = await odcModel
-            .find(queryObject)
-            // .sort(sortBy)
-            .populate({
-                path: 'partyId',
-                select: 'partyName',
-            });
+        let response = await odcModel.aggregate([
+            { $match: queryObject },
+            {
+                $lookup: {
+                    from: "accountmasters",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "partyDetails"
+                }
+            },
+            { $unwind: "$partyDetails" },
+            {
+                $project: {
+                    serialNo: 1,
+                    returnDate: 1,
+                    partyName: "$partyDetails.partyName",
+                    _id: 1
+                }
+            },
+            { $sort: sortOption }
+        ]);
+
+        if (data.partyName && data.partyName.trim() !== '') {
+            response = response.filter(item =>
+                item.partyName?.toLowerCase().startsWith(data.partyName.toLowerCase())
+            );
+        }
+
 
         let encryptData = encryptionAPI(response, 1)
 
