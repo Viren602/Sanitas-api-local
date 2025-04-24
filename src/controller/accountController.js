@@ -1225,6 +1225,10 @@ const updateGRNEntryToPurchaseEntry = async (req, res) => {
         let response = await gemDetailsModel
             .findByIdAndUpdate(data.grnMaterialId, { isGSTPurchaseEntryRMPM: data.isGRNEntryDone })
 
+        let gemPartyDetailsModel = await grnEntryPartyDetailsModel();
+        await gemPartyDetailsModel
+            .findByIdAndUpdate(response.grnEntryPartyDetailId, { isGSTPurchaseEntryRMPM: data.isGRNEntryDone })
+
         let encryptData = encryptionAPI(response, 1)
 
         res.status(200).json({
@@ -1252,7 +1256,12 @@ const addEditGSTPurchaseEntryRMPM = async (req, res) => {
             let gemDetailsModel = await grnEntryMaterialDetailsModel();
 
             await Promise.all(data.itemListing.map(async (item) => {
-                await gemDetailsModel.findByIdAndUpdate(item.grnMaterialId, { isGSTPurchaseEntryRMPM: true });
+                let grnItem = await gemDetailsModel.findByIdAndUpdate(item.grnMaterialId, { isGSTPurchaseEntryRMPM: true });
+
+                console.log(grnItem)
+                let gemPartyDetailsModel = await grnEntryPartyDetailsModel();
+                await gemPartyDetailsModel
+                    .findByIdAndUpdate(grnItem.grnEntryPartyDetailId, { isGSTPurchaseEntryRMPM: true })
             }));
         }
 
@@ -1475,12 +1484,15 @@ const deleteGSTPurchaseEntryRMPMById = async (req, res) => {
         let gpitemListRMPMModel = await gstPurchaseItemListRMPMModel();
         let list = await gpitemListRMPMModel.find({ gstPurchaseEntryRMPMId: reqId, isDeleted: false });
 
-        console.log(list)
         if (list && list.length > 0) {
             let gemDetailsModel = await grnEntryMaterialDetailsModel();
 
             await Promise.all(list.map(async (item) => {
-                await gemDetailsModel.findByIdAndUpdate(item.grnMaterialId, { isGSTPurchaseEntryRMPM: false });
+                let grnItem = await gemDetailsModel.findByIdAndUpdate(item.grnMaterialId, { isGSTPurchaseEntryRMPM: false });
+
+                let gemPartyDetailsModel = await grnEntryPartyDetailsModel();
+                await gemPartyDetailsModel
+                    .findByIdAndUpdate(grnItem.grnEntryPartyDetailId, { isGSTPurchaseEntryRMPM: false })
             }));
         }
         await gpitemListRMPMModel.updateMany({ gstPurchaseEntryRMPMId: reqId }, { isDeleted: true });

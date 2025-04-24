@@ -11,6 +11,7 @@ const grnEntryPartyDetailsSchema = mongoose.Schema({
     invoiceNo: { type: String, default: '' },
     invoiceDate: { type: Date, default: '' },
     grnEntryType: { type: String, default: '' },
+    isGSTPurchaseEntryRMPM: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 

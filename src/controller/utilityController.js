@@ -1,5 +1,6 @@
 import { encryptionAPI, getRequestData } from "../middleware/encryption.js";
-import adminRoleModel from "../model/adminroleModel.js";
+import adminRoleModel from "../model/adminRoleModel.js";
+// import adminRoleModel from "../model/adminroleModel.js";
 import companyAdminModel from "../model/companyAdmin.js";
 import companyGroupModel from "../model/companyGroup.js";
 import userLogModel from "../model/userLogModel.js";

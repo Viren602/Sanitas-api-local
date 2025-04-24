@@ -474,7 +474,7 @@ const removeProductionPlanningEntryFromProductionRequisition = async (req, res) 
       if (stage) {
         productionResponse = await prodPlaningModel.findByIdAndUpdate(
           reqId,
-          { productionStageStatusId: stage._id },
+          { productionStageStatusId: stage._id, isRMFormulaCreated: false },
           { new: true, useFindAndModify: false })
       }
 
@@ -720,7 +720,7 @@ const removeProductionPlanningEntryFromPackingRequisition = async (req, res) => 
       if (stage) {
         productionResponse = await prodPlaningModel.findByIdAndUpdate(
           reqId,
-          { productionStageStatusId: stage._id },
+          { productionStageStatusId: stage._id, isPMFormulaCreated: false },
           { new: true, useFindAndModify: false })
       }
 

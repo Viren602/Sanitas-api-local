@@ -3,7 +3,8 @@ import mongoose from "mongoose";
 import globals from "../utils/globals.js";
 import connectToDatabase from "../utils/dbConnection.js";
 import config from "../config/config.js";
-import adminRoleModel from "./adminroleModel.js";
+import adminRoleModel from "./adminRoleModel.js";
+// import adminRoleModel from "./adminroleModel.js";
 
 const MasterDB = config.MASTER_DB;
 
