@@ -326,6 +326,7 @@ const productOpeningStock = async (req, res) => {
                             mfgDate: '',
                             quantity: response[x].quantity,
                             mrp: response[x].mrp,
+                            isFromOpeningStock: true,
                         }
 
                         let batchClearingData = {

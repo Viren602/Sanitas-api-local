@@ -775,12 +775,10 @@ const addEditBatchClearingEntry = async (req, res) => {
       let batchClrModel = await batchClearingEntryModel()
       let batchwiseProdStkModel = await batchWiseProductStockModel()
       let oldRecord = await batchClrModel.findOne({ _id: reqData.batchClearingId })
-      console.log(oldRecord)
       if (oldRecord) {
         const oldQty = oldRecord.quantity
         const updatedQty = reqData.quantity
         const finalQty = oldQty - updatedQty
-
         await batchwiseProdStkModel.findOneAndUpdate(
           { batchNo: reqData?.batchNo, productId: reqData?.packingItemId, },
           { $inc: { quantity: -finalQty } },

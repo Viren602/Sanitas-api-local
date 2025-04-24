@@ -125,7 +125,10 @@ const getProductionStockByProductId = async (req, res) => {
         let batchwiseProdStkModel = await batchWiseProductStockModel()
         let response = await batchwiseProdStkModel.find({
             productId: reqId,
-            batchNo: { $in: batchNoList }
+            $or: [
+                { batchNo: { $in: batchNoList } },
+                { isFromOpeningStock: true }
+            ]
         }).sort({ updatedAt: -1 });
 
 

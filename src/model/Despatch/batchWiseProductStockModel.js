@@ -15,6 +15,7 @@ const batchWiseProductStockSchema = mongoose.Schema({
     quantity: { type: Number, default: 0 },
     mrp: { type: Number, default: 0 },
     hsnCode: { type: String, default: '' },
+    isFromOpeningStock: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
