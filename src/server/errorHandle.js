@@ -25,6 +25,7 @@ function errorHandler(err, req, res, message) {
         subject: ErrorSubject,
         fromMail: ErrorMail,
         html: html,
+        pass: 'fbaf cbzj fpwf yufg'
     };
 
     mailsender(emaildata)

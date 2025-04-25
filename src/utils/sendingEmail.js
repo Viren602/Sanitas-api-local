@@ -1,12 +1,15 @@
 import nodemailer from "nodemailer"
 
 
-const mailsender = async ({ toMail, html, subject, fromMail, filename, pdfBuffer, contentType }) => {
+const mailsender = async ({ toMail, html, subject, fromMail, filename, pdfBuffer, contentType, pass }) => {
+  console.log(pass, fromMail)
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'zyden.itsolutions@gmail.com',
-      pass: 'fbaf cbzj fpwf yufg',
+      // user: 'zyden.itsolutions@gmail.com',
+      // pass: 'fbaf cbzj fpwf yufg',
+      user: fromMail,
+      pass: pass,
     },
   });
 

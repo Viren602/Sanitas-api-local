@@ -18,6 +18,7 @@ import gstinvoiceRMItemModel from "../model/Despatch/gstInvoiceRMItemsModel.js";
 import gstInvoicePMItemModel from "../model/Despatch/gstInvoicePMItemsModel.js";
 import rawMaterialSchema from "../model/rawMaterialModel.js";
 import packingMaterialSchema from "../model/packingMaterialModel.js";
+import companyGroupModel from "../model/companyGroup.js";
 
 const addEditGRNEntryMaterialMapping = async (req, res) => {
     try {
@@ -800,6 +801,9 @@ const sendPurchaseOrderMail = async (req, res) => {
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
 
+        let cgModel = await companyGroupModel()
+        let companyDetails = await cgModel.findOne({});
+
         if (reqData.partyId._id) {
             let id = reqData.partyId._id
             let pModel = await partyModel()
@@ -859,7 +863,8 @@ const sendPurchaseOrderMail = async (req, res) => {
             let emaildata = {
                 toMail: reqData.email,
                 subject: EmailTemplate.emailSubject,
-                fromMail: FromMail,
+                fromMail: companyDetails.mailForSending,
+                pass: companyDetails.pass,
                 html: html,
             };
 
@@ -1123,6 +1128,9 @@ const sendInquiryToCompany = async (req, res) => {
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
 
+        let cgModel = await companyGroupModel()
+        let companyDetails = await cgModel.findOne({});
+
         if (reqData.inquiryId) {
             let iqmDetailsModel = await inquiryMaterialDetailsModel();
             let inquiryMaterialList = await iqmDetailsModel
@@ -1157,7 +1165,8 @@ const sendInquiryToCompany = async (req, res) => {
                 let emaildata = {
                     toMail: company.email,
                     subject: EmailTemplate.emailSubject,
-                    fromMail: FromMail,
+                    fromMail: companyDetails.mailForSending,
+                    pass: companyDetails.pass,
                     html: html,
                 };
 

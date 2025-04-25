@@ -22,6 +22,8 @@ const companyGroup = mongoose.Schema({
     panNo: { type: String, default: '' },
     pinCode: { type: String, default: '' },
     state: { type: String, default: '' },
+    pass: { type: String, default: '' },
+    mailForSending: { type: String, default: '' },
     termsConditionLine1: { type: String, default: '' },
     termsConditionLine2: { type: String, default: '' },
     termsConditionLine3: { type: String, default: '' },

@@ -567,10 +567,10 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
 
         if (invoiceDetails.changeShippedAdd === true) {
             shippedToAddress =
-                `${invoiceDetails.addressLine1 || ''} ` +
-                `${invoiceDetails.addressLine2 || ''} ` +
-                `${invoiceDetails.addressLine3 || ''} ` +
-                `${invoiceDetails.addressLine4 || ''} `;
+                `${invoiceDetails.addressLine1 || ''} ` 
+                // `${invoiceDetails.addressLine2 || ''} ` +
+                // `${invoiceDetails.addressLine3 || ''} ` +
+                // `${invoiceDetails.addressLine4 || ''} `;
         } else {
             shippedToAddress =
                 `${invoiceDetails.partyId.corrspAddress1 || invoiceDetails.partyId.address1 || ''} ` +
@@ -995,10 +995,11 @@ const sendGSTInvoiceFinishGoodsToClient = async (req, res) => {
             let emaildata = {
                 toMail: invoiceDetails.partyId.email.toLowerCase(),
                 subject: EmailTemplate.emailSubject,
-                fromMail: companyDetails.email,
+                fromMail: companyDetails.mailForSending,
                 html: html,
                 filename: 'GSTInvoiceFinishGoods',
                 pdfBuffer: pdfBuffer,
+                pass: companyDetails.pass,
                 contentType: "application/pdf"
             };
 
@@ -1934,10 +1935,11 @@ const sendGSTInvoiceRMToClient = async (req, res) => {
             let emaildata = {
                 toMail: invoiceDetails.partyId.email,
                 subject: EmailTemplate.emailSubject,
-                fromMail: FromMail,
+                fromMail: companyDetails.mailForSending,
                 html: html,
                 filename: 'GSTInvoiceRM',
                 pdfBuffer: pdfBuffer,
+                pass: companyDetails.pass,
                 contentType: "application/pdf"
             };
 
@@ -2878,11 +2880,12 @@ const sendGSTInvoicePMToClient = async (req, res) => {
             let emaildata = {
                 toMail: invoiceDetails.partyId.email,
                 subject: EmailTemplate.emailSubject,
-                fromMail: FromMail,
+                fromMail: companyDetails.mailForSending,
                 html: html,
                 filename: 'GSTInvoicePM',
                 pdfBuffer: pdfBuffer,
-                contentType: "application/pdf"
+                contentType: "application/pdf",
+                pass: companyDetails.pass,
             };
 
             mailsender(emaildata)
