@@ -82,7 +82,12 @@ const getCompanyDataWithCompanyNameAndYear = async (req, res) => {
         });
 
         const databaseName = dbDetails.databaseName;
-        console.log(databaseName)
+        
+        let response = {
+            dbName : databaseName
+        }
+        let responseData = encryptionAPI(response, 1)
+
         globals.Database = databaseName;
         await connectToDatabase(databaseName);
 
@@ -90,7 +95,7 @@ const getCompanyDataWithCompanyNameAndYear = async (req, res) => {
             data: {
                 statusCode: 200,
                 Message: "Databases are switched",
-                responseData: null,
+                responseData: responseData,
                 isEnType: true
             },
         });

@@ -18,6 +18,10 @@ const gstInvoiceFinishGoodsSchema = mongoose.Schema({
     ewbNo: { type: String, default: '' },
     cases: { type: String, default: '' },
     weight: { type: String, default: '' },
+    addressLine1: { type: String, default: '' },
+    addressLine2: { type: String, default: '' },
+    addressLine3: { type: String, default: '' },
+    addressLine4: { type: String, default: '' },
     freight: { type: Number, default: '' },
     other: { type: Number, default: '' },
     roundOff: { type: Number, default: '' },
@@ -32,6 +36,7 @@ const gstInvoiceFinishGoodsSchema = mongoose.Schema({
     grandTotal: { type: Number, default: 0 },
     pendingAmount: { type: Number, default: 0 },
     paidAmount: { type: Number, default: 0 },
+    changeShippedAdd: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 

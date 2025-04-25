@@ -398,7 +398,7 @@ const getAllPartyDropdown = async (req, res) => {
     try {
         let queryObject = { isDeleted: false }
         let pModel = await partyModel()
-        let response = await pModel.find(queryObject).select("partyName email transporterName maintainAc gstnNo state").sort("partyName");
+        let response = await pModel.find(queryObject).select("partyName email transporterName maintainAc gstnNo state address1 address2 address3 address4").sort("partyName");
 
         let encryptData = encryptionAPI(response, 1)
 

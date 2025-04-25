@@ -561,13 +561,25 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
             + invoiceDetails.partyId.address2 + ' '
             + invoiceDetails.partyId.address3 + ' '
             + invoiceDetails.partyId.address4 + '-'
-            + invoiceDetails.partyId.pinCode
+            + ((invoiceDetails.partyId.pinCode !== '' && invoiceDetails.partyId.pinCode) ? invoiceDetails.partyId.pinCode : '')
 
-        let shippedToAddress = (invoiceDetails.partyId.corrspAddress1 !== '' ? invoiceDetails.partyId.corrspAddress1 : invoiceDetails.partyId.address1) + ' ' +
-            (invoiceDetails.partyId.corrspAddress2 !== '' ? invoiceDetails.partyId.corrspAddress2 : invoiceDetails.partyId.address2) + ' ' +
-            (invoiceDetails.partyId.corrspAddress3 !== '' ? invoiceDetails.partyId.corrspAddress3 : invoiceDetails.partyId.address3) + ' ' +
-            (invoiceDetails.partyId.corrspAddress4 !== '' ? invoiceDetails.partyId.corrspAddress4 : invoiceDetails.partyId.address4) + '-' +
-            invoiceDetails.partyId.pinCode
+        let shippedToAddress = '';
+
+        if (invoiceDetails.changeShippedAdd === true) {
+            shippedToAddress =
+                `${invoiceDetails.addressLine1 || ''} ` +
+                `${invoiceDetails.addressLine2 || ''} ` +
+                `${invoiceDetails.addressLine3 || ''} ` +
+                `${invoiceDetails.addressLine4 || ''} `;
+        } else {
+            shippedToAddress =
+                `${invoiceDetails.partyId.corrspAddress1 || invoiceDetails.partyId.address1 || ''} ` +
+                `${invoiceDetails.partyId.corrspAddress2 || invoiceDetails.partyId.address2 || ''} ` +
+                `${invoiceDetails.partyId.corrspAddress3 || invoiceDetails.partyId.address3 || ''} ` +
+                `${invoiceDetails.partyId.corrspAddress4 || invoiceDetails.partyId.address4 || ''} -` +
+                `${(invoiceDetails.partyId.pinCode !== '' && invoiceDetails.partyId.pinCode) ? invoiceDetails.partyId.pinCode : ''}`;
+        }
+
 
         let mobileNo = invoiceDetails.partyId.mobileNo1 + (invoiceDetails.partyId.mobileNo2 !== '' ? ',' + invoiceDetails.partyId.mobileNo2 : '')
 
