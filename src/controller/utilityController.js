@@ -222,8 +222,10 @@ const getAllUserLog = async (req, res) => {
     try {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
-        console.log(data);
-        let queryObject = {}
+
+        let queryObject = {
+            companyId : data.companyId
+        }
         if (data.startDate && data.endDate) {
             let endDate = new Date(data.endDate);
             endDate.setHours(23, 59, 59, 999);

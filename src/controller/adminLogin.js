@@ -48,9 +48,10 @@ const getCompanyForCompanySelection = async (req, res) => {
 const getFinancialYearByCompanyName = async (req, res) => {
     try {
         const { id } = req.query;
+        let reqId = getRequestData(id)
         const CompanyMaster = await companyFinancialYearModel();
         const companyFinancialYear = await CompanyMaster
-            .find({ CompanyName: id })
+            .find({ CompanyName: reqId })
             .sort('CompanyYear')
             .sort({ CompanyYear: -1 });;
 
@@ -82,9 +83,9 @@ const getCompanyDataWithCompanyNameAndYear = async (req, res) => {
         });
 
         const databaseName = dbDetails.databaseName;
-        
+
         let response = {
-            dbName : databaseName
+            dbName: databaseName
         }
         let responseData = encryptionAPI(response, 1)
 
@@ -153,7 +154,8 @@ const userAuthentication = async (req, res) => {
                     email: user.email,
                     sessionTimeout: config.Session_TimeOut,
                     expires: expiry,
-                    device: currentDevice ? currentDevice : 'Unknown'
+                    device: currentDevice ? currentDevice : 'Unknown',
+                    companyId: user.companyId
                 }
                 let ulModel = await userLogModel()
                 const userLogData = new ulModel(reqData);

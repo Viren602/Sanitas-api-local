@@ -80,7 +80,7 @@ despatchRoute.get("/Despatch/GetAllPartyWiseMonthlySalesByPartyId", checkAuth, g
 
 // Despatch - Reports - Stock Statement Report
 despatchRoute.post("/Despatch/GetAllStockStatementReport", checkAuth, getAllStockStatementReport);
-despatchRoute.get("/Despatch/GetALLStockStatementByProductId", getALLStockStatementByProductId);
+despatchRoute.get("/Despatch/GetALLStockStatementByProductId", checkAuth, getALLStockStatementByProductId);
 despatchRoute.post("/Despatch/GetAllBatchWiseStockStatementReport", checkAuth, getAllBatchWiseStockStatementReport);
 
 // Despatch - Reports - Stock Ledger Report
