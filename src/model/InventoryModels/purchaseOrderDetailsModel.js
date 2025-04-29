@@ -27,9 +27,9 @@ const purchaseOrderDetailsSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const purchaseOrderDetailsModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await partyModel()
+const purchaseOrderDetailsModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await partyModel(dbYear)
     return db.models.PurchaseOrderDetail || db.model("PurchaseOrderDetail", purchaseOrderDetailsSchema);
 }
 

@@ -45,12 +45,12 @@ const productionPlanningEntrySchema = mongoose.Schema(
 );
 
 
-const productionPlanningEntryModel = async () => {
-  const db = await connectToDatabase(globals.Database);
-  await productDetailsModel()
-  await partyModel()
-  await companyItems()
-  await ProductionStagesModel()
+const productionPlanningEntryModel = async (dbYear) => {
+  const db = await connectToDatabase(dbYear);
+  await productDetailsModel(dbYear)
+  await partyModel(dbYear)
+  await companyItems(dbYear)
+  await ProductionStagesModel(dbYear)
   return db.models.ProductionEntry || db.model("ProductionEntry", productionPlanningEntrySchema);
 }
 

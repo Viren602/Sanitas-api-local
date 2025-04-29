@@ -29,13 +29,13 @@ const grnEntryMaterialDetailsSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const grnEntryMaterialDetailsModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await rawMaterialSchema()
-    await packingMaterialSchema()
-    await grnEntryPartyDetailsModel()
-    await purchaseOrderDetailsModel()
-    await purchaserOrderMaterialDetailsModel()
+const grnEntryMaterialDetailsModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await rawMaterialSchema(dbYear)
+    await packingMaterialSchema(dbYear)
+    await grnEntryPartyDetailsModel(dbYear)
+    await purchaseOrderDetailsModel(dbYear)
+    await purchaserOrderMaterialDetailsModel(dbYear)
     return db.models.GRNEntryMaterialDetail || db.model("GRNEntryMaterialDetail", grnEntryMaterialDetailsSchema);
 }
 

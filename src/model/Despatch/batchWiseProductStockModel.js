@@ -19,10 +19,10 @@ const batchWiseProductStockSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const batchWiseProductStockModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await batchClearingEntryModel()
-    await companyItems()
+const batchWiseProductStockModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await batchClearingEntryModel(dbYear)
+    await companyItems(dbYear)
     return db.models.BatchWiseProductStock || db.model("BatchWiseProductStock", batchWiseProductStockSchema);
 }
 

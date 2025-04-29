@@ -12,9 +12,9 @@ const outwardPostScHema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const outwardPostModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await partyModel()
+const outwardPostModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await partyModel(dbYear)
     return db.models.OutwardPostEntry || db.model("OutwardPostEntry", outwardPostScHema);
 }
 

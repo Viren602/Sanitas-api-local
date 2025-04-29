@@ -25,7 +25,8 @@ import errorHandler from "../server/errorHandle.js";
 
 const getAllItemCategory = async (req, res) => {
     try {
-        let icModel = await ItemCategory()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let icModel = await ItemCategory(dbYear)
         let response = await icModel.find({});
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -44,7 +45,8 @@ const getAllItemCategory = async (req, res) => {
 
 const getAllHSNCode = async (req, res) => {
     try {
-        let hcModel = await HNSCodesScHema()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let hcModel = await HNSCodesScHema(dbYear)
         let response = await hcModel.find({});
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -63,7 +65,8 @@ const getAllHSNCode = async (req, res) => {
 
 const getAllStorageConditions = async (req, res) => {
     try {
-        let scModel = await storageConditionModel()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let scModel = await storageConditionModel(dbYear)
         let response = await scModel.find({});
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -84,7 +87,8 @@ const getAllStorageConditions = async (req, res) => {
 
 const getAllRMCategory = async (req, res) => {
     try {
-        let rmCModel = await rmCategoryModel()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let rmCModel = await rmCategoryModel(dbYear)
         let response = await rmCModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
@@ -106,7 +110,8 @@ const getAllRMCategory = async (req, res) => {
 
 const getAllPMCategory = async (req, res) => {
     try {
-        let pmcModel = await pmCategoryModel()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let pmcModel = await pmCategoryModel(dbYear)
         let response = await pmcModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
@@ -128,7 +133,8 @@ const getAllPMCategory = async (req, res) => {
 
 const getAllPackingMaterialSize = async (req, res) => {
     try {
-        let pmsModel = await packingMaterialSizeModel()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let pmsModel = await packingMaterialSizeModel(dbYear)
         let response = await pmsModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
@@ -150,7 +156,8 @@ const getAllPackingMaterialSize = async (req, res) => {
 
 const getAllStates = async (req, res) => {
     try {
-        let sModel = await stateModel()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let sModel = await stateModel(dbYear)
         let response = await sModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
@@ -172,7 +179,8 @@ const getAllStates = async (req, res) => {
 
 const getAllStereoData = async (req, res) => {
     try {
-        let sModel = await stereoModel()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let sModel = await stereoModel(dbYear)
         let response = await sModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
@@ -194,7 +202,8 @@ const getAllStereoData = async (req, res) => {
 
 const getAllLabelClaims = async (req, res) => {
     try {
-        let lcModel = await labelClaimModel()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let lcModel = await labelClaimModel(dbYear)
         let response = await lcModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
@@ -215,7 +224,8 @@ const getAllLabelClaims = async (req, res) => {
 
 const getAllColors = async (req, res) => {
     try {
-        let cModel = await colorModel()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let cModel = await colorModel(dbYear)
         let response = await cModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
@@ -237,7 +247,8 @@ const getAllColors = async (req, res) => {
 
 const getAllMfgLicMaster = async (req, res) => {
     try {
-        let mlModel = await mfgLicModel()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let mlModel = await mfgLicModel(dbYear)
         let response = await mlModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
@@ -259,7 +270,8 @@ const getAllMfgLicMaster = async (req, res) => {
 
 const getAllProductionStageMaster = async (req, res) => {
     try {
-        let pstageModel = await productionStageModel()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let pstageModel = await productionStageModel(dbYear)
         let response = await pstageModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
@@ -281,7 +293,8 @@ const getAllProductionStageMaster = async (req, res) => {
 
 const getAllPunchSizes = async (req, res) => {
     try {
-        let pSizeModel = await punchSizeModel()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let pSizeModel = await punchSizeModel(dbYear)
         let response = await pSizeModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
@@ -303,7 +316,8 @@ const getAllPunchSizes = async (req, res) => {
 
 const getAllAccountGroups = async (req, res) => {
     try {
-        let acModel = await accountGroupModel()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let acModel = await accountGroupModel(dbYear)
         let response = await acModel.find({});
 
         let encryptData = encryptionAPI(response, 1)
@@ -324,13 +338,14 @@ const getAllAccountGroups = async (req, res) => {
 
 const getAllTransportCourier = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let queryObject = { isDeleted: false }
         if (reqId && reqId.trim() !== "") {
             queryObject.transportName = { $regex: `^${reqId}`, $options: "i" };
         }
-        let tcModel = await transportCourierModel()
+        let tcModel = await transportCourierModel(dbYear)
         let response = await tcModel.find(queryObject).sort("transportName");
 
 
@@ -353,6 +368,7 @@ const getAllTransportCourier = async (req, res) => {
 
 const getAllDaybooks = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let queryObject = { isDeleted: false }
@@ -360,14 +376,14 @@ const getAllDaybooks = async (req, res) => {
             queryObject.daybookName = { $regex: `^${reqId}`, $options: "i" };
         }
 
-        let dbMasterModel = await daybookMasterModel()
+        let dbMasterModel = await daybookMasterModel(dbYear)
         let response = await dbMasterModel.find(queryObject);
 
         for (let i = 0; i < response.length; i++) {
             const accountCode = response[i].acGroupCode;
             let accountCodeName = '';
             if (accountCode) {
-                let acModel = await accountGroupModel()
+                let acModel = await accountGroupModel(dbYear)
                 const accountGroup = await acModel.findOne({ accountGroupCode: accountCode });
                 accountCodeName = accountGroup ? accountGroup.accountGroupname : '';
             }
@@ -396,8 +412,9 @@ const getAllDaybooks = async (req, res) => {
 
 const getAllPartyDropdown = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let queryObject = { isDeleted: false }
-        let pModel = await partyModel()
+        let pModel = await partyModel(dbYear)
         let response = await pModel.find(queryObject).select("partyName email transporterName maintainAc gstnNo state address1 address2 address3 address4").sort("partyName");
 
         let encryptData = encryptionAPI(response, 1)
@@ -421,8 +438,9 @@ const getAllPartyDropdown = async (req, res) => {
 
 const getAllItem = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let queryObject = { IsDeleted: false }
-        let cIModel = await companyItems()
+        let cIModel = await companyItems(dbYear)
         let response = await cIModel.find(queryObject).select("ItemName Packing UnitQuantity JobCharge TestingCharge ProdLoss BasicRate UOM NonInventoryItem").sort("ItemName");
 
         let encryptData = encryptionAPI(response, 1)
@@ -445,8 +463,9 @@ const getAllItem = async (req, res) => {
 
 const getAllProductDropdown = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let queryObject = { isDeleted: false }
-        let pdModel = await productDetailsModel()
+        let pdModel = await productDetailsModel(dbYear)
         let data = await pdModel.find(queryObject).select("productName").sort("productName");
 
         let encryptData = encryptionAPI(data, 1)
@@ -469,8 +488,9 @@ const getAllProductDropdown = async (req, res) => {
 
 const getAllRMDropdown = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let queryObject = { isDeleted: false }
-        let rmModel = await rawMaterialSchema()
+        let rmModel = await rawMaterialSchema(dbYear)
         let data = await rmModel.find(queryObject).select("rmName rmUOM").sort("rmName");
 
         let encryptData = encryptionAPI(data, 1)
@@ -492,8 +512,9 @@ const getAllRMDropdown = async (req, res) => {
 
 const getAllPackingMaterialDropdown = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let queryObject = { isDeleted: false }
-        let mpModel = await packingMaterialSchema()
+        let mpModel = await packingMaterialSchema(dbYear)
         let data = await mpModel.find(queryObject).select('pmName pmUOM').sort("pmName");
 
         let encryptData = encryptionAPI(data, 1)
@@ -515,8 +536,9 @@ const getAllPackingMaterialDropdown = async (req, res) => {
 
 const getCompanyDetails = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let queryObject = { isDeleted: false }
-        let uSCHMOdel = await UsersSCHM()
+        let uSCHMOdel = await UsersSCHM(dbYear)
         let data = await uSCHMOdel.find(queryObject);
 
         let encryptData = encryptionAPI(data, 1)

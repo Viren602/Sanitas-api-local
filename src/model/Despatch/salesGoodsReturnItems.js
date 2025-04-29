@@ -38,13 +38,13 @@ const salesGoodsReturnItemsSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const salesGoodsReturnItemsModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await salesGoodsReturnEntryModel()
-    await companyItems()
-    await HNSCodesScHema()
-    await batchClearingEntryModel()
-    await batchWiseProductStockModel()
+const salesGoodsReturnItemsModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await salesGoodsReturnEntryModel(dbYear)
+    await companyItems(dbYear)
+    await HNSCodesScHema(dbYear)
+    await batchClearingEntryModel(dbYear)
+    await batchWiseProductStockModel(dbYear)
     return db.models.ItemsForSalesGoodsReturnItems || db.model("ItemsForSalesGoodsReturnItems", salesGoodsReturnItemsSchema);
 }
 

@@ -26,8 +26,8 @@ const rawMaterialModel = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const rawMaterialSchema = async () => {
-    const db = await connectToDatabase(globals.Database);
+const rawMaterialSchema = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.RawMaterialMasters || db.model("RawMaterialMasters", rawMaterialModel);
 }
 

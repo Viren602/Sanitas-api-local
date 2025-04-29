@@ -12,9 +12,9 @@ const inwardPostScHema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const inwardPostModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await partyModel()
+const inwardPostModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await partyModel(dbYear)
     return db.models.InwardPostEntry || db.model("InwardPostEntry", inwardPostScHema);
 }
 

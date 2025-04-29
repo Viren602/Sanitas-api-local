@@ -36,13 +36,13 @@ const gstInvoiceFinishGoodsItemsSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const gstInvoiceFinishGoodsItemsModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await gstInvoiceFinishGoodsModel()
-    await companyItems()
-    await HNSCodesScHema()
-    await batchClearingEntryModel()
-    await batchWiseProductStockModel()
+const gstInvoiceFinishGoodsItemsModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await gstInvoiceFinishGoodsModel(dbYear)
+    await companyItems(dbYear)
+    await HNSCodesScHema(dbYear)
+    await batchClearingEntryModel(dbYear)
+    await batchWiseProductStockModel(dbYear)
     return db.models.ItemsForGSTInvoiceFinishGoods || db.model("ItemsForGSTInvoiceFinishGoods", gstInvoiceFinishGoodsItemsSchema);
 }
 

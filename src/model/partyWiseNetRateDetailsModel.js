@@ -14,8 +14,8 @@ const partyWiseNetRateDetailsSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const partyWiseNetRateDetailsModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const partyWiseNetRateDetailsModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     await companyItems()
     await partyModel()
     return db.models.PartyWiseNetRateDetails || db.model("PartyWiseNetRateDetails", partyWiseNetRateDetailsSchema);

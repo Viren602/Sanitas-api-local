@@ -1,6 +1,5 @@
 
 import mongoose from "mongoose";
-import globals from "../utils/globals.js";
 import connectToDatabase from "../utils/dbConnection.js";
 import config from "../config/config.js";
 import adminRoleModel from "./adminRoleModel.js";

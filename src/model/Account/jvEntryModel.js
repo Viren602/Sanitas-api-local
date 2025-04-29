@@ -11,8 +11,8 @@ const jsEntrySchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const jvEntryModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const jvEntryModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.JVEntry || db.model("JVEntry", jsEntrySchema);
 }
 

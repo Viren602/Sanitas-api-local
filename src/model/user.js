@@ -16,8 +16,8 @@ const userSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const UsersSCHM = async () => {
-    const db = await connectToDatabase(globals.Database);
+const UsersSCHM = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.User || db.model("User", userSchema);
 }
 

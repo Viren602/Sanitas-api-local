@@ -9,8 +9,8 @@ const labelClaimSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const labelClaimModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const labelClaimModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.LabelClaimMasters || db.model("LabelClaimMasters", labelClaimSchema);
 }
 

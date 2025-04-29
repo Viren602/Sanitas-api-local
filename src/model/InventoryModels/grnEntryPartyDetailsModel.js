@@ -15,9 +15,9 @@ const grnEntryPartyDetailsSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const grnEntryPartyDetailsModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await partyModel()
+const grnEntryPartyDetailsModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await partyModel(dbYear)
     return db.models.GRNEntryPartyDetail || db.model("GRNEntryPartyDetail", grnEntryPartyDetailsSchema);
 }
 

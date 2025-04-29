@@ -47,6 +47,7 @@ const __dirname = path.dirname(__filename);
 
 const getProductionStockByProductId = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
 
         let reqId = getRequestData(id)
@@ -107,7 +108,7 @@ const getProductionStockByProductId = async (req, res) => {
         //     }
         // }
 
-        let psModel = await ProductionStagesModel()
+        let psModel = await ProductionStagesModel(dbYear)
         const stage = await psModel.findOne({
             productionStageId: 5,
             isDeleted: false,
@@ -117,12 +118,12 @@ const getProductionStockByProductId = async (req, res) => {
             queryObject.productionStageStatusId = stage._id
         }
 
-        let ppeModel = await productionPlanningEntryModel()
+        let ppeModel = await productionPlanningEntryModel(dbYear)
         let batchNos = await ppeModel.find(queryObject).select('batchNo');
         let batchNoList = batchNos.map(item => item.batchNo);
 
 
-        let batchwiseProdStkModel = await batchWiseProductStockModel()
+        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
         let response = await batchwiseProdStkModel.find({
             productId: reqId,
             $or: [
@@ -151,13 +152,14 @@ const getProductionStockByProductId = async (req, res) => {
 
 const getGSTInvoiceFinishGoodsInvoiceNo = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let response = {}
 
-        let cgModel = await companyGroupModel()
+        let cgModel = await companyGroupModel(dbYear)
         let companyDetails = await cgModel.findOne({}).select('CompanyName');
         let firstLetterOfCompany = companyDetails.CompanyName[0]
 
-        let gifgModel = await gstInvoiceFinishGoodsModel();
+        let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
         let gstNoRecord = await gifgModel
             .findOne({ isDeleted: false })
             .sort({ _id: -1 })
@@ -191,13 +193,14 @@ const getGSTInvoiceFinishGoodsInvoiceNo = async (req, res) => {
 
 const addEditGSTInvoiceFinishGoods = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
         let responseData = {}
         if (data.invoiceDetails.gstInvoiceFinishGoodsId && data.invoiceDetails.gstInvoiceFinishGoodsId.trim() !== '') {
             // Add Edit For Invoice Details
-            let gifgModel = await gstInvoiceFinishGoodsModel();
+            let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
             const response = await gifgModel.findByIdAndUpdate(data.invoiceDetails.gstInvoiceFinishGoodsId, data.invoiceDetails, { new: true });
             if (!response) {
                 responseData.invoiceDetails = 'Party details not found';
@@ -217,7 +220,7 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
                 await Promise.all(data.itemListing.map(async (item) => {
                     const totalReduceQty = (Number(item.qty) || 0) + (Number(item.free) || 0);
 
-                    let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+                    let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
                     const existingItemDetails = await gifinishGoodsITemModel.findOne({ _id: item._id, isDeleted: false });
 
                     if (existingItemDetails) {
@@ -225,14 +228,14 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
                         const updatedQty = existingQty - totalReduceQty;
                         console.log(existingQty, totalReduceQty)
                         console.log(updatedQty)
-                        let batchwiseProdStkModel = await batchWiseProductStockModel()
+                        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
                         await batchwiseProdStkModel.findByIdAndUpdate(
                             item.stockId,
                             { $inc: { quantity: updatedQty } },
                             { new: true }
                         );
                     } else {
-                        let batchwiseProdStkModel = await batchWiseProductStockModel()
+                        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
                         await batchwiseProdStkModel.findByIdAndUpdate(
                             item.stockId,
                             { $inc: { quantity: -totalReduceQty } },
@@ -250,7 +253,7 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
                     narration1: `INVOICE NO : ${data.invoiceDetails.invoiceNo}`,
                 }
 
-                let prEntryModel = await paymentReceiptEntryModel();
+                let prEntryModel = await paymentReceiptEntryModel(dbYear);
                 await prEntryModel.findOneAndUpdate(
                     { gstInvoiceFinishGoodsId: data.invoiceDetails.gstInvoiceFinishGoodsId },
                     request,
@@ -258,7 +261,7 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
                 );
 
                 // After Stock Updating, proceed with Invoice Item Details
-                let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+                let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
                 await gifinishGoodsITemModel.deleteMany({ gstInvoiceFinishGoodsId: response._id });
 
                 const items = data.itemListing.map(item => ({
@@ -266,7 +269,7 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
                     gstInvoiceFinishGoodsId: response._id
                 }));
 
-                let gifinishGoodsITemModel1 = await gstInvoiceFinishGoodsItemsModel()
+                let gifinishGoodsITemModel1 = await gstInvoiceFinishGoodsItemsModel(dbYear)
                 await gifinishGoodsITemModel1.insertMany(items);
 
                 responseData.invoiceDetails = response;
@@ -288,7 +291,7 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
 
         } else {
             // Add Edit For Invoice Details
-            let gifgModel = await gstInvoiceFinishGoodsModel();
+            let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
             const response = new gifgModel(data.invoiceDetails);
             await response.save();
 
@@ -302,7 +305,7 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
             });
 
             // Add Edit For Invoice Item Details
-            let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+            let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
             await gifinishGoodsITemModel.insertMany(items);
 
             let encryptData = encryptionAPI(responseData, 1);
@@ -334,7 +337,7 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
                 from: 'GSTInvoiceFinishGoods',
                 gstInvoiceFinishGoodsId: response._id,
             }
-            let prEntryModel = await paymentReceiptEntryModel();
+            let prEntryModel = await paymentReceiptEntryModel(dbYear);
             let paymentEntry = new prEntryModel(request);
             await paymentEntry.save();
 
@@ -342,7 +345,7 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
             // Stock Updating
             for (let item of data.itemListing) {
                 let totalReduceQty = (Number(item.qty) || 0) + (Number(item.free) || 0)
-                let batchwiseProdStkModel = await batchWiseProductStockModel()
+                let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
                 await batchwiseProdStkModel.findByIdAndUpdate(
                     item.stockId,
                     { $inc: { quantity: -totalReduceQty } },
@@ -358,6 +361,7 @@ const addEditGSTInvoiceFinishGoods = async (req, res) => {
 
 const getAllGSTInvoiceFinishGoodsRecords = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
@@ -373,7 +377,7 @@ const getAllGSTInvoiceFinishGoodsRecords = async (req, res) => {
         }
 
         let response = []
-        let gifgModel = await gstInvoiceFinishGoodsModel();
+        let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
         response = await gifgModel
             .find(queryObject)
             .sort(sortBy)
@@ -405,11 +409,12 @@ const getAllGSTInvoiceFinishGoodsRecords = async (req, res) => {
 
 const getGSTInvoiceFinishGoodsById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
 
         let reqId = getRequestData(id)
 
-        let gifgModel = await gstInvoiceFinishGoodsModel();
+        let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
         let invoiceDetails = await gifgModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -421,7 +426,7 @@ const getGSTInvoiceFinishGoodsById = async (req, res) => {
                 select: "transportName",
             });
 
-        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
         let itemListing = await gifinishGoodsITemModel
             .find({ gstInvoiceFinishGoodsId: reqId, isDeleted: false });
 
@@ -448,19 +453,20 @@ const getGSTInvoiceFinishGoodsById = async (req, res) => {
 
 const deleteItemFromDBById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
         // Stock Updating
         let totalReduceQty = (Number(data.qty) || 0) + (Number(data.free) || 0)
-        let batchwiseProdStkModel = await batchWiseProductStockModel()
+        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
         await batchwiseProdStkModel.findByIdAndUpdate(
             data.stockId,
             { $inc: { quantity: +totalReduceQty } },
             { new: true });
 
         // Removing Particualr Item From GST Invoice
-        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
         let response = await gifinishGoodsITemModel.findByIdAndUpdate(data.gstInvoiceBatchId, { isDeleted: true })
 
 
@@ -483,16 +489,17 @@ const deleteItemFromDBById = async (req, res) => {
 
 const deleteInvoiceById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
         let itemList = await gifinishGoodsITemModel.find({ gstInvoiceFinishGoodsId: reqId, isDeleted: false })
 
         itemList.map(async item => {
             // Stock Updating
             let totalReduceQty = (Number(item.qty) || 0) + (Number(item.free) || 0)
-            let batchwiseProdStkModel = await batchWiseProductStockModel()
+            let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
             await batchwiseProdStkModel.findByIdAndUpdate(
                 item.stockId,
                 { $inc: { quantity: +totalReduceQty } },
@@ -503,11 +510,11 @@ const deleteInvoiceById = async (req, res) => {
         })
 
         // Payment Receipt Entry
-        let prEntryModel = await paymentReceiptEntryModel();
+        let prEntryModel = await paymentReceiptEntryModel(dbYear);
         await prEntryModel.findOneAndUpdate({ gstInvoiceFinishGoodsId: reqId }, { isDeleted: true }, { new: true });
 
         // Removing GST Invoice Finish Goods Record
-        let gifgModel = await gstInvoiceFinishGoodsModel();
+        let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
         let response = await gifgModel.findByIdAndUpdate(reqId, { isDeleted: true })
 
         let encryptData = encryptionAPI(response, 1);
@@ -529,19 +536,19 @@ const deleteInvoiceById = async (req, res) => {
 
 const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id, id1 } = req.query;
         let reqId = getRequestData(id)
         let isDeliveryChallanNeed = id1 ? getRequestData(id1) : false
 
-        let cgModel = await companyGroupModel()
+        let cgModel = await companyGroupModel(dbYear)
         let companyDetails = await cgModel.findOne({});
         let adminAddress = companyDetails.addressLine1 + ' '
             + companyDetails.addressLine2 + ' '
             + companyDetails.addressLine3 + ' '
             + companyDetails.pinCode + '(' + companyDetails.state + ')'
 
-        let gifgModel = await gstInvoiceFinishGoodsModel();
+        let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
         let invoiceDetails = await gifgModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -553,7 +560,7 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
                 select: 'transportName',
             });
 
-        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
         let itemListing = await gifinishGoodsITemModel
             .find({ gstInvoiceFinishGoodsId: reqId, isDeleted: false });
 
@@ -622,7 +629,7 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
             `).join('')
             : '';
 
-        let hcModel = await HNSCodesScHema()
+        let hcModel = await HNSCodesScHema(dbYear)
         let hsnCodeList = await hcModel.find({});
 
         let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList, invoiceDetails.partyId.state)
@@ -788,17 +795,18 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
 
 const sendGSTInvoiceFinishGoodsToClient = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let cgModel = await companyGroupModel()
+        let cgModel = await companyGroupModel(dbYear)
         let companyDetails = await cgModel.findOne({});
         let adminAddress = companyDetails.addressLine1 + ' '
             + companyDetails.addressLine2 + ' '
             + companyDetails.addressLine3 + ' '
             + companyDetails.pinCode + '(' + companyDetails.state + ')'
 
-        let gifgModel = await gstInvoiceFinishGoodsModel();
+        let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
         let invoiceDetails = await gifgModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -810,7 +818,7 @@ const sendGSTInvoiceFinishGoodsToClient = async (req, res) => {
                 select: 'transportName',
             });
         if (invoiceDetails.partyId.email && invoiceDetails.partyId.email !== '') {
-            let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+            let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
             let itemListing = await gifinishGoodsITemModel
                 .find({ gstInvoiceFinishGoodsId: reqId, isDeleted: false });
 
@@ -854,7 +862,7 @@ const sendGSTInvoiceFinishGoodsToClient = async (req, res) => {
             `).join('')
                 : '';
 
-            let hcModel = await HNSCodesScHema()
+            let hcModel = await HNSCodesScHema(dbYear)
             let hsnCodeList = await hcModel.find({});
 
 
@@ -987,7 +995,7 @@ const sendGSTInvoiceFinishGoodsToClient = async (req, res) => {
 
             await browser.close();
 
-            let etModel = await emailTemplateModel()
+            let etModel = await emailTemplateModel(dbYear)
             const EmailTemplate = await etModel.findOne({ emailTemplateId: 3 });
 
             let html = EmailTemplate.description.replace('#CompanyName', invoiceDetails.partyId.partyName);
@@ -1037,8 +1045,9 @@ const sendGSTInvoiceFinishGoodsToClient = async (req, res) => {
 
 const getGSTInvoiceRMInvoice = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let response = {}
-        let girModel = await gstInvoiceRMModel();
+        let girModel = await gstInvoiceRMModel(dbYear);
         let gstNoRecord = await girModel
             .findOne({ isDeleted: false })
             .sort({ _id: -1 })
@@ -1072,6 +1081,7 @@ const getGSTInvoiceRMInvoice = async (req, res) => {
 
 const getrawMaterialStockByRMId = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
@@ -1081,7 +1091,7 @@ const getrawMaterialStockByRMId = async (req, res) => {
         };
 
         // From GRN Entry
-        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
         const rawMaterialData = await gemDetailsModel
             .find(queryObject)
             .populate({
@@ -1100,7 +1110,7 @@ const getrawMaterialStockByRMId = async (req, res) => {
         const totalPurchaseQty = rawMaterialData.reduce((sum, item) => sum + item.qty, 0);
 
         // From Production Used Qty
-        let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
+        let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
         const responseFromUsedQty = await prRMFormulaModel
             .find({ rmName: data.rmName, isDeleted: false })
             .populate({
@@ -1115,7 +1125,7 @@ const getrawMaterialStockByRMId = async (req, res) => {
         const totalUsedQtyInProduction = responseFromUsedQty.reduce((sum, item) => sum + item.netQty, 0);
 
         // From Invoice Used Qty
-        let iRMStock = await InvoiceRMStockModel();
+        let iRMStock = await InvoiceRMStockModel(dbYear);
         const responseFromUsedQtyGSTInvoice = await iRMStock.find({ rmId: data.id, isDeleted: false });
 
         const totalUsedQtyInGSTInvoice = responseFromUsedQtyGSTInvoice.reduce((sum, item) => sum + item.qty, 0);
@@ -1127,7 +1137,7 @@ const getrawMaterialStockByRMId = async (req, res) => {
         }
 
         // From Additional Entry
-        let addEntryModel = await additionalEntryMaterialDetailsModel();
+        let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear);
         let additionalEntry = await addEntryModel.find({ rawMaterialId: data.id, isDeleted: false }).select('qty');
         const totalUsedQtyInAdditionalEntry = additionalEntry.reduce((sum, item) => sum + item.qty, 0);
 
@@ -1168,13 +1178,14 @@ const getrawMaterialStockByRMId = async (req, res) => {
 
 const addEditInvoiceRM = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
         let responseData = {}
         if (data.invoiceDetails.gstInvoiceRMID && data.invoiceDetails.gstInvoiceRMID.trim() !== '') {
             // Add Edit For Invoice Details
-            let girModel = await gstInvoiceRMModel();
+            let girModel = await gstInvoiceRMModel(dbYear);
             const response = await girModel.findByIdAndUpdate(data.invoiceDetails.gstInvoiceRMID, data.invoiceDetails, { new: true });
             if (!response) {
                 responseData.invoiceDetails = 'Party details not found';
@@ -1194,18 +1205,18 @@ const addEditInvoiceRM = async (req, res) => {
                 await Promise.all(data.itemListing.map(async (item) => {
                     const totalReduceQty = (Number(item.finalQty) || 0);
                     let id = item._id ? item._id : null
-                    let giRMItemModel = await gstinvoiceRMItemModel()
+                    let giRMItemModel = await gstinvoiceRMItemModel(dbYear)
                     const existingItemDetails = await giRMItemModel.findOne({ _id: id, isDeleted: false });
 
                     if (existingItemDetails) {
-                        let iRMStock = await InvoiceRMStockModel();
+                        let iRMStock = await InvoiceRMStockModel(dbYear);
                         await iRMStock.findOneAndUpdate(
                             { rmId: item.itemId },
                             { $inc: { qty: totalReduceQty } },
                             { new: true }
                         );
                     } else {
-                        let iRMStock = await InvoiceRMStockModel();
+                        let iRMStock = await InvoiceRMStockModel(dbYear);
                         await iRMStock.findOneAndUpdate(
                             { rmId: item.itemId },
                             { $inc: { qty: Number(item.qty) } },
@@ -1223,7 +1234,7 @@ const addEditInvoiceRM = async (req, res) => {
                     narration1: `INVOICE NO : ${data.invoiceDetails.invoiceNo}`,
                 }
 
-                let prEntryModel = await paymentReceiptEntryModel();
+                let prEntryModel = await paymentReceiptEntryModel(dbYear);
                 await prEntryModel.findOneAndUpdate(
                     { gstInvoiceRMId: data.invoiceDetails.gstInvoiceRMID },
                     request,
@@ -1231,7 +1242,7 @@ const addEditInvoiceRM = async (req, res) => {
                 );
 
                 // After Stock Updating, proceed with Invoice Item Details
-                let giRMItemModel = await gstinvoiceRMItemModel()
+                let giRMItemModel = await gstinvoiceRMItemModel(dbYear)
                 await giRMItemModel.deleteMany({ gstInvoiceRMID: response._id });
 
                 const items = data.itemListing.map(item => ({
@@ -1239,7 +1250,7 @@ const addEditInvoiceRM = async (req, res) => {
                     gstInvoiceRMID: response._id
                 }));
 
-                let giRMItemModel1 = await gstinvoiceRMItemModel()
+                let giRMItemModel1 = await gstinvoiceRMItemModel(dbYear)
                 await giRMItemModel1.insertMany(items);
 
                 responseData.invoiceDetails = response;
@@ -1261,7 +1272,7 @@ const addEditInvoiceRM = async (req, res) => {
 
         } else {
             // Add Edit For Invoice Details
-            let girModel = await gstInvoiceRMModel();
+            let girModel = await gstInvoiceRMModel(dbYear);
             const response = new girModel(data.invoiceDetails);
             await response.save();
 
@@ -1273,7 +1284,7 @@ const addEditInvoiceRM = async (req, res) => {
             }));
 
             // Add Edit For Invoice Item Details
-            let giRMItemModel = await gstinvoiceRMItemModel()
+            let giRMItemModel = await gstinvoiceRMItemModel(dbYear)
             await giRMItemModel.insertMany(items);
 
             // Payment Receipt Entry
@@ -1293,7 +1304,7 @@ const addEditInvoiceRM = async (req, res) => {
                 from: 'GSTInvoiceRM',
                 gstInvoiceRMId: response._id,
             }
-            let prEntryModel = await paymentReceiptEntryModel();
+            let prEntryModel = await paymentReceiptEntryModel(dbYear);
             let paymentEntry = new prEntryModel(request);
             await paymentEntry.save();
 
@@ -1301,14 +1312,14 @@ const addEditInvoiceRM = async (req, res) => {
             // Stock Data Inserting
             data.itemListing.map(async (item) => {
                 const totalReduceQty = (Number(item.qty) || 0);
-                let iRMStock = await InvoiceRMStockModel();
+                let iRMStock = await InvoiceRMStockModel(dbYear);
                 const existingItemDetails = await iRMStock.findOne({ rmId: item.itemId, isDeleted: false });
 
                 if (existingItemDetails) {
                     const existingQty = (Number(existingItemDetails.qty) || 0);
                     const updatedQty = existingQty - totalReduceQty;
 
-                    let iRMStock = await InvoiceRMStockModel();
+                    let iRMStock = await InvoiceRMStockModel(dbYear);
                     await iRMStock.findOneAndUpdate(
                         { rmId: item.itemId },
                         { $inc: { qty: totalReduceQty } },
@@ -1322,7 +1333,7 @@ const addEditInvoiceRM = async (req, res) => {
                         rmName: item.itemName,
                         invoiceNo: item.invoiceNo
                     }
-                    let iRMStock = await InvoiceRMStockModel();
+                    let iRMStock = await InvoiceRMStockModel(dbYear);
                     await iRMStock.create(itemDetails);
                 }
             })
@@ -1350,6 +1361,7 @@ const addEditInvoiceRM = async (req, res) => {
 
 const getAllGSTInvoiceRMRecords = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
@@ -1365,7 +1377,7 @@ const getAllGSTInvoiceRMRecords = async (req, res) => {
         }
 
         let response = []
-        let girModel = await gstInvoiceRMModel();
+        let girModel = await gstInvoiceRMModel(dbYear);
         response = await girModel
             .find(queryObject)
             .sort(sortBy)
@@ -1397,11 +1409,12 @@ const getAllGSTInvoiceRMRecords = async (req, res) => {
 
 const getGSTInvoiceRMById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
 
         let reqId = getRequestData(id)
 
-        let girModel = await gstInvoiceRMModel();
+        let girModel = await gstInvoiceRMModel(dbYear);
         let invoiceDetails = await girModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -1413,7 +1426,7 @@ const getGSTInvoiceRMById = async (req, res) => {
                 select: "transportName",
             });
 
-        let giRMItemModel = await gstinvoiceRMItemModel()
+        let giRMItemModel = await gstinvoiceRMItemModel(dbYear)
         let itemListing = await giRMItemModel
             .find({ gstInvoiceRMID: reqId, isDeleted: false });
 
@@ -1440,19 +1453,20 @@ const getGSTInvoiceRMById = async (req, res) => {
 
 const deleteRMItemFromDBById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
         // Stock Updating
         let totalReduceQty = (Number(data.qty) || 0)
-        let iRMStock = await InvoiceRMStockModel();
+        let iRMStock = await InvoiceRMStockModel(dbYear);
         await iRMStock.findOneAndUpdate(
             { rmId: data.itemId },
             { $inc: { qty: -totalReduceQty } },
             { new: true }
         );
         // Removing Particualr Item From GST Invoice
-        let giRMItemModel = await gstinvoiceRMItemModel()
+        let giRMItemModel = await gstinvoiceRMItemModel(dbYear)
         let response = await giRMItemModel.findByIdAndUpdate(data.gstInvoiceItemId, { isDeleted: true })
 
         let encryptData = encryptionAPI(response, 1);
@@ -1474,17 +1488,18 @@ const deleteRMItemFromDBById = async (req, res) => {
 
 const deleteRMInvoiceById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let giRMItemModel = await gstinvoiceRMItemModel()
+        let giRMItemModel = await gstinvoiceRMItemModel(dbYear)
         let itemList = await giRMItemModel.find({ gstInvoiceRMID: reqId, isDeleted: false })
 
         itemList.map(async item => {
             // Stock Updating
             let totalReduceQty = (Number(item.qty) || 0)
 
-            let iRMStock = await InvoiceRMStockModel();
+            let iRMStock = await InvoiceRMStockModel(dbYear);
             await iRMStock.findOneAndUpdate(
                 { rmId: item.itemId },
                 { $inc: { qty: -totalReduceQty } },
@@ -1492,16 +1507,16 @@ const deleteRMInvoiceById = async (req, res) => {
             );
 
             // Removing Particualr Item From GST Invoice
-            let giRMItemModel = await gstinvoiceRMItemModel()
+            let giRMItemModel = await gstinvoiceRMItemModel(dbYear)
             await giRMItemModel.findByIdAndUpdate(item._id, { isDeleted: true })
         })
 
         // Payment Receipt Entry
-        let prEntryModel = await paymentReceiptEntryModel();
+        let prEntryModel = await paymentReceiptEntryModel(dbYear);
         await prEntryModel.findOneAndUpdate({ gstInvoiceRMId: reqId }, { isDeleted: true }, { new: true });
 
         // Removing GST Invoice Finish Goods Record
-        let girModel = await gstInvoiceRMModel();
+        let girModel = await gstInvoiceRMModel(dbYear);
         let response = await girModel.findByIdAndUpdate(reqId, { isDeleted: true })
 
         let encryptData = encryptionAPI(response, 1);
@@ -1523,18 +1538,18 @@ const deleteRMInvoiceById = async (req, res) => {
 
 const generateGSTInvoiceForRMById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let cgModel = await companyGroupModel()
+        let cgModel = await companyGroupModel(dbYear)
         let companyDetails = await cgModel.findOne({});
         let adminAddress = companyDetails.addressLine1 + ' '
             + companyDetails.addressLine2 + ' '
             + companyDetails.addressLine3 + ' '
             + companyDetails.pinCode + '(' + companyDetails.state + ')'
 
-        let girModel = await gstInvoiceRMModel();
+        let girModel = await gstInvoiceRMModel(dbYear);
         let invoiceDetails = await girModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -1546,7 +1561,7 @@ const generateGSTInvoiceForRMById = async (req, res) => {
                 select: 'transportName',
             });
 
-        let giRMItemModel = await gstinvoiceRMItemModel()
+        let giRMItemModel = await gstinvoiceRMItemModel(dbYear)
         let itemListing = await giRMItemModel
             .find({ gstInvoiceRMID: reqId, isDeleted: false });
 
@@ -1586,7 +1601,7 @@ const generateGSTInvoiceForRMById = async (req, res) => {
             `).join('')
             : '';
 
-        let hcModel = await HNSCodesScHema()
+        let hcModel = await HNSCodesScHema(dbYear)
         let hsnCodeList = await hcModel.find({});
 
         let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList, invoiceDetails.partyId.state)
@@ -1733,17 +1748,18 @@ const generateGSTInvoiceForRMById = async (req, res) => {
 
 const sendGSTInvoiceRMToClient = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let cgModel = await companyGroupModel()
+        let cgModel = await companyGroupModel(dbYear)
         let companyDetails = await cgModel.findOne({});
         let adminAddress = companyDetails.addressLine1 + ' '
             + companyDetails.addressLine2 + ' '
             + companyDetails.addressLine3 + ' '
             + companyDetails.pinCode + '(' + companyDetails.state + ')'
 
-        let girModel = await gstInvoiceRMModel();
+        let girModel = await gstInvoiceRMModel(dbYear);
         let invoiceDetails = await girModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -1756,7 +1772,7 @@ const sendGSTInvoiceRMToClient = async (req, res) => {
             });
 
         if (invoiceDetails.partyId.email && invoiceDetails.partyId.email !== '') {
-            let giRMItemModel = await gstinvoiceRMItemModel()
+            let giRMItemModel = await gstinvoiceRMItemModel(dbYear)
             let itemListing = await giRMItemModel
                 .find({ gstInvoiceRMID: reqId, isDeleted: false });
 
@@ -1796,7 +1812,7 @@ const sendGSTInvoiceRMToClient = async (req, res) => {
             `).join('')
                 : '';
 
-            let hcModel = await HNSCodesScHema()
+            let hcModel = await HNSCodesScHema(dbYear)
             let hsnCodeList = await hcModel.find({});
 
             let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList, invoiceDetails.partyId.state)
@@ -1927,7 +1943,7 @@ const sendGSTInvoiceRMToClient = async (req, res) => {
 
             await browser.close();
 
-            let etModel = await emailTemplateModel()
+            let etModel = await emailTemplateModel(dbYear)
             const EmailTemplate = await etModel.findOne({ emailTemplateId: 3 });
 
             let html = EmailTemplate.description.replace('#CompanyName', invoiceDetails.partyId.partyName);
@@ -1977,8 +1993,9 @@ const sendGSTInvoiceRMToClient = async (req, res) => {
 // GST Invoice PM
 const getGSTInvoicePMInvoiceNo = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let response = {}
-        let gipModel = await gstInvoicePMModel();
+        let gipModel = await gstInvoicePMModel(dbYear);
         let gstNoRecord = await gipModel
             .findOne({ isDeleted: false })
             .sort({ _id: -1 })
@@ -2012,6 +2029,7 @@ const getGSTInvoicePMInvoiceNo = async (req, res) => {
 
 const getPakcingMaterialStockByPMID = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
@@ -2021,7 +2039,7 @@ const getPakcingMaterialStockByPMID = async (req, res) => {
         };
 
         // From GRN Entry
-        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
         const packingMaterialData = await gemDetailsModel
             .find(queryObject)
             .populate({
@@ -2040,7 +2058,7 @@ const getPakcingMaterialStockByPMID = async (req, res) => {
         const totalPurchaseQty = packingMaterialData.reduce((sum, item) => sum + item.qty, 0);
 
         // From Production Used Qty
-        let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+        let prPMFormualModel = await PackingRequisitionPMFormulaModel(dbYear)
         const responseFromUsedQty = await prPMFormualModel
             .find({ pmName: data.pmName, isDeleted: false })
             .populate({
@@ -2055,7 +2073,7 @@ const getPakcingMaterialStockByPMID = async (req, res) => {
         const totalUsedQtyInProduction = responseFromUsedQty.reduce((sum, item) => sum + item.netQty, 0);
 
         // From Invoice Used Qty
-        let iPMStockModel = await InvoicePMStockModel()
+        let iPMStockModel = await InvoicePMStockModel(dbYear)
         const responseFromUsedQtyGSTInvoice = await iPMStockModel
             .find({ pmId: data.id, isDeleted: false });
 
@@ -2068,7 +2086,7 @@ const getPakcingMaterialStockByPMID = async (req, res) => {
         }
 
         // From Additional Entry
-        let addEntryModel = await additionalEntryMaterialDetailsModel();
+        let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear);
         let additionalEntry = await addEntryModel.find({ packageMaterialId: data.id, isDeleted: false }).select('qty');
         const totalUsedQtyInAdditionalEntry = additionalEntry.reduce((sum, item) => sum + item.qty, 0);
 
@@ -2110,13 +2128,14 @@ const getPakcingMaterialStockByPMID = async (req, res) => {
 
 const addEditInvoicePM = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
         let responseData = {}
         if (data.invoiceDetails.gstInvoicePMID && data.invoiceDetails.gstInvoicePMID.trim() !== '') {
             // Add Edit For Invoice Details
-            let gipModel = await gstInvoicePMModel();
+            let gipModel = await gstInvoicePMModel(dbYear);
             const response = await gipModel.findByIdAndUpdate(data.invoiceDetails.gstInvoicePMID, data.invoiceDetails, { new: true });
             if (!response) {
                 responseData.invoiceDetails = 'Party details not found';
@@ -2136,17 +2155,17 @@ const addEditInvoicePM = async (req, res) => {
                 await Promise.all(data.itemListing.map(async (item) => {
                     const totalReduceQty = (Number(item.finalQty) || 0);
                     let id = item._id ? item._id : null
-                    let giPMItemModel = await gstInvoicePMItemModel()
+                    let giPMItemModel = await gstInvoicePMItemModel(dbYear)
                     const existingItemDetails = await giPMItemModel.findOne({ _id: id, isDeleted: false });
                     if (existingItemDetails) {
-                        let iPMStockModel = await InvoicePMStockModel()
+                        let iPMStockModel = await InvoicePMStockModel(dbYear)
                         await iPMStockModel.findOneAndUpdate(
                             { pmId: item.itemId },
                             { $inc: { qty: totalReduceQty } },
                             { new: true }
                         );
                     } else {
-                        let iPMStockModel = await InvoicePMStockModel()
+                        let iPMStockModel = await InvoicePMStockModel(dbYear)
                         await iPMStockModel.findOneAndUpdate(
                             { pmId: item.itemId },
                             { $inc: { qty: Number(item.qty) } },
@@ -2165,7 +2184,7 @@ const addEditInvoicePM = async (req, res) => {
                     narration1: `INVOICE NO : ${data.invoiceDetails.invoiceNo}`,
                 }
 
-                let prEntryModel = await paymentReceiptEntryModel();
+                let prEntryModel = await paymentReceiptEntryModel(dbYear);
                 await prEntryModel.findOneAndUpdate(
                     { gstInvoicePMId: data.invoiceDetails.gstInvoicePMID },
                     request,
@@ -2173,7 +2192,7 @@ const addEditInvoicePM = async (req, res) => {
                 );
 
                 // After Stock Updating, proceed with Invoice Item Details
-                let giPMItemModel = await gstInvoicePMItemModel()
+                let giPMItemModel = await gstInvoicePMItemModel(dbYear)
                 await giPMItemModel.deleteMany({ gstInvoicePMID: response._id });
 
                 const items = data.itemListing.map(item => ({
@@ -2181,7 +2200,7 @@ const addEditInvoicePM = async (req, res) => {
                     gstInvoicePMID: response._id
                 }));
 
-                let giPMItemModel1 = await gstInvoicePMItemModel()
+                let giPMItemModel1 = await gstInvoicePMItemModel(dbYear)
                 await giPMItemModel1.insertMany(items);
 
                 responseData.invoiceDetails = response;
@@ -2203,7 +2222,7 @@ const addEditInvoicePM = async (req, res) => {
 
         } else {
             // Add Edit For Invoice Details
-            let gipModel = await gstInvoicePMModel();
+            let gipModel = await gstInvoicePMModel(dbYear);
             const response = new gipModel(data.invoiceDetails);
             await response.save();
 
@@ -2215,7 +2234,7 @@ const addEditInvoicePM = async (req, res) => {
             }));
 
             // Add Edit For Invoice Item Details
-            let giPMItemModel = await gstInvoicePMItemModel()
+            let giPMItemModel = await gstInvoicePMItemModel(dbYear)
             await giPMItemModel.insertMany(items);
 
             // Payment Receipt Entry
@@ -2236,7 +2255,7 @@ const addEditInvoicePM = async (req, res) => {
                 gstInvoicePMId: response._id,
             }
 
-            let prEntryModel = await paymentReceiptEntryModel();
+            let prEntryModel = await paymentReceiptEntryModel(dbYear);
             let paymentEntry = new prEntryModel(request);
             await paymentEntry.save();
 
@@ -2244,13 +2263,13 @@ const addEditInvoicePM = async (req, res) => {
             // Stock Data Inserting
             data.itemListing.map(async (item) => {
                 const totalReduceQty = (Number(item.qty) || 0);
-                let iPMStockModel = await InvoicePMStockModel()
+                let iPMStockModel = await InvoicePMStockModel(dbYear)
                 const existingItemDetails = await iPMStockModel.findOne({ pmId: item.itemId, isDeleted: false });
 
                 if (existingItemDetails) {
                     const existingQty = (Number(existingItemDetails.qty) || 0);
 
-                    let iPMStockModel = await InvoicePMStockModel()
+                    let iPMStockModel = await InvoicePMStockModel(dbYear)
                     await iPMStockModel.findOneAndUpdate(
                         { pmId: item.itemId },
                         { $inc: { qty: totalReduceQty } },
@@ -2264,7 +2283,7 @@ const addEditInvoicePM = async (req, res) => {
                         rmName: item.itemName,
                         invoiceNo: item.invoiceNo
                     }
-                    let iPMStockModel = await InvoicePMStockModel()
+                    let iPMStockModel = await InvoicePMStockModel(dbYear)
                     await iPMStockModel.create(itemDetails);
                 }
             })
@@ -2292,6 +2311,7 @@ const addEditInvoicePM = async (req, res) => {
 
 const getAllGSTInvoicePMRecords = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
@@ -2307,7 +2327,7 @@ const getAllGSTInvoicePMRecords = async (req, res) => {
         }
 
         let response = []
-        let gipModel = await gstInvoicePMModel();
+        let gipModel = await gstInvoicePMModel(dbYear);
         response = await gipModel
             .find(queryObject)
             .sort(sortBy)
@@ -2339,11 +2359,12 @@ const getAllGSTInvoicePMRecords = async (req, res) => {
 
 const getGSTInvoicePMById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
 
         let reqId = getRequestData(id)
 
-        let gipModel = await gstInvoicePMModel();
+        let gipModel = await gstInvoicePMModel(dbYear);
         let invoiceDetails = await gipModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -2355,7 +2376,7 @@ const getGSTInvoicePMById = async (req, res) => {
                 select: "transportName",
             });
 
-        let giPMItemModel = await gstInvoicePMItemModel()
+        let giPMItemModel = await gstInvoicePMItemModel(dbYear)
         let itemListing = await giPMItemModel
             .find({ gstInvoicePMID: reqId, isDeleted: false });
 
@@ -2382,19 +2403,20 @@ const getGSTInvoicePMById = async (req, res) => {
 
 const deletePMItemFromDBById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
         // Stock Updating
         let totalReduceQty = (Number(data.qty) || 0)
-        let iPMStockModel = await InvoicePMStockModel()
+        let iPMStockModel = await InvoicePMStockModel(dbYear)
         await iPMStockModel.findOneAndUpdate(
             { pmId: data.itemId },
             { $inc: { qty: -totalReduceQty } },
             { new: true }
         );
         // Removing Particualr Item From GST Invoice
-        let giPMItemModel = await gstInvoicePMItemModel()
+        let giPMItemModel = await gstInvoicePMItemModel(dbYear)
         let response = await giPMItemModel.findByIdAndUpdate(data.gstInvoiceItemId, { isDeleted: true })
 
         let encryptData = encryptionAPI(response, 1);
@@ -2416,17 +2438,18 @@ const deletePMItemFromDBById = async (req, res) => {
 
 const deletePMInvoiceById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let giPMItemModel = await gstInvoicePMItemModel()
+        let giPMItemModel = await gstInvoicePMItemModel(dbYear)
         let itemList = await giPMItemModel.find({ gstInvoicePMID: reqId, isDeleted: false })
 
         itemList.map(async item => {
             // Stock Updating
             let totalReduceQty = (Number(item.qty) || 0)
 
-            let iPMStockModel = await InvoicePMStockModel()
+            let iPMStockModel = await InvoicePMStockModel(dbYear)
             await iPMStockModel.findOneAndUpdate(
                 { pmId: item.itemId },
                 { $inc: { qty: -totalReduceQty } },
@@ -2434,16 +2457,16 @@ const deletePMInvoiceById = async (req, res) => {
             );
 
             // Removing Particualr Item From GST Invoice
-            let giPMItemModel = await gstInvoicePMItemModel()
+            let giPMItemModel = await gstInvoicePMItemModel(dbYear)
             await giPMItemModel.findByIdAndUpdate(item._id, { isDeleted: true })
         })
 
         // Payment Receipt Entry
-        let prEntryModel = await paymentReceiptEntryModel();
+        let prEntryModel = await paymentReceiptEntryModel(dbYear);
         await prEntryModel.findOneAndUpdate({ gstInvoicePMId: reqId }, { isDeleted: true }, { new: true });
 
         // Removing GST Invoice Finish Goods Record
-        let gipModel = await gstInvoicePMModel();
+        let gipModel = await gstInvoicePMModel(dbYear);
         let response = await gipModel.findByIdAndUpdate(reqId, { isDeleted: true })
 
         let encryptData = encryptionAPI(response, 1);
@@ -2465,18 +2488,18 @@ const deletePMInvoiceById = async (req, res) => {
 
 const generateGSTInvoiceForPMById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let cgModel = await companyGroupModel()
+        let cgModel = await companyGroupModel(dbYear)
         let companyDetails = await cgModel.findOne({});
         let adminAddress = companyDetails.addressLine1 + ' '
             + companyDetails.addressLine2 + ' '
             + companyDetails.addressLine3 + ' '
             + companyDetails.pinCode + '(' + companyDetails.state + ')'
 
-        let gipModel = await gstInvoicePMModel();
+        let gipModel = await gstInvoicePMModel(dbYear);
         let invoiceDetails = await gipModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -2488,7 +2511,7 @@ const generateGSTInvoiceForPMById = async (req, res) => {
                 select: 'transportName',
             });
 
-        let giPMItemModel = await gstInvoicePMItemModel()
+        let giPMItemModel = await gstInvoicePMItemModel(dbYear)
         let itemListing = await giPMItemModel
             .find({ gstInvoicePMID: reqId, isDeleted: false });
 
@@ -2528,7 +2551,7 @@ const generateGSTInvoiceForPMById = async (req, res) => {
             `).join('')
             : '';
 
-        let hcModel = await HNSCodesScHema()
+        let hcModel = await HNSCodesScHema(dbYear)
         let hsnCodeList = await hcModel.find({});
 
         let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList, invoiceDetails.partyId.state)
@@ -2676,18 +2699,18 @@ const generateGSTInvoiceForPMById = async (req, res) => {
 
 const sendGSTInvoicePMToClient = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let cgModel = await companyGroupModel()
+        let cgModel = await companyGroupModel(dbYear)
         let companyDetails = await cgModel.findOne({});
         let adminAddress = companyDetails.addressLine1 + ' '
             + companyDetails.addressLine2 + ' '
             + companyDetails.addressLine3 + ' '
             + companyDetails.pinCode + '(' + companyDetails.state + ')'
 
-        let gipModel = await gstInvoicePMModel();
+        let gipModel = await gstInvoicePMModel(dbYear);
         let invoiceDetails = await gipModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -2700,7 +2723,7 @@ const sendGSTInvoicePMToClient = async (req, res) => {
             });
 
         if (invoiceDetails.partyId.email && invoiceDetails.partyId.email !== '') {
-            let giPMItemModel = await gstInvoicePMItemModel()
+            let giPMItemModel = await gstInvoicePMItemModel(dbYear)
             let itemListing = await giPMItemModel
                 .find({ gstInvoicePMID: reqId, isDeleted: false });
 
@@ -2740,7 +2763,7 @@ const sendGSTInvoicePMToClient = async (req, res) => {
             `).join('')
                 : '';
 
-            let hcModel = await HNSCodesScHema()
+            let hcModel = await HNSCodesScHema(dbYear)
             let hsnCodeList = await hcModel.find({});
 
             let hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList, invoiceDetails.partyId.state)
@@ -2872,7 +2895,7 @@ const sendGSTInvoicePMToClient = async (req, res) => {
 
             await browser.close();
 
-            let etModel = await emailTemplateModel()
+            let etModel = await emailTemplateModel(dbYear)
             const EmailTemplate = await etModel.findOne({ emailTemplateId: 3 });
 
             let html = EmailTemplate.description.replace('#CompanyName', invoiceDetails.partyId.partyName);
@@ -2921,12 +2944,13 @@ const sendGSTInvoicePMToClient = async (req, res) => {
 // Sales Order Entry
 const addEditSalesOrderEntry = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
         let responseData = {}
         if (data.orderDetails.salesOrderId && data.orderDetails.salesOrderId.trim() !== '') {
-            let odsoEntryModel = await orderDetailsSalesOrderEntryModel()
+            let odsoEntryModel = await orderDetailsSalesOrderEntryModel(dbYear)
             const response = await odsoEntryModel.findByIdAndUpdate(data.orderDetails.salesOrderId, data.orderDetails, { new: true });
             if (response) {
                 responseData.orderDetails = response;
@@ -2937,7 +2961,7 @@ const addEditSalesOrderEntry = async (req, res) => {
 
             let nextOrderNo = '0001';
 
-            let odsoEntryModel = await orderDetailsSalesOrderEntryModel()
+            let odsoEntryModel = await orderDetailsSalesOrderEntryModel(dbYear)
             const lastRecord = await odsoEntryModel
                 .findOne()
                 .sort({ orderNo: -1 })
@@ -2951,7 +2975,7 @@ const addEditSalesOrderEntry = async (req, res) => {
 
             data.orderDetails.orderNo = nextOrderNo;
 
-            let odsoEntryModel1 = await orderDetailsSalesOrderEntryModel()
+            let odsoEntryModel1 = await orderDetailsSalesOrderEntryModel(dbYear)
             const response = new odsoEntryModel1(data.orderDetails);
             await response.save();
             responseData.orderDetails = response;
@@ -2959,7 +2983,7 @@ const addEditSalesOrderEntry = async (req, res) => {
 
         if (data.itemDetails.itemMappingId && data.itemDetails.itemMappingId.trim() !== '') {
             data.itemDetails.salesOrderId = responseData.orderDetails._id
-            let odsoimModel = await orderDetailsSalesOrderItemMappingModel()
+            let odsoimModel = await orderDetailsSalesOrderItemMappingModel(dbYear)
             const response = await odsoimModel.findByIdAndUpdate(data.itemDetails.itemMappingId, data.itemDetails, { new: true });
             if (response) {
                 responseData.salesOrderItemMapping = response;
@@ -2968,7 +2992,7 @@ const addEditSalesOrderEntry = async (req, res) => {
             }
         } else {
             data.itemDetails.salesOrderId = responseData.orderDetails._id
-            let odsoimModel = await orderDetailsSalesOrderItemMappingModel()
+            let odsoimModel = await orderDetailsSalesOrderItemMappingModel(dbYear)
             const response = new odsoimModel(data.itemDetails);
             await response.save();
             responseData.salesOrderItemMapping = response;
@@ -2993,12 +3017,13 @@ const addEditSalesOrderEntry = async (req, res) => {
 
 const getAllOrderDetailsItemMappingById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         console.log(reqId)
         let response = []
         if (reqId) {
-            let odsoimModel = await orderDetailsSalesOrderItemMappingModel()
+            let odsoimModel = await orderDetailsSalesOrderItemMappingModel(dbYear)
             response = await odsoimModel
                 .find({ salesOrderId: reqId, isDeleted: false })
                 .populate({
@@ -3026,6 +3051,7 @@ const getAllOrderDetailsItemMappingById = async (req, res) => {
 
 const getAllSalesOrderEntry = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
@@ -3036,7 +3062,7 @@ const getAllSalesOrderEntry = async (req, res) => {
             arrangedBy = data.arrangedBy
         }
 
-        let odsoEntryModel = await orderDetailsSalesOrderEntryModel()
+        let odsoEntryModel = await orderDetailsSalesOrderEntryModel(dbYear)
         let response = await odsoEntryModel
             .find(queryObject)
             .sort(arrangedBy)
@@ -3075,11 +3101,12 @@ const getAllSalesOrderEntry = async (req, res) => {
 
 const deleteSalesOrderById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let odsoEntryModel = await orderDetailsSalesOrderEntryModel()
+            let odsoEntryModel = await orderDetailsSalesOrderEntryModel(dbYear)
             response = await odsoEntryModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -3102,11 +3129,12 @@ const deleteSalesOrderById = async (req, res) => {
 
 const deleteSalesOrderItemByItemId = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let odsoimModel = await orderDetailsSalesOrderItemMappingModel()
+            let odsoimModel = await orderDetailsSalesOrderItemMappingModel(dbYear)
             response = await odsoimModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -3131,8 +3159,9 @@ const deleteSalesOrderItemByItemId = async (req, res) => {
 // Sales Goods Return Entry
 const getSalesGoodsReturnEntryInvoiceNo = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let response = {}
-        let sgrEntryModel = await salesGoodsReturnEntryModel()
+        let sgrEntryModel = await salesGoodsReturnEntryModel(dbYear)
         let gstNoRecord = await sgrEntryModel
             .findOne({ isDeleted: false })
             .sort({ _id: -1 })
@@ -3166,6 +3195,7 @@ const getSalesGoodsReturnEntryInvoiceNo = async (req, res) => {
 
 const getAllBatchesForItemByItemId = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
 
         let reqId = getRequestData(id)
@@ -3175,7 +3205,7 @@ const getAllBatchesForItemByItemId = async (req, res) => {
             packingItemId: reqId
         };
 
-        let batchClrModel = await batchClearingEntryModel()
+        let batchClrModel = await batchClearingEntryModel(dbYear)
         let batchClearingData = await batchClrModel
             .find(queryObject)
             .populate({
@@ -3204,7 +3234,7 @@ const getAllBatchesForItemByItemId = async (req, res) => {
         }));
 
         for (let stockItem of totalStock) {
-            let batchwiseProdStkModel = await batchWiseProductStockModel()
+            let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
             const existingStock = await batchwiseProdStkModel.findOne({
                 batchNo: stockItem.batchNo,
                 batchClearingEntryId: stockItem.batchClearingEntryId,
@@ -3212,12 +3242,12 @@ const getAllBatchesForItemByItemId = async (req, res) => {
             });
 
             if (!existingStock) {
-                let batchwiseProdStkModel = await batchWiseProductStockModel()
+                let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
                 await batchwiseProdStkModel.create(stockItem);
             }
         }
 
-        let batchwiseProdStkModel = await batchWiseProductStockModel()
+        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
         let response = await batchwiseProdStkModel.find({
             productId: reqId,
         });
@@ -3242,13 +3272,14 @@ const getAllBatchesForItemByItemId = async (req, res) => {
 
 const addEditSalesGoodsReturnEntry = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
         let responseData = {}
         if (data.salesReturnDetails.salesGoodsReturnId && data.salesReturnDetails.salesGoodsReturnId.trim() !== '') {
             // Add Edit For Invoice Details
-            let sgrEntryModel = await salesGoodsReturnEntryModel()
+            let sgrEntryModel = await salesGoodsReturnEntryModel(dbYear)
             const response = await sgrEntryModel.findByIdAndUpdate(data.salesReturnDetails.salesGoodsReturnId, data.salesReturnDetails, { new: true });
             if (!response) {
                 responseData.salesReturnDetails = 'Party details not found';
@@ -3268,21 +3299,21 @@ const addEditSalesGoodsReturnEntry = async (req, res) => {
                 await Promise.all(data.itemListing.map(async (item) => {
                     if (item.stockUpgrade === 'yes' || item.stockUpgrade === 'Yes') {
                         const totalReduceQty = (Number(item.qty) || 0) + (Number(item.free) || 0);
-                        let sgrItemsModel = await salesGoodsReturnItemsModel()
+                        let sgrItemsModel = await salesGoodsReturnItemsModel(dbYear)
                         const existingItemDetails = await sgrItemsModel.findOne({ _id: item._id, isDeleted: false });
 
                         if (existingItemDetails) {
                             const existingQty = (Number(existingItemDetails.qty) || 0) + (Number(existingItemDetails.free) || 0);
                             const updatedQty = existingQty - totalReduceQty;
 
-                            let batchwiseProdStkModel = await batchWiseProductStockModel()
+                            let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
                             await batchwiseProdStkModel.findByIdAndUpdate(
                                 item.stockId,
                                 { $inc: { quantity: -updatedQty } },
                                 { new: true }
                             );
                         } else {
-                            let batchwiseProdStkModel = await batchWiseProductStockModel()
+                            let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
                             await batchwiseProdStkModel.findByIdAndUpdate(
                                 item.stockId,
                                 { $inc: { quantity: totalReduceQty } },
@@ -3293,7 +3324,7 @@ const addEditSalesGoodsReturnEntry = async (req, res) => {
                 }));
 
                 // After Stock Updating, proceed with Invoice Item Details
-                let sgrItemsModel = await salesGoodsReturnItemsModel()
+                let sgrItemsModel = await salesGoodsReturnItemsModel(dbYear)
                 await sgrItemsModel.deleteMany({ salesGoodsReturnId: response._id });
 
                 const items = data.itemListing.map(item => ({
@@ -3301,7 +3332,7 @@ const addEditSalesGoodsReturnEntry = async (req, res) => {
                     salesGoodsReturnId: response._id
                 }));
 
-                let sgrItemsModel1 = await salesGoodsReturnItemsModel()
+                let sgrItemsModel1 = await salesGoodsReturnItemsModel(dbYear)
                 await sgrItemsModel1.insertMany(items);
 
                 responseData.salesReturnDetails = response;
@@ -3323,7 +3354,7 @@ const addEditSalesGoodsReturnEntry = async (req, res) => {
 
         } else {
             // Add Edit For Invoice Details
-            let sgrEntryModel = await salesGoodsReturnEntryModel()
+            let sgrEntryModel = await salesGoodsReturnEntryModel(dbYear)
             const response = new sgrEntryModel(data.salesReturnDetails);
             await response.save();
 
@@ -3335,7 +3366,7 @@ const addEditSalesGoodsReturnEntry = async (req, res) => {
             }));
 
             // Add Edit For Invoice Item Details
-            let sgrItemsModel = await salesGoodsReturnItemsModel()
+            let sgrItemsModel = await salesGoodsReturnItemsModel(dbYear)
             await sgrItemsModel.insertMany(items);
 
             let encryptData = encryptionAPI(responseData, 1);
@@ -3354,7 +3385,7 @@ const addEditSalesGoodsReturnEntry = async (req, res) => {
             for (let item of data.itemListing) {
                 if (item.stockUpgrade === 'yes' || item.stockUpgrade === 'Yes') {
                     let totalReduceQty = (Number(item.qty) || 0) + (Number(item.free) || 0)
-                    let batchwiseProdStkModel = await batchWiseProductStockModel()
+                    let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
                     await batchwiseProdStkModel.findByIdAndUpdate(
                         item.stockId,
                         { $inc: { quantity: totalReduceQty } },
@@ -3371,6 +3402,7 @@ const addEditSalesGoodsReturnEntry = async (req, res) => {
 
 const getAllSalesGoodsReturnEntry = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
@@ -3386,7 +3418,7 @@ const getAllSalesGoodsReturnEntry = async (req, res) => {
         }
 
         let response = []
-        let sgrEntryModel = await salesGoodsReturnEntryModel()
+        let sgrEntryModel = await salesGoodsReturnEntryModel(dbYear)
         response = await sgrEntryModel
             .find(queryObject)
             .sort(sortBy)
@@ -3430,11 +3462,12 @@ const getAllSalesGoodsReturnEntry = async (req, res) => {
 
 const getSalesGoodsReturnDetailsById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
 
         let reqId = getRequestData(id)
 
-        let sgrEntryModel = await salesGoodsReturnEntryModel()
+        let sgrEntryModel = await salesGoodsReturnEntryModel(dbYear)
         let salesReturnDetails = await sgrEntryModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -3446,7 +3479,7 @@ const getSalesGoodsReturnDetailsById = async (req, res) => {
                 select: "transportName",
             });
 
-        let sgrItemsModel = await salesGoodsReturnItemsModel()
+        let sgrItemsModel = await salesGoodsReturnItemsModel(dbYear)
         let itemListing = await sgrItemsModel
             .find({ salesGoodsReturnId: reqId, isDeleted: false });
 
@@ -3473,20 +3506,21 @@ const getSalesGoodsReturnDetailsById = async (req, res) => {
 
 const deleteSalesGoodsReturnItemById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
         // Stock Updating
         if (item.stockUpgrade === 'yes' || item.stockUpgrade === 'Yes') {
             let totalReduceQty = (Number(data.qty) || 0) + (Number(data.free) || 0)
-            let batchwiseProdStkModel = await batchWiseProductStockModel()
+            let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
             await batchwiseProdStkModel.findByIdAndUpdate(
                 data.stockId,
                 { $inc: { quantity: -totalReduceQty } },
                 { new: true });
         }
         // Removing Particualr Item From GST Invoice
-        let sgrItemsModel = await salesGoodsReturnItemsModel()
+        let sgrItemsModel = await salesGoodsReturnItemsModel(dbYear)
         let response = await sgrItemsModel.findByIdAndUpdate(data.gstInvoiceBatchId, { isDeleted: true })
 
 
@@ -3509,29 +3543,30 @@ const deleteSalesGoodsReturnItemById = async (req, res) => {
 
 const deleteSalesGoodsReturnById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let sgrItemsModel = await salesGoodsReturnItemsModel()
+        let sgrItemsModel = await salesGoodsReturnItemsModel(dbYear)
         let itemList = await sgrItemsModel.find({ salesGoodsReturnId: reqId })
 
         itemList.map(async item => {
             // Stock Updating
             if (item.stockUpgrade === 'yes' || item.stockUpgrade === 'Yes') {
                 let totalReduceQty = (Number(item.qty) || 0) + (Number(item.free) || 0)
-                let batchwiseProdStkModel = await batchWiseProductStockModel()
+                let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
                 await batchwiseProdStkModel.findByIdAndUpdate(
                     item.stockId,
                     { $inc: { quantity: -totalReduceQty } },
                     { new: true });
             }
             // Removing Particualr Item From GST Invoice
-            let sgrItemsModel = await salesGoodsReturnItemsModel()
+            let sgrItemsModel = await salesGoodsReturnItemsModel(dbYear)
             await sgrItemsModel.findByIdAndUpdate(item._id, { isDeleted: true })
         })
 
         // Removing GST Invoice Finish Goods Record
-        let sgrEntryModel = await salesGoodsReturnEntryModel()
+        let sgrEntryModel = await salesGoodsReturnEntryModel(dbYear)
         let response = await sgrEntryModel.findByIdAndUpdate(reqId, { isDeleted: true })
 
         let encryptData = encryptionAPI(response, 1);
@@ -3553,10 +3588,11 @@ const deleteSalesGoodsReturnById = async (req, res) => {
 
 const getCompanyAddressByCompanyId = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let pModel = await partyModel()
+        let pModel = await partyModel(dbYear)
         let response = await pModel.findOne({ _id: reqId });
 
         let encryptData = encryptionAPI(response, 1);
@@ -3579,9 +3615,10 @@ const getCompanyAddressByCompanyId = async (req, res) => {
 // Other Delivery Challan
 const getSerialNoForDeliveryChallan = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let response = {}
 
-        let odcModel = await otherDeliveryChallanModel();
+        let odcModel = await otherDeliveryChallanModel(dbYear);
         let dcRecords = await odcModel
             .findOne({ isDeleted: false })
             .sort({ _id: -1 })
@@ -3615,13 +3652,14 @@ const getSerialNoForDeliveryChallan = async (req, res) => {
 
 const addEditDeliveryChallan = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
         let responseData = {}
         if (data.challanDetails.otherDeliveryChallanId && data.challanDetails.otherDeliveryChallanId.trim() !== '') {
             // Add Edit For Invoice Details
-            let gifgModel = await otherDeliveryChallanModel();
+            let gifgModel = await otherDeliveryChallanModel(dbYear);
             const response = await gifgModel.findByIdAndUpdate(data.challanDetails.otherDeliveryChallanId, data.challanDetails, { new: true });
             if (!response) {
                 responseData.challanDetails = 'Challan details not found';
@@ -3637,12 +3675,12 @@ const addEditDeliveryChallan = async (req, res) => {
             responseData.challanDetails = response
             data.itemChallanDetails.otherDeliveryChallanId = data.challanDetails.otherDeliveryChallanId
             if (data.itemChallanDetails.itemChallanDetialsId && data.itemChallanDetails.itemChallanDetialsId.trim() !== '') {
-                let iodcModel = await itemOtherDeliveryChalanModel()
+                let iodcModel = await itemOtherDeliveryChalanModel(dbYear)
                 const itemDetails = iodcModel.find({ _id: data.itemChallanDetails.itemChallanDetialsId, isDeleted: false })
 
                 // Stock Update
                 const UpdatedQty = itemDetails.qty - Number(data.itemChallanDetails.qty || 0)
-                let batchwiseProdStkModel = await batchWiseProductStockModel()
+                let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
                 await batchwiseProdStkModel.findByIdAndUpdate(
                     data.itemChallanDetails.stockId,
                     { $inc: { quantity: UpdatedQty } },
@@ -3650,18 +3688,18 @@ const addEditDeliveryChallan = async (req, res) => {
                 );
 
                 // Item Details Update For Challan
-                let iodcModel1 = await itemOtherDeliveryChalanModel();
+                let iodcModel1 = await itemOtherDeliveryChalanModel(dbYear);
                 await iodcModel1.findByIdAndUpdate(data.itemChallanDetails.itemChallanDetialsId, data.itemChallanDetails, { new: true });
 
             } else {
                 // Add For Delivery Challan Item
-                let iodcModel = await itemOtherDeliveryChalanModel()
+                let iodcModel = await itemOtherDeliveryChalanModel(dbYear)
                 const IODCModel = new iodcModel(data.itemChallanDetails);
                 await IODCModel.save();
 
                 // Stock Updating
                 let totalQty = (Number(data.itemChallanDetails.qty) || 0)
-                let batchwiseProdStkModel = await batchWiseProductStockModel()
+                let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
                 await batchwiseProdStkModel.findByIdAndUpdate(
                     data.itemChallanDetails.stockId,
                     { $inc: { quantity: -totalQty } },
@@ -3681,7 +3719,7 @@ const addEditDeliveryChallan = async (req, res) => {
             });
         } else {
             // Add For Delivery Challan
-            let odcModel = await otherDeliveryChallanModel();
+            let odcModel = await otherDeliveryChallanModel(dbYear);
             const response = new odcModel(data.challanDetails);
             await response.save();
 
@@ -3689,7 +3727,7 @@ const addEditDeliveryChallan = async (req, res) => {
             data.itemChallanDetails.otherDeliveryChallanId = response._id
 
             // Add For Delivery Challan Item
-            let iodcModel = await itemOtherDeliveryChalanModel()
+            let iodcModel = await itemOtherDeliveryChalanModel(dbYear)
             const IODCModel = new iodcModel(data.itemChallanDetails);
             await IODCModel.save();
 
@@ -3707,7 +3745,7 @@ const addEditDeliveryChallan = async (req, res) => {
 
             // Stock Updating
             let totalQty = (Number(data.itemChallanDetails.qty) || 0)
-            let batchwiseProdStkModel = await batchWiseProductStockModel()
+            let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
             await batchwiseProdStkModel.findByIdAndUpdate(
                 data.itemChallanDetails.stockId,
                 { $inc: { quantity: -totalQty } },
@@ -3722,6 +3760,7 @@ const addEditDeliveryChallan = async (req, res) => {
 
 const getallOtherDeliveryChallanList = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
@@ -3752,7 +3791,7 @@ const getallOtherDeliveryChallanList = async (req, res) => {
             sortOption = { [data.arrangedBy]: 1 };
         }
 
-        let odcModel = await otherDeliveryChallanModel();
+        let odcModel = await otherDeliveryChallanModel(dbYear);
         let response = await odcModel.aggregate([
             { $match: queryObject },
             {
@@ -3801,11 +3840,12 @@ const getallOtherDeliveryChallanList = async (req, res) => {
 
 const getOtherDeliveryChallanDetailsById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
 
         let reqId = getRequestData(id)
 
-        let odcModel = await otherDeliveryChallanModel();
+        let odcModel = await otherDeliveryChallanModel(dbYear);
         let challanDetails = await odcModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -3813,7 +3853,7 @@ const getOtherDeliveryChallanDetailsById = async (req, res) => {
                 select: "partyName",
             });
 
-        let iodcModel = await itemOtherDeliveryChalanModel()
+        let iodcModel = await itemOtherDeliveryChalanModel(dbYear)
         let itemChallanDetailsList = await iodcModel
             .find({ otherDeliveryChallanId: reqId, isDeleted: false })
             .populate({
@@ -3844,14 +3884,15 @@ const getOtherDeliveryChallanDetailsById = async (req, res) => {
 
 const deleteItemDeliveryChallanById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
-        let iodcModel = await itemOtherDeliveryChalanModel()
+        let iodcModel = await itemOtherDeliveryChalanModel(dbYear)
         const itemDetails = await iodcModel.findOne({ _id: reqId, isDeleted: false })
 
         // Stock Update
         const UpdatedQty = itemDetails.qty
-        let batchwiseProdStkModel = await batchWiseProductStockModel()
+        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
         await batchwiseProdStkModel.findByIdAndUpdate(
             itemDetails.stockId,
             { $inc: { quantity: UpdatedQty } },
@@ -3859,7 +3900,7 @@ const deleteItemDeliveryChallanById = async (req, res) => {
         );
 
         // Item Details Update For Challan
-        let iodcModel1 = await itemOtherDeliveryChalanModel();
+        let iodcModel1 = await itemOtherDeliveryChalanModel(dbYear);
         let response = await iodcModel1.findByIdAndUpdate(reqId, { isDeleted: true });
 
         let encryptData = encryptionAPI(response, 1);
@@ -3881,17 +3922,18 @@ const deleteItemDeliveryChallanById = async (req, res) => {
 
 const deleteOtherDeliveryChallanById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
         // Delete Delivery Challan
-        let odcModel = await otherDeliveryChallanModel()
+        let odcModel = await otherDeliveryChallanModel(dbYear)
         await odcModel.findByIdAndUpdate(reqId, { isDeleted: true });
 
-        let iodcModel = await itemOtherDeliveryChalanModel()
+        let iodcModel = await itemOtherDeliveryChalanModel(dbYear)
         const itemDetails = await iodcModel.find({ otherDeliveryChallanId: reqId, isDeleted: false })
 
-        let batchwiseProdStkModel = await batchWiseProductStockModel();
+        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear);
 
         await Promise.all(itemDetails.map(async (item) => {
             // Stock Update
@@ -3928,11 +3970,11 @@ const deleteOtherDeliveryChallanById = async (req, res) => {
 
 const printOtherDeliveryChallanById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let cgModel = await companyGroupModel()
+        let cgModel = await companyGroupModel(dbYear)
         let companyDetails = await cgModel.findOne({});
         let adminAddress = companyDetails.addressLine1 + ' '
             + companyDetails.addressLine2 + ' '
@@ -3940,7 +3982,7 @@ const printOtherDeliveryChallanById = async (req, res) => {
             + companyDetails.pinCode + '(' + companyDetails.state + ')'
 
 
-        let odcModel = await otherDeliveryChallanModel();
+        let odcModel = await otherDeliveryChallanModel(dbYear);
         let challanDetails = await odcModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -3948,7 +3990,7 @@ const printOtherDeliveryChallanById = async (req, res) => {
                 select: "partyName",
             });
 
-        let iodcModel = await itemOtherDeliveryChalanModel()
+        let iodcModel = await itemOtherDeliveryChalanModel(dbYear)
         let itemChallanDetailsList = await iodcModel
             .find({ otherDeliveryChallanId: reqId, isDeleted: false })
             .populate({
@@ -4028,6 +4070,7 @@ const printOtherDeliveryChallanById = async (req, res) => {
 // Reports - Party Wise Despatch Report
 const getAllPartyWiseDespatchItem = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
@@ -4039,7 +4082,7 @@ const getAllPartyWiseDespatchItem = async (req, res) => {
             };
         }
 
-        let gifgModel = await gstInvoiceFinishGoodsModel();
+        let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
         let gstInvoiceFinishGoodsResponse = await gifgModel
             .find(queryObject)
             .select('partyId grandTotal invoiceNo invoiceDate transportId lRNo lRDate')
@@ -4070,7 +4113,7 @@ const getAllPartyWiseDespatchItem = async (req, res) => {
 
         let reqIds = gstInvoiceFinishGoodsResponse.map(record => record._id);
 
-        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
         let itemListing = await gifinishGoodsITemModel
             .find({ gstInvoiceFinishGoodsId: { $in: reqIds }, isDeleted: false })
             .lean();
@@ -4108,10 +4151,11 @@ const getAllPartyWiseDespatchItem = async (req, res) => {
 
 const getAllPartyWiseDespatchItemById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
-        let gifgModel = await gstInvoiceFinishGoodsModel();
+        let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
         let invoiceDetails = await gifgModel
             .findOne({ _id: reqId, isDeleted: false })
             .populate({
@@ -4123,7 +4167,7 @@ const getAllPartyWiseDespatchItemById = async (req, res) => {
                 select: "transportName",
             });
 
-        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
         let itemListing = await gifinishGoodsITemModel
             .find({ gstInvoiceFinishGoodsId: reqId, isDeleted: false });
 
@@ -4159,6 +4203,7 @@ const getAllPartyWiseDespatchItemById = async (req, res) => {
 // Reports - Item Wise Despatch Report
 const getAllItemWiseDesptach = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
@@ -4170,7 +4215,7 @@ const getAllItemWiseDesptach = async (req, res) => {
             };
         }
 
-        let gifgModel = await gstInvoiceFinishGoodsModel();
+        let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
         let gstInvoiceFinishGoodsResponse = await gifgModel
             .find(queryObject)
             .select('partyId grandTotal invoiceNo invoiceDate transportId lRNo lRDate')
@@ -4198,7 +4243,7 @@ const getAllItemWiseDesptach = async (req, res) => {
             };
         }
 
-        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
         let gstInvoiceFinishGoodsItemListing = await gifinishGoodsITemModel.aggregate([
             {
                 $match: {
@@ -4257,7 +4302,7 @@ const getAllItemWiseDesptach = async (req, res) => {
         // gstInvoiceFinishGoodsItemListing = await Promise.all(invoicePromises);
 
         let ids = gstInvoiceFinishGoodsItemListing.map(record => record.itemId);
-        let gifinishGoodsITemModel1 = await gstInvoiceFinishGoodsItemsModel()
+        let gifinishGoodsITemModel1 = await gstInvoiceFinishGoodsItemsModel(dbYear)
         let itemListing = await gifinishGoodsITemModel1
             .find({ itemId: { $in: ids }, isDeleted: false })
             .populate({
@@ -4301,11 +4346,12 @@ const getAllItemWiseDesptach = async (req, res) => {
 // Reports - Item Wise Monthly Sales
 const getALLItemWiseMonthlySales = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
 
-        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
         let gstInvoiceFinishGoodsItemListing = await gifinishGoodsITemModel.aggregate([
             { $match: queryObject },
             {
@@ -4384,12 +4430,13 @@ const getALLItemWiseMonthlySales = async (req, res) => {
 // Reports - Party Wise Monthly Sales
 const getAllPartyWiseMonthlySalesByPartyId = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let queryObject = { isDeleted: false }
         let reqIdObjectId = new mongoose.Types.ObjectId(reqId);
 
-        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
         let gstInvoiceFinishGoodsItemListing = await gifinishGoodsITemModel.aggregate([
             { $match: queryObject },
             {
@@ -4465,11 +4512,12 @@ const getAllPartyWiseMonthlySalesByPartyId = async (req, res) => {
 // Reports - Stock Statement Report
 const getAllStockStatementReport = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
 
-        let batchwiseProdStkModel = await batchWiseProductStockModel()
+        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
         const response = await batchwiseProdStkModel.find(queryObject)
             .populate({
                 path: 'productId',
@@ -4526,13 +4574,14 @@ const getAllStockStatementReport = async (req, res) => {
 
 const getALLStockStatementByProductId = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id, id2 } = req.query;
 
         let itemId = getRequestData(id)
         let batchClearingEntryId = getRequestData(id2)
 
         // Batch Cleared Products
-        let batchClrModel = await batchClearingEntryModel()
+        let batchClrModel = await batchClearingEntryModel(dbYear)
         let productionStock = await batchClrModel
             .find({ packingItemId: itemId, isDeleted: false })
             .select('quantity productDetialsId createdAt isFromOpeningStock')
@@ -4546,7 +4595,7 @@ const getALLStockStatementByProductId = async (req, res) => {
             });
 
         // Invoice Generated Products
-        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
         let issuedItemStock = await gifinishGoodsITemModel
             .find({ itemId: itemId, isDeleted: false })
             .select('qty batchNo gstInvoiceFinishGoodsId free createdAt')
@@ -4560,7 +4609,7 @@ const getALLStockStatementByProductId = async (req, res) => {
             });
 
         // Sales Goods Return Products
-        let sgrItemsModel = await salesGoodsReturnItemsModel()
+        let sgrItemsModel = await salesGoodsReturnItemsModel(dbYear)
         let salesGoodsReturnEntry = await sgrItemsModel
             .find({ itemId: itemId, isDeleted: false })
             .select('qty batchNo salesGoodsReturnId free createdAt invoiceNo invoiceDate')
@@ -4574,7 +4623,7 @@ const getALLStockStatementByProductId = async (req, res) => {
             });
 
         // Other Delivery Challan
-        let iodcModel = await itemOtherDeliveryChalanModel()
+        let iodcModel = await itemOtherDeliveryChalanModel(dbYear)
         let itemOtherDeliveryChallanEntry = await iodcModel
             .find({ itemId: itemId, isDeleted: false })
             .select('qty batchNo otherDeliveryChallanId createdAt')
@@ -4667,11 +4716,12 @@ const getALLStockStatementByProductId = async (req, res) => {
 
 const getAllBatchWiseStockStatementReport = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
 
-        let batchwiseProdStkModel = await batchWiseProductStockModel()
+        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
         const response = await batchwiseProdStkModel.find(queryObject)
             .populate({
                 path: 'productId',
@@ -4697,10 +4747,11 @@ const getAllBatchWiseStockStatementReport = async (req, res) => {
 // Reports - Stock Ledger Report
 const getAllStockLedgerReport = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
-        let batchClrModel = await batchClearingEntryModel()
+        let batchClrModel = await batchClearingEntryModel(dbYear)
         let productionStock = await batchClrModel
             .find({ packingItemId: data.itemId, isDeleted: false })
             .select('quantity productDetialsId updatedAt')
@@ -4713,7 +4764,7 @@ const getAllStockLedgerReport = async (req, res) => {
                 },
             });
 
-        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
+        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
         let issuedItemStock = await gifinishGoodsITemModel
             .find({ itemId: data.itemId, isDeleted: false })
             .select('qty batchNo gstInvoiceFinishGoodsId free updatedAt')
@@ -4727,7 +4778,7 @@ const getAllStockLedgerReport = async (req, res) => {
             });
 
         // Other Delivery Challan
-        let iodcModel = await itemOtherDeliveryChalanModel()
+        let iodcModel = await itemOtherDeliveryChalanModel(dbYear)
         let itemOtherDeliveryChallanEntry = await iodcModel
             .find({ itemId: data.itemId, isDeleted: false })
             .select('qty batchNo otherDeliveryChallanId updatedAt')
@@ -4805,6 +4856,7 @@ const getAllStockLedgerReport = async (req, res) => {
 
 const getAllStockLedgerReportBatchStock = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = {
@@ -4812,7 +4864,7 @@ const getAllStockLedgerReportBatchStock = async (req, res) => {
             productId: data.itemId
         }
 
-        let batchwiseProdStkModel = await batchWiseProductStockModel()
+        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
         const response = await batchwiseProdStkModel.find(queryObject)
             .populate({
                 path: 'productId',
@@ -4840,13 +4892,14 @@ const getAllStockLedgerReportBatchStock = async (req, res) => {
 // Near Expiry Stock Report
 const getAllNearExpiryStockReport = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
         let queryObject = {
             isDeleted: false,
         };
 
-        let batchwiseProdStkModel = await batchWiseProductStockModel()
+        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
         const response = await batchwiseProdStkModel.find(queryObject)
             .populate({
                 path: 'productId',
@@ -4883,10 +4936,11 @@ const getAllNearExpiryStockReport = async (req, res) => {
 
 const addEditInwardPost = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let iwpModel = await inwardPostModel()
+            let iwpModel = await inwardPostModel(dbYear)
             const response = await iwpModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -4905,7 +4959,7 @@ const addEditInwardPost = async (req, res) => {
                 res.status(404).json({ Message: "Inward Post not found" });
             }
         } else {
-            let iwpModel = await inwardPostModel()
+            let iwpModel = await inwardPostModel(dbYear)
             const response = new iwpModel(data);
             await response.save();
 
@@ -4929,6 +4983,7 @@ const addEditInwardPost = async (req, res) => {
 
 const getAllInwardPost = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = {
@@ -4941,7 +4996,7 @@ const getAllInwardPost = async (req, res) => {
 
         }
 
-        let iwpModel = await inwardPostModel()
+        let iwpModel = await inwardPostModel(dbYear)
         let response = await iwpModel.aggregate([
             { $match: queryObject },
             {
@@ -4986,12 +5041,12 @@ const getAllInwardPost = async (req, res) => {
 };
 const getInwardPostById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let iwpModel = await inwardPostModel()
+            let iwpModel = await inwardPostModel(dbYear)
             response = await iwpModel.findOne({ _id: reqId });
         }
         console.log(response)
@@ -5015,11 +5070,12 @@ const getInwardPostById = async (req, res) => {
 };
 const deleteInwardPostById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
         // Removing GST Invoice Finish Goods Record
-        let iwpModel = await inwardPostModel()
+        let iwpModel = await inwardPostModel(dbYear)
         let response = await iwpModel.findByIdAndUpdate(reqId, { isDeleted: true })
 
         let encryptData = encryptionAPI(response, 1);
@@ -5040,10 +5096,11 @@ const deleteInwardPostById = async (req, res) => {
 };
 const addEditOutwardPost = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let owpModel = await outwardPostModel()
+            let owpModel = await outwardPostModel(dbYear)
             const response = await owpModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -5062,7 +5119,7 @@ const addEditOutwardPost = async (req, res) => {
                 res.status(404).json({ Message: "Outward Post not found" });
             }
         } else {
-            let owpModel = await outwardPostModel()
+            let owpModel = await outwardPostModel(dbYear)
             const response = new owpModel(data);
             await response.save();
 
@@ -5097,7 +5154,7 @@ const getAllOutwardPost = async (req, res) => {
 
         }
 
-        let owpModel = await outwardPostModel()
+        let owpModel = await outwardPostModel(dbYear)
         let response = await owpModel.aggregate([
             { $match: queryObject },
             {
@@ -5142,12 +5199,12 @@ const getAllOutwardPost = async (req, res) => {
 };
 const getOutwardPostById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let owpModel = await outwardPostModel()
+            let owpModel = await outwardPostModel(dbYear)
             response = await owpModel.findOne({ _id: reqId });
         }
 
@@ -5171,11 +5228,12 @@ const getOutwardPostById = async (req, res) => {
 };
 const deleteOutwardPostById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
         // Removing GST Invoice Finish Goods Record
-        let owpModel = await outwardPostModel()
+        let owpModel = await outwardPostModel(dbYear)
         let response = await owpModel.findByIdAndUpdate(reqId, { isDeleted: true })
 
         let encryptData = encryptionAPI(response, 1);
@@ -5197,6 +5255,7 @@ const deleteOutwardPostById = async (req, res) => {
 
 const getAllInwardOutwardRegister = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
@@ -5211,7 +5270,7 @@ const getAllInwardOutwardRegister = async (req, res) => {
             queryObject.partyId = data.partyId
         }
         let Response = []
-        let iwpModel = await inwardPostModel()
+        let iwpModel = await inwardPostModel(dbYear)
         let inwardData = await iwpModel
             .find(queryObject)
             .populate({
@@ -5224,7 +5283,7 @@ const getAllInwardOutwardRegister = async (req, res) => {
             category: "Inward"
         }));
 
-        let owpModel = await outwardPostModel()
+        let owpModel = await outwardPostModel(dbYear)
         let outwardData = await owpModel
             .find(queryObject)
             .populate({

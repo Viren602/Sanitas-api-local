@@ -28,11 +28,11 @@ const gstInvoiceRMItemsSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const gstinvoiceRMItemModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await gstInvoiceRMModel()
-    await rawMaterialSchema()
-    await HNSCodesScHema()
+const gstinvoiceRMItemModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await gstInvoiceRMModel(dbYear)
+    await rawMaterialSchema(dbYear)
+    await HNSCodesScHema(dbYear)
     return db.models.ItemsForGSTInvoiceRM || db.model("ItemsForGSTInvoiceRM", gstInvoiceRMItemsSchema);
 }
 

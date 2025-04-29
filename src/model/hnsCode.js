@@ -13,8 +13,8 @@ const hnsCodeSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const HNSCodesScHema = async () => {
-    const db = await connectToDatabase(globals.Database);
+const HNSCodesScHema = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.HSNCodes || db.model("HSNCodes", hnsCodeSchema);
 }
 

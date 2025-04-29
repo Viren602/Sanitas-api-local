@@ -13,6 +13,8 @@ import batchWiseProductStockModel from '../model/Despatch/batchWiseProductStockM
 import productionStageModel from '../model/productionStageModel.js';
 import { getRequestData } from '../middleware/encryption.js';
 
+const dbYear = 'PharmaSoftware'
+
 const importRMFormula = async (req, res) => {
     try {
 
@@ -23,10 +25,10 @@ const importRMFormula = async (req, res) => {
             .then(async (response) => {
                 for (let x = 0; x < response.length; x++) {
 
-                    let pdModel = await productDetailsModel()
+                    let pdModel = await productDetailsModel(dbYear)
                     const product = await pdModel.findOne({ productCode: response[x].productCode });
 
-                    let stagModel = await productionStageModel()
+                    let stagModel = await productionStageModel(dbYear)
                     const stageDetails = await stagModel.findOne({ seqNo: Number(response[x].stageId) });
 
                     if (product) {
@@ -57,7 +59,7 @@ const importRMFormula = async (req, res) => {
                         console.log(`${x + 1} ProductCode ${response[x].productCode} not found in ProductModel`);
                     }
                 }
-                let rmFModel = await rmFormulaModel()
+                let rmFModel = await rmFormulaModel(dbYear)
                 await rmFModel.insertMany(rmFormulaList)
             })
         res.send({ status: 200, success: true, msg: 'RM Formula CSV Imported Successfully' })
@@ -76,7 +78,7 @@ const importPMFormula = async (req, res) => {
             .then(async (response) => {
                 for (let x = 0; x < response.length; x++) {
 
-                    let cIModel = await companyItems()
+                    let cIModel = await companyItems(dbYear)
                     const item = await cIModel.findOne({ ItemCode: response[x].itemCode });
                     if (item) {
                         pmFormulaList.push({
@@ -102,7 +104,7 @@ const importPMFormula = async (req, res) => {
                     }
                 }
 
-                let pmfModel = await pmFormulaModel()
+                let pmfModel = await pmFormulaModel(dbYear)
                 await pmfModel.insertMany(pmFormulaList)
             })
         res.send({ status: 200, success: true, msg: 'PM Formula CSV Imported Successfully' })
@@ -117,12 +119,12 @@ const importRMFormulaWithRMId = async (req, res) => {
             isDeleted: false,
         };
 
-        let rmModel = await rawMaterialSchema()
+        let rmModel = await rawMaterialSchema(dbYear)
         const rawMaterials = await rmModel.find(queryObject);
 
         await Promise.all(
             rawMaterials.map(async (rawMaterial) => {
-                let rmFModel = await rmFormulaModel()
+                let rmFModel = await rmFormulaModel(dbYear)
                 const updateResult = await rmFModel.updateMany(
                     { itemCode: rawMaterial.rmCode },
                     { $set: { rmId: rawMaterial._id } }
@@ -152,13 +154,13 @@ const importPMFormulaWithRMId = async (req, res) => {
             isDeleted: false,
         };
 
-        let mpModel = await packingMaterialSchema()
+        let mpModel = await packingMaterialSchema(dbYear)
         const packingMaterials = await mpModel.find(queryObject);
         let totalUpdatedRecords = 0;
 
         await Promise.all(
             packingMaterials.map(async (packingMaterial) => {
-                let pmfModel = await pmFormulaModel()
+                let pmfModel = await pmFormulaModel(dbYear)
                 const updateResult = await pmfModel.updateMany(
                     { pmCode: packingMaterial.pmCode },
                     { $set: { packageMaterialId: packingMaterial._id } }
@@ -194,7 +196,7 @@ const rawMaterialOpeningStock = async (req, res) => {
             .then(async (response) => {
                 for (let x = 0; x < response.length; x++) {
 
-                    let cIModel = await rawMaterialSchema()
+                    let cIModel = await rawMaterialSchema(dbYear)
                     const item = await cIModel.findOne({ rmName: response[x].rmName });
                     if (item) {
                         openingStockList.push({
@@ -223,7 +225,7 @@ const rawMaterialOpeningStock = async (req, res) => {
                     }
                 }
 
-                let grnModel = await grnEntryMaterialDetailsModel()
+                let grnModel = await grnEntryMaterialDetailsModel(dbYear)
                 await grnModel.insertMany(openingStockList)
                 console.log('Updated')
             })
@@ -242,7 +244,7 @@ const packingMaterialOpeningStock = async (req, res) => {
             .then(async (response) => {
                 for (let x = 0; x < response.length; x++) {
 
-                    let cIModel = await packingMaterialSchema()
+                    let cIModel = await packingMaterialSchema(dbYear)
                     const item = await cIModel.findOne({ pmName: response[x].pmName });
                     if (item) {
                         openingStockList.push({
@@ -271,7 +273,7 @@ const packingMaterialOpeningStock = async (req, res) => {
                     }
                 }
 
-                let grnModel = await grnEntryMaterialDetailsModel()
+                let grnModel = await grnEntryMaterialDetailsModel(dbYear)
                 await grnModel.insertMany(openingStockList)
                 console.log('Updated')
             })
@@ -288,7 +290,7 @@ const partyOpeningBalance = async (req, res) => {
             .then(async (response) => {
                 for (let x = 0; x < response.length; x++) {
 
-                    let pModel = await partyModel()
+                    let pModel = await partyModel(dbYear)
                     const party = await pModel.findOne({ partyName: response[x].partyName });
                     if (party) {
                         let DRCR = response[x].closingBalanceDRCR === 'D' ? 'DR' : response[x].closingBalanceDRCR === 'C' ? 'CR' : ''
@@ -314,7 +316,7 @@ const productOpeningStock = async (req, res) => {
             .fromFile(req.file.path)
             .then(async (response) => {
                 for (let x = 0; x < response.length; x++) {
-                    let companyItemModel = await companyItems()
+                    let companyItemModel = await companyItems(dbYear)
                     const item = await companyItemModel.findOne({ ItemName: response[x].itemName });
                     if (item) {
                         let data = {
@@ -343,11 +345,11 @@ const productOpeningStock = async (req, res) => {
                             isFromOpeningStock: true,
                         }
 
-                        let batchClrModel = await batchWiseProductStockModel()
+                        let batchClrModel = await batchWiseProductStockModel(dbYear)
                         const BatchData = new batchClrModel(data);
                         await BatchData.save();
 
-                        let batchClearingModel = await batchClearingEntryModel()
+                        let batchClearingModel = await batchClearingEntryModel(dbYear)
                         const BatchClearData = new batchClearingModel(batchClearingData);
                         await BatchClearData.save();
                         console.log('found')

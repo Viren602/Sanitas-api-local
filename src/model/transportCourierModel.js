@@ -16,8 +16,8 @@ const transportCourierSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const transportCourierModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const transportCourierModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.TransportCourierMasters || db.model("TransportCourierMasters", transportCourierSchema);
 }
 

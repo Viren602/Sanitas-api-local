@@ -9,8 +9,8 @@ const punchSizeSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const punchSizeModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const punchSizeModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.PunchSizeMasters || db.model("PunchSizeMasters", punchSizeSchema);
 }
 

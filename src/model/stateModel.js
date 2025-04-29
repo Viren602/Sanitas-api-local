@@ -11,8 +11,8 @@ const stateSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const stateModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const stateModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.StateMasters || db.model("StateMasters", stateSchema);
 }
 

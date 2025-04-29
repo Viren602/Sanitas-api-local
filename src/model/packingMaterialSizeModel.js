@@ -8,8 +8,8 @@ const packingMaterialSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const packingMaterialSizeModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const packingMaterialSizeModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.PackingMaterialSizes || db.model("PackingMaterialSizes", packingMaterialSchema);
 }
 

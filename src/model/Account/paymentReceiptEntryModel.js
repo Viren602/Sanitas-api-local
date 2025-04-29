@@ -38,17 +38,17 @@ const paymentReceiptEntrySchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const paymentReceiptEntryModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await daybookMasterModel()
-    await partyModel()
-    await gstInvoiceFinishGoodsModel()
-    await gstInvoiceRMModel()
-    await gstInvoicePMModel()
-    await gstPurchaseEntryRMPMModel()
-    await gstPurchaseWithoutInventoryEntryModel()
-    await contraEntryModel()
-    await jvEntryModel()
+const paymentReceiptEntryModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await daybookMasterModel(dbYear)
+    await partyModel(dbYear)
+    await gstInvoiceFinishGoodsModel(dbYear)
+    await gstInvoiceRMModel(dbYear)
+    await gstInvoicePMModel(dbYear)
+    await gstPurchaseEntryRMPMModel(dbYear)
+    await gstPurchaseWithoutInventoryEntryModel(dbYear)
+    await contraEntryModel(dbYear)
+    await jvEntryModel(dbYear)
     return db.models.PaymentReceiptEntry || db.model("PaymentReceiptEntry", paymentReceiptEntrySchema);
 }
 

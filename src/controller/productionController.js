@@ -17,11 +17,12 @@ import batchWiseProductStockModel from "../model/Despatch/batchWiseProductStockM
 
 const addEditProductionPlanningEntry = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let apiData = req.body.data;
     let reqData = getRequestData(apiData, "PostApi");
     let responseData = {};
 
-    let psModel = await ProductionStagesModel()
+    let psModel = await ProductionStagesModel(dbYear)
     const stage = await psModel.findOne({
       productionStageId: reqData.productionStageId,
       isDeleted: false,
@@ -30,7 +31,7 @@ const addEditProductionPlanningEntry = async (req, res) => {
     reqData.productionStageStatusId = stage._id;
 
     if (reqData.productDetialsId && reqData.productDetialsId.trim() !== "") {
-      let ppeModel = await productionPlanningEntryModel()
+      let ppeModel = await productionPlanningEntryModel(dbYear)
       const response = await ppeModel.findByIdAndUpdate(
         reqData.productDetialsId,
         reqData,
@@ -50,7 +51,7 @@ const addEditProductionPlanningEntry = async (req, res) => {
     } else {
       let nextProductionNo = "P0001";
 
-      let ppeModel = await productionPlanningEntryModel()
+      let ppeModel = await productionPlanningEntryModel(dbYear)
       const lastRecord = await ppeModel
         .findOne()
         .sort({ productionNo: -1 })
@@ -66,7 +67,7 @@ const addEditProductionPlanningEntry = async (req, res) => {
 
       reqData.productionPlanningDate = new Date();
 
-      let ppeModel1 = await productionPlanningEntryModel()
+      let ppeModel1 = await productionPlanningEntryModel(dbYear)
       const response = new ppeModel1(reqData);
       await response.save();
 
@@ -89,6 +90,7 @@ const addEditProductionPlanningEntry = async (req, res) => {
 
 const getAllProductionPlanningEntry = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let apiData = req.body.data;
     let data = getRequestData(apiData, "PostApi");
     let queryObject = {
@@ -102,7 +104,7 @@ const getAllProductionPlanningEntry = async (req, res) => {
     }
 
     if (Array.isArray(data.productionStageId) && data.productionStageId.length > 0) {
-      let psModel = await ProductionStagesModel()
+      let psModel = await ProductionStagesModel(dbYear)
       const stages = await psModel.find({
         productionStageId: { $in: data.productionStageId },
         isDeleted: false,
@@ -118,7 +120,7 @@ const getAllProductionPlanningEntry = async (req, res) => {
       queryObject.productionStageStatusId = { $in: [] };
     }
 
-    let ppeModel = await productionPlanningEntryModel()
+    let ppeModel = await productionPlanningEntryModel(dbYear)
     let response = await ppeModel
       .find(queryObject)
       .sort(filterBy)
@@ -177,11 +179,12 @@ const getAllProductionPlanningEntry = async (req, res) => {
 
 const getProductionPlanningEntryById = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id);
     let response = [];
     if (reqId) {
-      let ppeModel = await productionPlanningEntryModel()
+      let ppeModel = await productionPlanningEntryModel(dbYear)
       response = await ppeModel
         .findOne({
           _id: reqId,
@@ -214,11 +217,12 @@ const getProductionPlanningEntryById = async (req, res) => {
 
 const deleteProductionPlanningEntryById = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id);
     let response = {};
     if (reqId) {
-      let ppeModel = await productionPlanningEntryModel()
+      let ppeModel = await productionPlanningEntryModel(dbYear)
       response = await ppeModel.findByIdAndUpdate(
         reqId,
         { isDeleted: true },
@@ -226,12 +230,12 @@ const deleteProductionPlanningEntryById = async (req, res) => {
       );
     }
 
-    let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+    let prPMFormualModel = await PackingRequisitionPMFormulaModel(dbYear)
     await prPMFormualModel.deleteMany({
       _id: reqId,
     });
 
-    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
+    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
     await prRMFormulaModel.deleteMany({
       _id: reqId,
     });
@@ -254,7 +258,7 @@ const deleteProductionPlanningEntryById = async (req, res) => {
 
 const getRMFormulaForProductionById = async (req, res) => {
   try {
-
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id)
 
@@ -263,7 +267,7 @@ const getRMFormulaForProductionById = async (req, res) => {
       rawMaterialId: { $ne: null },
     };
 
-    let rmFModel = await rmFormulaModel()
+    let rmFModel = await rmFormulaModel(dbYear)
     let formulaResponse = await rmFModel
       .find({ productId: reqId, isDeleted: false })
       .select('qty netQty rmName uom stageName batchSize rmId')
@@ -274,7 +278,7 @@ const getRMFormulaForProductionById = async (req, res) => {
 
     formulaResponse.sort((a, b) => (a.stageId?.seqNo || 0) - (b.stageId?.seqNo || 0));
 
-    let gemDetailsModel = await grnEntryMaterialDetailsModel();
+    let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
     const grnEntryForStock = await gemDetailsModel
       .find(queryObject)
       .populate({
@@ -299,10 +303,10 @@ const getRMFormulaForProductionById = async (req, res) => {
       return acc;
     }, {});
 
-    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
-    let giRMItemModel = await gstinvoiceRMItemModel();
-    let addEntryModel = await additionalEntryMaterialDetailsModel();
-    let rmModel = await rawMaterialSchema()
+    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
+    let giRMItemModel = await gstinvoiceRMItemModel(dbYear);
+    let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear);
+    let rmModel = await rawMaterialSchema(dbYear)
 
     const enrichedFormulaResponse = await Promise.all(
       formulaResponse.map(async (item) => {
@@ -388,11 +392,12 @@ const getRMFormulaForProductionById = async (req, res) => {
 
 const productionRequisitionRMFormulaListing = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let apiData = req.body.data;
     let reqData = getRequestData(apiData, "PostApi");
     let responseData = {};
 
-    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
+    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
     const existingRecords = await prRMFormulaModel.find({
       productDetialsId: reqData.productDetialsId,
     });
@@ -430,11 +435,11 @@ const productionRequisitionRMFormulaListing = async (req, res) => {
 
 const getProductionRMFOrmulaByProductionDetailsId = async (req, res) => {
   try {
-
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id)
 
-    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
+    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
     const response = await prRMFormulaModel
       .find({ productDetialsId: reqId, isDeleted: false });
 
@@ -457,14 +462,15 @@ const getProductionRMFOrmulaByProductionDetailsId = async (req, res) => {
 
 const removeProductionPlanningEntryFromProductionRequisition = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id);
     let productionResponse = {};
     if (reqId) {
 
       // Change Stage Id from 5 to 4
-      let prodPlaningModel = await productionPlanningEntryModel()
-      let psModel = await ProductionStagesModel()
+      let prodPlaningModel = await productionPlanningEntryModel(dbYear)
+      let psModel = await ProductionStagesModel(dbYear)
 
       const stage = await psModel.findOne({
         productionStageId: 1,
@@ -479,7 +485,7 @@ const removeProductionPlanningEntryFromProductionRequisition = async (req, res) 
       }
 
       // Delete Used Qty from Production Requisition
-      let prPMFormualModel = await ProductionRequisitionRMFormulaModel()
+      let prPMFormualModel = await ProductionRequisitionRMFormulaModel(dbYear)
       await prPMFormualModel.updateMany({ productDetialsId: reqId }, { isDeleted: true });
 
       // Delete Used Qty from Packing Requisition
@@ -525,7 +531,7 @@ const removeProductionPlanningEntryFromProductionRequisition = async (req, res) 
 
 const getPMFormulaByPackingItemId = async (req, res) => {
   try {
-
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id)
 
@@ -534,12 +540,12 @@ const getPMFormulaByPackingItemId = async (req, res) => {
       packageMaterialId: { $ne: null },
     };
 
-    let pmfModel = await pmFormulaModel()
+    let pmfModel = await pmFormulaModel(dbYear)
     const formulaResponse = await pmfModel
       .find({ itemId: reqId, isDeleted: false })
       .select('qty netQty pmName uom stageName batchSize packageMaterialId');
 
-    let gemDetailsModel = await grnEntryMaterialDetailsModel();
+    let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
     const grnEntryForStock = await gemDetailsModel
       .find(queryObject)
       .populate({
@@ -573,9 +579,9 @@ const getPMFormulaByPackingItemId = async (req, res) => {
     //   };
     // });
 
-    let addEntryModel = await additionalEntryMaterialDetailsModel()
-    let giPMItemModel = await gstInvoicePMItemModel()
-    let prPMFormulaModel = await PackingRequisitionPMFormulaModel();
+    let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear)
+    let giPMItemModel = await gstInvoicePMItemModel(dbYear)
+    let prPMFormulaModel = await PackingRequisitionPMFormulaModel(dbYear);
 
     const enrichedFormulaResponse = await Promise.all(
       formulaResponse.map(async (item) => {
@@ -628,11 +634,12 @@ const getPMFormulaByPackingItemId = async (req, res) => {
 
 const packingRequisitionPMFormulaListing = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let apiData = req.body.data;
     let reqData = getRequestData(apiData, "PostApi");
     let responseData = {};
 
-    let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+    let prPMFormualModel = await PackingRequisitionPMFormulaModel(dbYear)
     const existingRecords = await prPMFormualModel.find({
       productDetialsId: reqData.productDetialsId,
     });
@@ -654,7 +661,7 @@ const packingRequisitionPMFormulaListing = async (req, res) => {
       packingItemId: reqData.packingItemId,
     }));
 
-    let prPMFormualModel1 = await PackingRequisitionPMFormulaModel()
+    let prPMFormualModel1 = await PackingRequisitionPMFormulaModel(dbYear)
     const result = await prPMFormualModel1.insertMany(newRecords);
 
     responseData = encryptionAPI(result, 1);
@@ -676,11 +683,11 @@ const packingRequisitionPMFormulaListing = async (req, res) => {
 
 const getProductionPMFOrmulaByProductionDetailsId = async (req, res) => {
   try {
-
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id)
 
-    let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+    let prPMFormualModel = await PackingRequisitionPMFormulaModel(dbYear)
     const response = await prPMFormualModel
       .find({ productDetialsId: reqId, isDeleted: false });
 
@@ -703,14 +710,15 @@ const getProductionPMFOrmulaByProductionDetailsId = async (req, res) => {
 
 const removeProductionPlanningEntryFromPackingRequisition = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id);
     let productionResponse = {};
     if (reqId) {
 
       // Change Stage Id from 5 to 4
-      let prodPlaningModel = await productionPlanningEntryModel()
-      let psModel = await ProductionStagesModel()
+      let prodPlaningModel = await productionPlanningEntryModel(dbYear)
+      let psModel = await ProductionStagesModel(dbYear)
 
       const stage = await psModel.findOne({
         productionStageId: 2,
@@ -725,7 +733,7 @@ const removeProductionPlanningEntryFromPackingRequisition = async (req, res) => 
       }
 
       // Delete Used Qty from Packing Requisition
-      let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+      let prPMFormualModel = await PackingRequisitionPMFormulaModel(dbYear)
       await prPMFormualModel.updateMany({ productDetialsId: reqId }, { isDeleted: true });
 
       // Delete From BatchClearing & Stock
@@ -766,14 +774,15 @@ const removeProductionPlanningEntryFromPackingRequisition = async (req, res) => 
 
 const addEditBatchClearingEntry = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let apiData = req.body.data;
     let reqData = getRequestData(apiData, "PostApi");
     let responseData = {};
 
     if (reqData.batchClearingId && reqData.batchClearingId.trim() !== "") {
 
-      let batchClrModel = await batchClearingEntryModel()
-      let batchwiseProdStkModel = await batchWiseProductStockModel()
+      let batchClrModel = await batchClearingEntryModel(dbYear)
+      let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
       let oldRecord = await batchClrModel.findOne({ _id: reqData.batchClearingId })
       if (oldRecord) {
         const oldQty = oldRecord.quantity
@@ -804,12 +813,12 @@ const addEditBatchClearingEntry = async (req, res) => {
       }
     } else {
 
-      let batchClrModel = await batchClearingEntryModel()
+      let batchClrModel = await batchClearingEntryModel(dbYear)
       const response = new batchClrModel(reqData);
       await response.save();
 
       // Check Existing Stock And Add
-      let batchwiseProdStkModel = await batchWiseProductStockModel()
+      let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
       const existingStock = await batchwiseProdStkModel.findOne({
         batchNo: reqData?.batchNo,
         productId: reqData?.packingItemId,
@@ -828,7 +837,7 @@ const addEditBatchClearingEntry = async (req, res) => {
       }
 
       if (!existingStock) {
-        let batchwiseProdStkModel = await batchWiseProductStockModel()
+        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
         await batchwiseProdStkModel.create(stockItem);
       } else {
         await batchwiseProdStkModel.findByIdAndUpdate(
@@ -857,11 +866,12 @@ const addEditBatchClearingEntry = async (req, res) => {
 
 const getBatchClearingEntryByProductId = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id);
     let response = [];
     if (reqId) {
-      let batchClrModel = await batchClearingEntryModel()
+      let batchClrModel = await batchClearingEntryModel(dbYear)
       response = await batchClrModel
         .find({
           productDetialsId: reqId,
@@ -890,15 +900,16 @@ const getBatchClearingEntryByProductId = async (req, res) => {
 
 const removeProductionPlanningEntryFromBatchCLearingEntryById = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id);
     let productionResponse = {};
     if (reqId) {
 
-      let prodPlaningModel = await productionPlanningEntryModel()
-      let batchwiseProdStkModel = await batchWiseProductStockModel()
-      let psModel = await ProductionStagesModel()
-      let batchClrModel = await batchClearingEntryModel()
+      let prodPlaningModel = await productionPlanningEntryModel(dbYear)
+      let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
+      let psModel = await ProductionStagesModel(dbYear)
+      let batchClrModel = await batchClearingEntryModel(dbYear)
 
       const stage = await psModel.findOne({
         productionStageId: 3,
@@ -948,6 +959,7 @@ const removeProductionPlanningEntryFromBatchCLearingEntryById = async (req, res)
 
 const getAllBatchClearedRecords = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let apiData = req.body.data;
     let data = getRequestData(apiData, "PostApi");
     let queryObject = {
@@ -974,7 +986,7 @@ const getAllBatchClearedRecords = async (req, res) => {
     //     select: "JobCharge ItemName UnitQuantity",
     //   });
 
-    let batchClrModel = await batchClearingEntryModel()
+    let batchClrModel = await batchClearingEntryModel(dbYear)
     let response = await batchClrModel.aggregate([
       {
         $match: queryObject,
@@ -1101,18 +1113,19 @@ const getAllBatchClearedRecords = async (req, res) => {
 
 const deleteBatchCLearingEntryById = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let apiData = req.body.data;
     let data = getRequestData(apiData, "PostApi");
     let response = [];
     if (data.batchClearingId) {
-      let batchClrModel = await batchClearingEntryModel()
-      let batchwiseProdStkModel = await batchWiseProductStockModel()
+      let batchClrModel = await batchClearingEntryModel(dbYear)
+      let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
       let oldRecord = await batchClrModel.findOne({ _id: data.batchClearingId })
 
 
       // Update Stock
       if (oldRecord) {
-        console.log(oldRecord)
+        
         const oldQty = oldRecord.quantity
 
         await batchwiseProdStkModel.findOneAndUpdate(
@@ -1147,6 +1160,7 @@ const deleteBatchCLearingEntryById = async (req, res) => {
 
 const getAllPendingProductionPlanningReport = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let apiData = req.body.data;
     let data = getRequestData(apiData, "PostApi");
     let queryObject = {
@@ -1154,7 +1168,7 @@ const getAllPendingProductionPlanningReport = async (req, res) => {
     };
 
     if (Array.isArray(data.productionStageId) && data.productionStageId.length > 0) {
-      let psModel = await ProductionStagesModel()
+      let psModel = await ProductionStagesModel(dbYear)
       const stages = await psModel.find({
         productionStageId: { $in: data.productionStageId },
         isDeleted: false,
@@ -1170,7 +1184,7 @@ const getAllPendingProductionPlanningReport = async (req, res) => {
       queryObject.productionStageStatusId = { $in: [] };
     }
 
-    let ppeModel = await productionPlanningEntryModel()
+    let ppeModel = await productionPlanningEntryModel(dbYear)
     let response = await ppeModel
       .find(queryObject)
       .populate({
@@ -1210,6 +1224,7 @@ const getAllPendingProductionPlanningReport = async (req, res) => {
 
 const getAllProductionBatchRegister = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let apiData = req.body.data;
     let data = getRequestData(apiData, "PostApi");
     let queryObject = {
@@ -1227,7 +1242,7 @@ const getAllProductionBatchRegister = async (req, res) => {
     }
 
     if (Array.isArray(data.productionStageId) && data.productionStageId.length > 0) {
-      let psModel = await ProductionStagesModel()
+      let psModel = await ProductionStagesModel(dbYear)
       const stages = await psModel.find({
         productionStageId: { $in: data.productionStageId },
         isDeleted: false,
@@ -1244,7 +1259,7 @@ const getAllProductionBatchRegister = async (req, res) => {
       queryObject.productionStageStatusId = { $in: [] };
     }
 
-    let ppeModel = await productionPlanningEntryModel()
+    let ppeModel = await productionPlanningEntryModel(dbYear)
     let response = await ppeModel
       .find(queryObject)
       .sort(filterBy)
@@ -1264,7 +1279,7 @@ const getAllProductionBatchRegister = async (req, res) => {
     response = await Promise.all(
       response.map(async (item) => {
         let itemObject = item.toObject();
-        let batchClrModel = await batchClearingEntryModel()
+        let batchClrModel = await batchClearingEntryModel(dbYear)
         let batchClearDetails = await batchClrModel
           .find({ productDetialsId: itemObject._id })
           .populate({ path: "packingItemId", select: "UnitQuantity" });
@@ -1324,6 +1339,7 @@ const getAllProductionBatchRegister = async (req, res) => {
 
 const getAllJobChargeRecords = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let apiData = req.body.data;
     let data = getRequestData(apiData, "PostApi");
     let queryObject = {
@@ -1333,7 +1349,7 @@ const getAllJobChargeRecords = async (req, res) => {
     let endDate = new Date(data.endDate);
     endDate.setHours(23, 59, 59, 999);
 
-    let batchClrModel = await batchClearingEntryModel()
+    let batchClrModel = await batchClearingEntryModel(dbYear)
     let response = await batchClrModel
       .find(queryObject)
       // .sort(filterBy)
@@ -1391,6 +1407,7 @@ const getAllJobChargeRecords = async (req, res) => {
 
 const getProductCostingReport = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let apiData = req.body.data;
     let data = getRequestData(apiData, "PostApi");
 
@@ -1398,7 +1415,7 @@ const getProductCostingReport = async (req, res) => {
 
     let rmFormulaList = []
     if (data.productId) {
-      let rmFModel = await rmFormulaModel()
+      let rmFModel = await rmFormulaModel(dbYear)
       rmFormulaList = await rmFModel
         .find({ productId: data.productId, isDeleted: false })
         .select("netQty rmName uom")
@@ -1410,7 +1427,7 @@ const getProductCostingReport = async (req, res) => {
       rmFormulaList = await Promise.all(
         rmFormulaList.map(async (item) => {
           let itemObject = item.toObject();
-          let gemDetailsModel = await grnEntryMaterialDetailsModel();
+          let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
           const grnEntryForMaterial = await gemDetailsModel.find({ rawMaterialId: itemObject.rmId });
           const lastRecord = grnEntryForMaterial.at(-1);
           if (lastRecord) {
@@ -1429,7 +1446,7 @@ const getProductCostingReport = async (req, res) => {
 
     let pmFormulaList = []
     if (data.packingId) {
-      let pmfModel = await pmFormulaModel()
+      let pmfModel = await pmFormulaModel(dbYear)
       pmFormulaList = await pmfModel
         .find({ itemId: data.packingId, isDeleted: false })
         .select("netQty pmName uom batchSize")
@@ -1441,7 +1458,7 @@ const getProductCostingReport = async (req, res) => {
       pmFormulaList = await Promise.all(
         pmFormulaList.map(async (item) => {
           let itemObject = item.toObject();
-          let gemDetailsModel = await grnEntryMaterialDetailsModel();
+          let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
           const grnEntryForMaterial = await gemDetailsModel.find({ packageMaterialId: itemObject.packageMaterialId });
           const lastRecord = grnEntryForMaterial.at(-1);
           if (lastRecord) {
@@ -1479,11 +1496,12 @@ const getProductCostingReport = async (req, res) => {
 
 const getProductDetailsForBatchClearedByProductId = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id);
     let response = [];
     if (reqId) {
-      let batchClrModel = await batchClearingEntryModel()
+      let batchClrModel = await batchClearingEntryModel(dbYear)
       response = await batchClrModel
         .find({
           productDetialsId: reqId,
@@ -1516,21 +1534,21 @@ const getProductDetailsForBatchClearedByProductId = async (req, res) => {
 
 const getBatchCostingReportRMFormulaId = async (req, res) => {
   try {
-
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id)
 
-    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
+    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
     let response = await prRMFormulaModel.find({ productDetialsId: reqId, isDeleted: false });
 
     response = await Promise.all(
       response.map(async (item) => {
         let itemObject = item.toObject();
 
-        let rmFModel = await rawMaterialSchema()
+        let rmFModel = await rawMaterialSchema(dbYear)
         const rmId = await rmFModel.findOne({ rmName: item.rmName, isDeleted: false }).select('_id')
 
-        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
         const grnEntryForMaterial = await gemDetailsModel
           .find({ rawMaterialId: rmId._id })
           .populate({
@@ -1573,21 +1591,21 @@ const getBatchCostingReportRMFormulaId = async (req, res) => {
 
 const getBatchCostingReportPMFormulaById = async (req, res) => {
   try {
-
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id)
 
-    let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+    let prPMFormualModel = await PackingRequisitionPMFormulaModel(dbYear)
     let response = await prPMFormualModel.find({ productDetialsId: reqId, isDeleted: false });
 
     response = await Promise.all(
       response.map(async (item) => {
         let itemObject = item.toObject();
 
-        let pmfModel = await pmFormulaModel()
+        let pmfModel = await pmFormulaModel(dbYear)
         const pmId = await pmfModel.findOne({ pmName: item.pmName, isDeleted: false })
 
-        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
         const grnEntryForMaterial = await gemDetailsModel
           .find({ packageMaterialId: pmId.packageMaterialId })
           .populate({
@@ -1630,6 +1648,7 @@ const getBatchCostingReportPMFormulaById = async (req, res) => {
 
 const getAllMaterialRequirementReportForRM = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let apiData = req.body.data;
     let data = getRequestData(apiData, "PostApi");
 
@@ -1640,7 +1659,7 @@ const getAllMaterialRequirementReportForRM = async (req, res) => {
 
     let responseData = await Promise.all(
       data.map(async (item) => {
-        let rmFModel = await rmFormulaModel();
+        let rmFModel = await rmFormulaModel(dbYear);
         const formulas = await rmFModel
           .find({ productId: item.productId, isDeleted: false })
           .select('qty netQty rmName uom stageName rmId');
@@ -1668,7 +1687,7 @@ const getAllMaterialRequirementReportForRM = async (req, res) => {
       return acc;
     }, []);
 
-    let gemDetailsModel = await grnEntryMaterialDetailsModel();
+    let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
     const grnEntryForStock = await gemDetailsModel
       .find(queryObject)
       .populate({
@@ -1692,10 +1711,10 @@ const getAllMaterialRequirementReportForRM = async (req, res) => {
       return acc;
     }, {});
 
-    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
-    let giRMItemModel = await gstinvoiceRMItemModel();
-    let addEntryModel = await additionalEntryMaterialDetailsModel();
-    let rmModel = await rawMaterialSchema()
+    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
+    let giRMItemModel = await gstinvoiceRMItemModel(dbYear);
+    let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear);
+    let rmModel = await rawMaterialSchema(dbYear)
 
     const enrichedFormulaResponse = await Promise.all(
       aggregatedData.map(async (item) => {
@@ -1800,6 +1819,7 @@ const getAllMaterialRequirementReportForRM = async (req, res) => {
 
 const getAllMaterialRequirementReportForPM = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let apiData = req.body.data;
     let data = getRequestData(apiData, "PostApi");
 
@@ -1811,7 +1831,7 @@ const getAllMaterialRequirementReportForPM = async (req, res) => {
     let responseData = await Promise.all(
       data.map(async (item) => {
 
-        let pmfModel = await pmFormulaModel()
+        let pmfModel = await pmFormulaModel(dbYear)
         const formulas = await pmfModel
           .find({ itemId: item.packingId, isDeleted: false })
           .select('qty netQty pmName uom stageName batchSize packageMaterialId');
@@ -1839,7 +1859,7 @@ const getAllMaterialRequirementReportForPM = async (req, res) => {
       return acc;
     }, []);
 
-    let gemDetailsModel = await grnEntryMaterialDetailsModel();
+    let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
     const grnEntryForStock = await gemDetailsModel
       .find(queryObject)
       .populate({
@@ -1864,9 +1884,9 @@ const getAllMaterialRequirementReportForPM = async (req, res) => {
       return acc;
     }, {});
 
-    let addEntryModel = await additionalEntryMaterialDetailsModel()
-    let giPMItemModel = await gstInvoicePMItemModel()
-    let prPMFormulaModel = await PackingRequisitionPMFormulaModel();
+    let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear)
+    let giPMItemModel = await gstInvoicePMItemModel(dbYear)
+    let prPMFormulaModel = await PackingRequisitionPMFormulaModel(dbYear);
 
     const enrichedFormulaResponse = await Promise.all(
       aggregatedData.map(async (item) => {

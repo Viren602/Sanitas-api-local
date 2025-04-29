@@ -1,6 +1,5 @@
 
 import mongoose from "mongoose";
-import globals from "../utils/globals.js";
 import connectToDatabase from "../utils/dbConnection.js";
 
 const companyGroup = mongoose.Schema({
@@ -31,8 +30,8 @@ const companyGroup = mongoose.Schema({
     location: { type: String, default: '' },
 }, { timestamps: true })
 
-const companyGroupModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const companyGroupModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.CompanyGroup || db.model("CompanyGroup", companyGroup);
 }
 

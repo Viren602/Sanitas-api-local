@@ -31,11 +31,11 @@ const rmFormulaSchema = mongoose.Schema({
     rmId: { type: mongoose.Schema.Types.ObjectId, ref: "RawMaterialMasters" }
 }, { timestamps: true })
 
-const rmFormulaModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await productDetailsModel()
-    await rawMaterialSchema()
-    await productionStageModel()
+const rmFormulaModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await productDetailsModel(dbYear)
+    await rawMaterialSchema(dbYear)
+    await productionStageModel(dbYear)
     return db.models.RMFormulaMaster || db.model("RMFormulaMaster", rmFormulaSchema);
 }
 

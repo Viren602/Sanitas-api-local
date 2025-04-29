@@ -26,8 +26,8 @@ const productDetailSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const productDetailsModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const productDetailsModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.ProductMasters || db.model("ProductMasters", productDetailSchema);
 }
 

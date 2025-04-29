@@ -14,8 +14,8 @@ const productionRequisitionEntryschema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const productionRequisitionEntryModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const productionRequisitionEntryModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.AdditionalProductionEntry || db.model("AdditionalProductionEntry", productionRequisitionEntryschema);
 }
 

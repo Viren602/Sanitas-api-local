@@ -35,10 +35,10 @@ const gstInvoicePMSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const gstInvoicePMModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await partyModel()
-    await transportCourierModel()
+const gstInvoicePMModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await partyModel(dbYear)
+    await transportCourierModel(dbYear)
     return db.models.GSTInvoicePM || db.model("GSTInvoicePM", gstInvoicePMSchema);
 }
 

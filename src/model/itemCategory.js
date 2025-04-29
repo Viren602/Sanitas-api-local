@@ -7,8 +7,8 @@ const categorySchema = mongoose.Schema({
     categoryName: { type: String, default: '' },
 }, { timestamps: true })
 
-const ItemCategory = async () => {
-    const db = await connectToDatabase(globals.Database);
+const ItemCategory = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.ItemCategories || db.model("ItemCategories", categorySchema);
 }
 

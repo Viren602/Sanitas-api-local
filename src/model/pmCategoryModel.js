@@ -8,8 +8,8 @@ const pmCategorySchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const pmCategoryModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const pmCategoryModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.pmCategoryMasters || db.model("pmCategoryMasters", pmCategorySchema);
 }
 

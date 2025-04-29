@@ -22,10 +22,10 @@ const batchClearingEntrySchema = mongoose.Schema(
     { timestamps: true }
 );
 
-const batchClearingEntryModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await productionPlanningEntryModel()
-    await companyItems()
+const batchClearingEntryModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await productionPlanningEntryModel(dbYear)
+    await companyItems(dbYear)
     return db.models.BatchClearningEntry || db.model("BatchClearningEntry", batchClearingEntrySchema);
 }
 

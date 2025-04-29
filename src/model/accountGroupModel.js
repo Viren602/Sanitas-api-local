@@ -1,6 +1,5 @@
 
 import mongoose from "mongoose";
-import globals from "../utils/globals.js";
 import connectToDatabase from "../utils/dbConnection.js";
 
 const accountGroupSchema = mongoose.Schema({
@@ -11,8 +10,8 @@ const accountGroupSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const accountGroupModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const accountGroupModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.AccountGroupMasters || db.model("AccountGroupMasters", accountGroupSchema);
 }
 

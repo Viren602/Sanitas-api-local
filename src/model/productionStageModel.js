@@ -10,8 +10,8 @@ const productionStageSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const productionStageModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const productionStageModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.ProductionStagMasters || db.model("ProductionStagMasters", productionStageSchema);
 }
 

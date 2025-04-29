@@ -23,14 +23,14 @@ const paymentAdjustmentListSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const paymentAdjustmentListModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await paymentReceiptEntryModel()
-    await gstInvoiceFinishGoodsModel()
-    await gstInvoiceRMModel()
-    await gstInvoicePMModel()
-    await gstPurchaseEntryRMPMModel()
-    await gstPurchaseWithoutInventoryEntryModel()
+const paymentAdjustmentListModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await paymentReceiptEntryModel(dbYear)
+    await gstInvoiceFinishGoodsModel(dbYear)
+    await gstInvoiceRMModel(dbYear)
+    await gstInvoicePMModel(dbYear)
+    await gstPurchaseEntryRMPMModel(dbYear)
+    await gstPurchaseWithoutInventoryEntryModel(dbYear)
     return db.models.PaymentAdjustmentList || db.model("PaymentAdjustmentList", paymentAdjustmentListSchema);
 }
 

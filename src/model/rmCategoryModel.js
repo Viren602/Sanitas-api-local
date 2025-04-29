@@ -8,8 +8,8 @@ const rmCategorySchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const rmCategoryModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const rmCategoryModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.rmCategoryMasters || db.model("rmCategoryMasters", rmCategorySchema);
 }
 

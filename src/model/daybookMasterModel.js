@@ -1,7 +1,6 @@
 
 import mongoose from "mongoose";
 import connectToDatabase from "../utils/dbConnection.js";
-import globals from "../utils/globals.js";
 
 const daybookMasterSchema = mongoose.Schema({
     ID: { type: Number, default: 0 },
@@ -16,8 +15,8 @@ const daybookMasterSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const daybookMasterModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const daybookMasterModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.DaybookMaster || db.model("DaybookMaster", daybookMasterSchema);
 }
 

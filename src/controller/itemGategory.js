@@ -5,10 +5,11 @@ import errorHandler from "../server/errorHandle.js";
 
 const addEditItemGategory = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let reqData = req.body.data
     let data = getRequestData(reqData, 'PostApi')
     if (data._id && data._id.trim() !== '') {
-      let icModel = await ItemCategory()
+      let icModel = await ItemCategory(dbYear)
       const response = await icModel.findByIdAndUpdate(data._id, data, { new: true });
       if (response) {
 
@@ -26,7 +27,7 @@ const addEditItemGategory = async (req, res) => {
         res.status(404).json({ Message: "Category not found" });
       }
     } else {
-      let icModel = await ItemCategory()
+      let icModel = await ItemCategory(dbYear)
       const response = new icModel(data);
       await response.save();
 
@@ -50,11 +51,12 @@ const addEditItemGategory = async (req, res) => {
 
 const deleteCategoryById = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id)
     let response = {}
     if (reqId) {
-      let icModel = await ItemCategory()
+      let icModel = await ItemCategory(dbYear)
       response = await icModel.findByIdAndDelete(reqId, { IsDeleted: true }, { new: true, useFindAndModify: false });
     }
 
@@ -77,10 +79,11 @@ const deleteCategoryById = async (req, res) => {
 
 const addEditHSNCode = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     let apiData = req.body.data
     let data = getRequestData(apiData, 'PostApi')
     if (data._id && data._id.trim() !== '') {
-      let hcModel = await HNSCodesScHema()
+      let hcModel = await HNSCodesScHema(dbYear)
       const response = await hcModel.findByIdAndUpdate(data._id, data, { new: true });
       if (response) {
 
@@ -99,7 +102,7 @@ const addEditHSNCode = async (req, res) => {
         res.status(404).json({ Message: "HNSCode not found" });
       }
     } else {
-      let hcModel = await HNSCodesScHema()
+      let hcModel = await HNSCodesScHema(dbYear)
       const response = new hcModel(data);
       await response.save();
 
@@ -123,11 +126,12 @@ const addEditHSNCode = async (req, res) => {
 
 const deleteHSNCodeById = async (req, res) => {
   try {
+    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id)
     let response = {}
     if (reqId) {
-      let hcModel = await HNSCodesScHema()
+      let hcModel = await HNSCodesScHema(dbYear)
       response = await hcModel.findByIdAndDelete(reqId, { IsDeleted: true }, { new: true, useFindAndModify: false });
     }
 

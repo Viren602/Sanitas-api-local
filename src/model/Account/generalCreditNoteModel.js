@@ -42,9 +42,9 @@ const generalCreditNoteSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const generalCreditNoteModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await partyModel()
+const generalCreditNoteModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await partyModel(dbYear)
     return db.models.GeneralCreditNote || db.model("GeneralCreditNote", generalCreditNoteSchema);
 }
 

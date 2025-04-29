@@ -4,6 +4,7 @@ import { blacklist } from "../controller/logout.js";
 
 const checkAuth = (req, res, next) => {
     let token = req.cookies["token"] || req.headers.authorization;
+
     try {
 
         if (req.headers.authorization) {

@@ -25,9 +25,9 @@ const gstPurchaseEntryRMPMSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const gstPurchaseEntryRMPMModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await partyModel()
+const gstPurchaseEntryRMPMModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await partyModel(dbYear)
     return db.models.GSTPurchaseEntryRMPM || db.model("GSTPurchaseEntryRMPM", gstPurchaseEntryRMPMSchema);
 }
 

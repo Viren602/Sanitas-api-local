@@ -42,9 +42,9 @@ const generalDebitNoteSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const generalDebitNoteModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await partyModel()
+const generalDebitNoteModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await partyModel(dbYear)
     return db.models.GeneralDebitNote || db.model("GeneralDebitNote", generalDebitNoteSchema);
 }
 

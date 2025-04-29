@@ -24,10 +24,10 @@ const salesGoodsReturnEntrySchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const salesGoodsReturnEntryModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await partyModel()
-    await transportCourierModel()
+const salesGoodsReturnEntryModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await partyModel(dbYear)
+    await transportCourierModel(dbYear)
     return db.models.SalesGoodsReturnEntry || db.model("SalesGoodsReturnEntry", salesGoodsReturnEntrySchema);
 }
 

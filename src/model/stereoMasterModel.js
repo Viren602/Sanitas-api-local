@@ -9,8 +9,8 @@ const stereoSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const stereoModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const stereoModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.StereoMasters || db.model("StereoMasters", stereoSchema);
 }
 

@@ -16,11 +16,11 @@ const inquiryMaterialDetailsSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const inquiryMaterialDetailsModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await rawMaterialSchema()
-    await packingMaterialSchema()
-    await inquiryDetailsModel()
+const inquiryMaterialDetailsModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await rawMaterialSchema(dbYear)
+    await packingMaterialSchema(dbYear)
+    await inquiryDetailsModel(dbYear)
     return db.models.InquiryMaterialDetails || db.model("InquiryMaterialDetails", inquiryMaterialDetailsSchema);
 }
 

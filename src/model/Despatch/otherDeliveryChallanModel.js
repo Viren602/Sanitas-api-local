@@ -11,9 +11,9 @@ const otherDeliveryChallanSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const otherDeliveryChallanModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await partyModel()
+const otherDeliveryChallanModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await partyModel(dbYear)
     return db.models.OtherDeliveryChallan || db.model("OtherDeliveryChallan", otherDeliveryChallanSchema);
 }
 

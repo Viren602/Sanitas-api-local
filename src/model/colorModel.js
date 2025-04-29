@@ -1,15 +1,14 @@
 
 import mongoose from "mongoose";
 import connectToDatabase from "../utils/dbConnection.js";
-import globals from "../utils/globals.js";
 
 const colorSchema = mongoose.Schema({
     colorMaster: { type: String, default: '' },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const colorModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const colorModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.ColorMasters || db.model("ColorMasters", colorSchema);
 }
 

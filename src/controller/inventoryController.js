@@ -22,11 +22,12 @@ import companyGroupModel from "../model/companyGroup.js";
 
 const addEditGRNEntryMaterialMapping = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let responseData = {};
         if (data.grnRawMaterialPartyDetails.partyDetailsId && data.grnRawMaterialPartyDetails.partyDetailsId.trim() !== '') {
-            let gepdModel = await grnEntryPartyDetailsModel();
+            let gepdModel = await grnEntryPartyDetailsModel(dbYear);
             const response = await gepdModel.findByIdAndUpdate(data.grnRawMaterialPartyDetails.partyDetailsId, data.grnRawMaterialPartyDetails, { new: true });
             if (response) {
                 responseData.partyDetails = response;
@@ -37,7 +38,7 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
 
             let nextGRNNO = 'G001';
 
-            let gepdModel = await grnEntryPartyDetailsModel();
+            let gepdModel = await grnEntryPartyDetailsModel(dbYear);
             const lastRecord = await gepdModel
                 .findOne()
                 .sort({ grnNo: -1 })
@@ -51,7 +52,7 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
 
             data.grnRawMaterialPartyDetails.grnNo = nextGRNNO;
 
-            let gepdModel1 = await grnEntryPartyDetailsModel();
+            let gepdModel1 = await grnEntryPartyDetailsModel(dbYear);
             const response = new gepdModel1(data.grnRawMaterialPartyDetails);
             await response.save();
             responseData.partyDetails = response;
@@ -59,7 +60,7 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
 
         if (data.grnMaterialDetails.materialDetailsId && data.grnMaterialDetails.materialDetailsId.trim() !== '') {
             data.grnMaterialDetails.grnEntryPartyDetailId = responseData.partyDetails._id
-            let gemDetailsModel = await grnEntryMaterialDetailsModel();
+            let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
             const response = await gemDetailsModel.findByIdAndUpdate(data.grnMaterialDetails.materialDetailsId, data.grnMaterialDetails, { new: true });
             if (response) {
                 responseData.materialDetails = response;
@@ -68,14 +69,14 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
             }
         } else {
             data.grnMaterialDetails.grnEntryPartyDetailId = responseData.partyDetails._id
-            let gemDetailsModel = await grnEntryMaterialDetailsModel();
+            let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
             const response = new gemDetailsModel(data.grnMaterialDetails);
             await response.save();
             responseData.materialDetails = response;
         }
 
         if (data.grnMaterialDetails.isPurchaseOrderEntry && data.grnMaterialDetails.purchaseOrderId !== '' && data.grnMaterialDetails.purchaseOrdermaterialId !== '') {
-            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel(dbYear)
             await pomDetailsModel.findByIdAndUpdate(data.grnMaterialDetails.purchaseOrdermaterialId, { isGRNEntryDone: true }, { new: true, useFindAndModify: false });
         }
 
@@ -103,6 +104,7 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
 
 const getAllPartyListForGRNEntry = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
@@ -117,7 +119,7 @@ const getAllPartyListForGRNEntry = async (req, res) => {
             queryObject.grnEntryType = data.materialType
         }
 
-        let gepdModel = await grnEntryPartyDetailsModel();
+        let gepdModel = await grnEntryPartyDetailsModel(dbYear);
         let response = await gepdModel
             .find(queryObject)
             .sort(filterBy)
@@ -150,11 +152,12 @@ const getAllPartyListForGRNEntry = async (req, res) => {
 
 const getAllgrnEntryMaterialDetailsById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = []
         if (reqId) {
-            let gemDetailsModel = await grnEntryMaterialDetailsModel();
+            let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
             response = await gemDetailsModel
                 .find({ grnEntryPartyDetailId: reqId, isDeleted: false })
                 .populate({
@@ -188,12 +191,13 @@ const getAllgrnEntryMaterialDetailsById = async (req, res) => {
 
 const getPurchaseOrderMaterialByPartyId = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
         let purchaseOrder = [];
         if (data.partyId) {
-            let podModel = await purchaseOrderDetailsModel()
+            let podModel = await purchaseOrderDetailsModel(dbYear)
             purchaseOrder = await podModel
                 .find({ partyId: data.partyId, status: 'Order Approved' })
                 .populate({
@@ -207,7 +211,7 @@ const getPurchaseOrderMaterialByPartyId = async (req, res) => {
                 purchaseOrder.map(async (item) => {
                     let materials = []
                     if (data.materialType === 'Raw') {
-                        let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+                        let pomDetailsModel = await purchaserOrderMaterialDetailsModel(dbYear)
                         materials = await pomDetailsModel
                             .find({ purchaseOrderId: item._id, rawMaterialId: data.materialId, isDeleted: false, isGRNEntryDone: false })
                             .populate({
@@ -215,7 +219,7 @@ const getPurchaseOrderMaterialByPartyId = async (req, res) => {
                                 select: 'rmName rmUOM _id',
                             });
                     } else {
-                        let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+                        let pomDetailsModel = await purchaserOrderMaterialDetailsModel(dbYear)
                         materials = await pomDetailsModel
                             .find({ purchaseOrderId: item._id, packageMaterialId: data.materialId, isDeleted: false, isGRNEntryDone: false })
                             .populate({
@@ -262,22 +266,23 @@ const getPurchaseOrderMaterialByPartyId = async (req, res) => {
 
 const deleteGRNEntryMaterialDetailsById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let gepdModel = await grnEntryPartyDetailsModel();
+            let gepdModel = await grnEntryPartyDetailsModel(dbYear);
             response = await gepdModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         if (reqId) {
-            let gemDetailsModel = await grnEntryMaterialDetailsModel();
+            let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
             await gemDetailsModel.updateMany({ grnEntryPartyDetailId: reqId }, { isDeleted: true });
 
             let materialDetails = await gemDetailsModel.find({ grnEntryPartyDetailId: reqId });
 
             if (materialDetails.length > 0) {
-                let pomDetailsModel = await purchaserOrderMaterialDetailsModel();
+                let pomDetailsModel = await purchaserOrderMaterialDetailsModel(dbYear);
 
                 await Promise.all(materialDetails.map(async (details) => {
                     if (details.purchaseOrdermaterialId) {
@@ -306,16 +311,17 @@ const deleteGRNEntryMaterialDetailsById = async (req, res) => {
 
 const deleteItemforGRNEntryMaterialById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let gemDetailsModel = await grnEntryMaterialDetailsModel();
+            let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
             response = await gemDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         if (response.purchaseOrdermaterialId) {
-            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel(dbYear)
             response = await pomDetailsModel.findByIdAndUpdate(response.purchaseOrdermaterialId, { isGRNEntryDone: false }, { new: true, useFindAndModify: false });
         }
 
@@ -339,13 +345,14 @@ const deleteItemforGRNEntryMaterialById = async (req, res) => {
 
 const addEditAdditionalEntryMaterialMapping = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
 
 
         let responseData = {};
         if (reqData.productionRequisitionEntry.productionDetailId && reqData.productionRequisitionEntry.productionDetailId.trim() !== '') {
-            let prodRequisitionDet = await productionRequisitionEntryModel()
+            let prodRequisitionDet = await productionRequisitionEntryModel(dbYear)
             const response = await prodRequisitionDet.findByIdAndUpdate(reqData.productionRequisitionEntry.productionDetailId, reqData.productionRequisitionEntry, { new: true });
             if (response) {
                 responseData.productionRequisitionDetails = response;
@@ -356,7 +363,7 @@ const addEditAdditionalEntryMaterialMapping = async (req, res) => {
 
             let nextSlipno = 'AR001';
 
-            let prodRequisitionDet = await productionRequisitionEntryModel()
+            let prodRequisitionDet = await productionRequisitionEntryModel(dbYear)
             const lastRecord = await prodRequisitionDet
                 .findOne()
                 .sort({ slipNo: -1 })
@@ -373,7 +380,7 @@ const addEditAdditionalEntryMaterialMapping = async (req, res) => {
 
             reqData.productionRequisitionEntry.slipNo = nextSlipno;
 
-            let prodRequisitionDetModel = await productionRequisitionEntryModel()
+            let prodRequisitionDetModel = await productionRequisitionEntryModel(dbYear)
             const response = new prodRequisitionDetModel(reqData.productionRequisitionEntry);
             await response.save();
             responseData.productionRequisitionDetails = response;
@@ -381,7 +388,7 @@ const addEditAdditionalEntryMaterialMapping = async (req, res) => {
 
         if (reqData.productionRequisitionMaterialDetails.productionMaterialDetailId && reqData.productionRequisitionMaterialDetails.productionMaterialDetailId.trim() !== '') {
             reqData.productionRequisitionMaterialDetails.additionalEntryDetailsId = responseData.productionRequisitionDetails._id
-            let addEntryDetModel = await additionalEntryMaterialDetailsModel()
+            let addEntryDetModel = await additionalEntryMaterialDetailsModel(dbYear)
             const response = await addEntryDetModel.findByIdAndUpdate(reqData.productionRequisitionMaterialDetails.productionMaterialDetailId, reqData.productionRequisitionMaterialDetails, { new: true });
             if (response) {
                 responseData.materialDetails = response;
@@ -390,7 +397,7 @@ const addEditAdditionalEntryMaterialMapping = async (req, res) => {
             }
         } else {
             reqData.productionRequisitionMaterialDetails.additionalEntryDetailsId = responseData.productionRequisitionDetails._id
-            let addEntryDetModel = await additionalEntryMaterialDetailsModel()
+            let addEntryDetModel = await additionalEntryMaterialDetailsModel(dbYear)
             const response = new addEntryDetModel(reqData.productionRequisitionMaterialDetails);
             await response.save();
             responseData.materialDetails = response;
@@ -415,11 +422,12 @@ const addEditAdditionalEntryMaterialMapping = async (req, res) => {
 
 const getAllAdditionalEntryMaterialDetailsById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = []
         if (reqId) {
-            let addEntryDetModel = await additionalEntryMaterialDetailsModel()
+            let addEntryDetModel = await additionalEntryMaterialDetailsModel(dbYear)
             response = await addEntryDetModel
                 .find({ additionalEntryDetailsId: reqId, isDeleted: false })
                 .populate({
@@ -450,6 +458,7 @@ const getAllAdditionalEntryMaterialDetailsById = async (req, res) => {
 
 const getAllAdditionalEntryList = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
@@ -463,7 +472,7 @@ const getAllAdditionalEntryList = async (req, res) => {
             queryObject.materialType = data.materialType
         }
 
-        let prodRequisitionDetModel = await productionRequisitionEntryModel()
+        let prodRequisitionDetModel = await productionRequisitionEntryModel(dbYear)
         let response = await prodRequisitionDetModel
             .find(queryObject)
             .sort(filterBy);
@@ -493,16 +502,17 @@ const getAllAdditionalEntryList = async (req, res) => {
 
 const deleteAdditionalEntryDetailsById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let prodRequisitionDetModel = await productionRequisitionEntryModel()
+            let prodRequisitionDetModel = await productionRequisitionEntryModel(dbYear)
             response = await prodRequisitionDetModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
         if (reqId) {
-            let gemDetailsModel = await additionalEntryMaterialDetailsModel();
+            let gemDetailsModel = await additionalEntryMaterialDetailsModel(dbYear);
             await gemDetailsModel.updateMany({ additionalEntryDetailsId: reqId }, { isDeleted: true });
         }
 
@@ -524,11 +534,12 @@ const deleteAdditionalEntryDetailsById = async (req, res) => {
 
 const deleteAdditionalEntryMaterialDetailsById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let addEntryDetModel = await additionalEntryMaterialDetailsModel()
+            let addEntryDetModel = await additionalEntryMaterialDetailsModel(dbYear)
             response = await addEntryDetModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -551,13 +562,14 @@ const deleteAdditionalEntryMaterialDetailsById = async (req, res) => {
 
 const addEditPurchaseOrderDetails = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
 
 
         let responseData = {};
         if (reqData.purchaseOrderId && reqData.purchaseOrderId.trim() !== '') {
-            let podModel = await purchaseOrderDetailsModel()
+            let podModel = await purchaseOrderDetailsModel(dbYear)
             const response = await podModel.findByIdAndUpdate(reqData.purchaseOrderId, reqData, { new: true });
             if (response) {
                 responseData = encryptionAPI(response, 1)
@@ -574,7 +586,7 @@ const addEditPurchaseOrderDetails = async (req, res) => {
 
             let nextOrderNo = 'P0001';
 
-            let podModel = await purchaseOrderDetailsModel()
+            let podModel = await purchaseOrderDetailsModel(dbYear)
             const lastRecord = await podModel
                 .findOne()
                 .sort({ purchaseOrderNo: -1 })
@@ -589,7 +601,7 @@ const addEditPurchaseOrderDetails = async (req, res) => {
             reqData.purchaseOrderNo = nextOrderNo;
             reqData.purchaseOrderDate = new Date();
 
-            let podModel1 = await purchaseOrderDetailsModel()
+            let podModel1 = await purchaseOrderDetailsModel(dbYear)
             const response = new podModel1(reqData);
             await response.save();
 
@@ -614,6 +626,7 @@ const addEditPurchaseOrderDetails = async (req, res) => {
 
 const getAllPurchaseOrders = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
@@ -631,7 +644,7 @@ const getAllPurchaseOrders = async (req, res) => {
             queryObject.status = data.status
         }
 
-        let podModel = await purchaseOrderDetailsModel()
+        let podModel = await purchaseOrderDetailsModel(dbYear)
         let response = await podModel
             .find(queryObject)
             .sort(filterBy)
@@ -665,11 +678,12 @@ const getAllPurchaseOrders = async (req, res) => {
 
 const addEditPurchaserOrderMaterialDetails = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
         let responseData = {};
         if (reqData.purchaseOrderMaterialDetialId && reqData.purchaseOrderMaterialDetialId.trim() !== '') {
-            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel(dbYear)
             const response = await pomDetailsModel.findByIdAndUpdate(reqData.purchaseOrderMaterialDetialId, reqData, { new: true });
             if (response) {
                 responseData = encryptionAPI(response, 1)
@@ -683,7 +697,7 @@ const addEditPurchaserOrderMaterialDetails = async (req, res) => {
                 });
             }
         } else {
-            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel(dbYear)
             const response = new pomDetailsModel(reqData);
             await response.save();
 
@@ -708,11 +722,12 @@ const addEditPurchaserOrderMaterialDetails = async (req, res) => {
 
 const getPurchaseOrderMaterialDetailsByPurchaseOrderId = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = []
         if (reqId) {
-            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel(dbYear)
             response = await pomDetailsModel
                 .find({ purchaseOrderId: reqId, isDeleted: false })
                 .populate({
@@ -743,11 +758,12 @@ const getPurchaseOrderMaterialDetailsByPurchaseOrderId = async (req, res) => {
 
 const deletePurchaseOrderDetailsById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let podModel = await purchaseOrderDetailsModel()
+            let podModel = await purchaseOrderDetailsModel(dbYear)
             response = await podModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
 
             let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
@@ -772,11 +788,12 @@ const deletePurchaseOrderDetailsById = async (req, res) => {
 
 const deletepurchaseOrderMaterialDetialsById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel(dbYear)
             response = await pomDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -798,21 +815,22 @@ const deletepurchaseOrderMaterialDetialsById = async (req, res) => {
 
 const sendPurchaseOrderMail = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
 
-        let cgModel = await companyGroupModel()
+        let cgModel = await companyGroupModel(dbYear)
         let companyDetails = await cgModel.findOne({});
 
         if (reqData.partyId._id) {
             let id = reqData.partyId._id
-            let pModel = await partyModel()
+            let pModel = await partyModel(dbYear)
             let partyDetails = await pModel.findOne({ _id: id }).select("partyName person");
 
-            let etModel = await emailTemplateModel()
+            let etModel = await emailTemplateModel(dbYear)
             const EmailTemplate = await etModel.findOne({ emailTemplateId: 1 });
 
-            let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+            let pomDetailsModel = await purchaserOrderMaterialDetailsModel(dbYear)
             let purchaseMaterial = await pomDetailsModel
                 .find({ purchaseOrderId: reqData.purchaseOrderId, isDeleted: false })
                 .populate({
@@ -874,7 +892,7 @@ const sendPurchaseOrderMail = async (req, res) => {
                 let reqeust = {
                     status: 'Email Sent'
                 }
-                let podModel = await purchaseOrderDetailsModel()
+                let podModel = await purchaseOrderDetailsModel(dbYear)
                 const response = await podModel.findByIdAndUpdate(reqData.purchaseOrderId, reqeust, { new: true });
                 if (response) {
                     let responseData = encryptionAPI(response, 1)
@@ -897,11 +915,12 @@ const sendPurchaseOrderMail = async (req, res) => {
 
 const approvePurchaseOrderByPurchaseId = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let podModel = await purchaseOrderDetailsModel()
+            let podModel = await purchaseOrderDetailsModel(dbYear)
             response = await podModel.findByIdAndUpdate(reqId, { status: 'Order Approved' }, { new: true, useFindAndModify: false });
         }
 
@@ -923,11 +942,12 @@ const approvePurchaseOrderByPurchaseId = async (req, res) => {
 
 const addEditInquiryDetails = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
         let responseData = {};
         if (reqData.inquiryEntryDetails.inquiryId && reqData.inquiryEntryDetails.inquiryId.trim() !== '') {
-            let idModel = await inquiryDetailsModel();
+            let idModel = await inquiryDetailsModel(dbYear);
             const response = await idModel.findByIdAndUpdate(reqData.inquiryEntryDetails.inquiryId, reqData.inquiryEntryDetails, { new: true });
             if (response) {
                 responseData.inquiryEntryDetails = response;
@@ -937,7 +957,7 @@ const addEditInquiryDetails = async (req, res) => {
         } else {
             let nextInquiryNo = 'IQR0001';
 
-            let idModel = await inquiryDetailsModel();
+            let idModel = await inquiryDetailsModel(dbYear);
             const lastRecord = await idModel
                 .findOne()
                 .sort({ inquiryNo: -1 })
@@ -951,7 +971,7 @@ const addEditInquiryDetails = async (req, res) => {
 
             reqData.inquiryEntryDetails.inquiryNo = nextInquiryNo;
 
-            let idModel1 = await inquiryDetailsModel();
+            let idModel1 = await inquiryDetailsModel(dbYear);
             const response = new idModel1(reqData.inquiryEntryDetails);
             await response.save();
             responseData.inquiryEntryDetails = response;
@@ -959,7 +979,7 @@ const addEditInquiryDetails = async (req, res) => {
 
         if (reqData.inquiryMaterialDetails.inquiryMaterialDetailsId && reqData.inquiryMaterialDetails.inquiryMaterialDetailsId.trim() !== '') {
             reqData.inquiryMaterialDetails.inquiryId = responseData.inquiryEntryDetails._id
-            let iqmDetailsModel = await inquiryMaterialDetailsModel();
+            let iqmDetailsModel = await inquiryMaterialDetailsModel(dbYear);
             const response = await iqmDetailsModel.findByIdAndUpdate(reqData.inquiryMaterialDetails.inquiryMaterialDetailsId, reqData.inquiryMaterialDetails, { new: true });
             if (response) {
                 responseData.materialDetails = response;
@@ -968,7 +988,7 @@ const addEditInquiryDetails = async (req, res) => {
             }
         } else {
             reqData.inquiryMaterialDetails.inquiryId = responseData.inquiryEntryDetails._id
-            let iqmDetailsModel = await inquiryMaterialDetailsModel();
+            let iqmDetailsModel = await inquiryMaterialDetailsModel(dbYear);
             const response = new iqmDetailsModel(reqData.inquiryMaterialDetails);
             await response.save();
             responseData.materialDetails = response;
@@ -993,6 +1013,7 @@ const addEditInquiryDetails = async (req, res) => {
 
 const getallInquiryDetails = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
         let queryObject = { isDeleted: false }
@@ -1012,7 +1033,7 @@ const getallInquiryDetails = async (req, res) => {
         if (reqData.inquiryDate && reqData.inquiryDate.trim() !== '') {
             queryObject.inquiryDate = reqData.inquiryDate
         }
-        let idModel = await inquiryDetailsModel();
+        let idModel = await inquiryDetailsModel(dbYear);
         let response = await idModel
             .find(queryObject);
 
@@ -1035,11 +1056,12 @@ const getallInquiryDetails = async (req, res) => {
 
 const getAllInquiryMaterialDetailsByInquiryId = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = []
         if (reqId) {
-            let iqmDetailsModel = await inquiryMaterialDetailsModel();
+            let iqmDetailsModel = await inquiryMaterialDetailsModel(dbYear);
             response = await iqmDetailsModel
                 .find({ inquiryId: reqId, isDeleted: false })
                 .populate({
@@ -1071,11 +1093,12 @@ const getAllInquiryMaterialDetailsByInquiryId = async (req, res) => {
 
 const deleteInquiryDetailsById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let idModel = await inquiryDetailsModel();
+            let idModel = await inquiryDetailsModel(dbYear);
             response = await idModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -1098,11 +1121,12 @@ const deleteInquiryDetailsById = async (req, res) => {
 
 const deleteInquiryMaterialDetailsById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let iqmDetailsModel = await inquiryMaterialDetailsModel();
+            let iqmDetailsModel = await inquiryMaterialDetailsModel(dbYear);
             response = await iqmDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -1125,14 +1149,15 @@ const deleteInquiryMaterialDetailsById = async (req, res) => {
 
 const sendInquiryToCompany = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
 
-        let cgModel = await companyGroupModel()
+        let cgModel = await companyGroupModel(dbYear)
         let companyDetails = await cgModel.findOne({});
 
         if (reqData.inquiryId) {
-            let iqmDetailsModel = await inquiryMaterialDetailsModel();
+            let iqmDetailsModel = await inquiryMaterialDetailsModel(dbYear);
             let inquiryMaterialList = await iqmDetailsModel
                 .find({ inquiryId: reqData.inquiryId, isDeleted: false })
                 .populate({
@@ -1144,7 +1169,7 @@ const sendInquiryToCompany = async (req, res) => {
                     select: 'pmName pmUOM _id',
                 });
 
-            let etModel = await emailTemplateModel()
+            let etModel = await emailTemplateModel(dbYear)
             const EmailTemplate = await etModel.findOne({ emailTemplateId: 2 });
 
             const tableRows = inquiryMaterialList && inquiryMaterialList.length > 0
@@ -1176,7 +1201,7 @@ const sendInquiryToCompany = async (req, res) => {
             let reqeust = {
                 status: 'Email Sent'
             }
-            let idModel = await inquiryDetailsModel();
+            let idModel = await inquiryDetailsModel(dbYear);
             const response = await idModel.findByIdAndUpdate(reqData.inquiryId, reqeust, { new: true });
 
             let encryptData = encryptionAPI(response, 1)
@@ -1201,6 +1226,7 @@ const sendInquiryToCompany = async (req, res) => {
 
 const getAllGoodsRegistered = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
         let queryObject = {
@@ -1234,7 +1260,7 @@ const getAllGoodsRegistered = async (req, res) => {
 
         // queryObject["grnEntryPartyDetailId.partyId"] = { $exists: true, $ne: null };
 
-        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
         let response = await gemDetailsModel
             .find(queryObject)
             .populate({
@@ -1279,6 +1305,7 @@ const getAllGoodsRegistered = async (req, res) => {
 
 const getAllMaterialWisePurchaseReport = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
         let queryObject = {
@@ -1307,7 +1334,7 @@ const getAllMaterialWisePurchaseReport = async (req, res) => {
             }
         }
 
-        let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+        let pomDetailsModel = await purchaserOrderMaterialDetailsModel(dbYear)
         let response = await pomDetailsModel
             .find(queryObject)
             .populate({
@@ -1347,6 +1374,7 @@ const getAllMaterialWisePurchaseReport = async (req, res) => {
 
 const getAllItemsForStockLedgerReport = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
         let queryObject = {
@@ -1374,7 +1402,7 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
                 queryObject.packageMaterialId = reqData.packageMaterialId;
             }
         }
-        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
         let response = await gemDetailsModel
             .find(queryObject)
             .select('rawMaterialId packageMaterialId grnEntryPartyDetailId qty rate amount')
@@ -1461,13 +1489,13 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
         }, []);
 
         // Removing Production and GSTInvoice Qty 
-        let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
-        let prPMFormulaModel = await PackingRequisitionPMFormulaModel();
+        let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
+        let prPMFormulaModel = await PackingRequisitionPMFormulaModel(dbYear);
 
-        let giRMItemModel = await gstinvoiceRMItemModel()
-        let giPMItemModel = await gstInvoicePMItemModel()
+        let giRMItemModel = await gstinvoiceRMItemModel(dbYear)
+        let giPMItemModel = await gstInvoicePMItemModel(dbYear)
 
-        let addEntryModel = await additionalEntryMaterialDetailsModel()
+        let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear)
 
         processedData = await Promise.all(
             processedData.map(async (details) => {
@@ -1518,6 +1546,7 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
 
 const getAllStatementForPurchaseItemByItemId = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
         let queryObject = {
@@ -1531,7 +1560,7 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
             queryObject.packageMaterialId = reqData.item._id
         }
 
-        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
         let response = await gemDetailsModel
             .find(queryObject)
             .populate({
@@ -1558,7 +1587,7 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         // Additional Entry 
         let responseFromAdditionalEntry = [];
         if (reqData.materialType === 'Raw Material') {
-            let giRMItemModel = await additionalEntryMaterialDetailsModel()
+            let giRMItemModel = await additionalEntryMaterialDetailsModel(dbYear)
             responseFromAdditionalEntry = await giRMItemModel
                 .find({ rawMaterialId: reqData.item._id, isDeleted: false }).populate({
                     path: 'additionalEntryDetailsId',
@@ -1567,7 +1596,7 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         }
 
         if (reqData.materialType === 'Packing Material') {
-            let giPMItemModel = await additionalEntryMaterialDetailsModel()
+            let giPMItemModel = await additionalEntryMaterialDetailsModel(dbYear)
             responseFromAdditionalEntry = await giPMItemModel
                 .find({ packageMaterialId: reqData.item._id, isDeleted: false })
                 .populate({
@@ -1590,7 +1619,7 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         if (reqData.materialType === 'Raw Material') {
             queryObject1.rmName = reqData.item.rmName
 
-            let prRMFormulaModel = await ProductionRequisitionRMFormulaModel();
+            let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
             responseFromUsedQty = await prRMFormulaModel
                 .find(queryObject1)
                 .populate({
@@ -1610,7 +1639,7 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         if (reqData.materialType === 'Packing Material') {
             queryObject1.pmName = reqData.item.pmName
 
-            let prPMFormualModel = await PackingRequisitionPMFormulaModel()
+            let prPMFormualModel = await PackingRequisitionPMFormulaModel(dbYear)
             responseFromUsedQty = await prPMFormualModel
                 .find(queryObject1)
                 .populate({
@@ -1640,7 +1669,7 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         if (reqData.materialType === 'Raw Material') {
             queryObject1.rmName = reqData.item.rmName
 
-            let giRMItemModel = await gstinvoiceRMItemModel()
+            let giRMItemModel = await gstinvoiceRMItemModel(dbYear)
             responseFromUsedGSTInvoice = await giRMItemModel
                 .find({ itemId: reqData.item._id, isDeleted: false })
                 .populate({
@@ -1656,7 +1685,7 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         if (reqData.materialType === 'Packing Material') {
             queryObject1.pmName = reqData.item.pmName
 
-            let giPMItemModel = await gstInvoicePMItemModel()
+            let giPMItemModel = await gstInvoicePMItemModel(dbYear)
             responseFromUsedGSTInvoice = await giPMItemModel
                 .find({ itemId: reqData.item._id, isDeleted: false })
                 .populate({
@@ -1702,6 +1731,7 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
 
 const getAllShourtageReport = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
         let queryObject = {
@@ -1716,7 +1746,7 @@ const getAllShourtageReport = async (req, res) => {
             queryObject.packageMaterialId = { $exists: true, $ne: null };
         }
 
-        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
         let grnMaterialRecords = await gemDetailsModel
             .find(queryObject)
             .populate({
@@ -1746,7 +1776,7 @@ const getAllShourtageReport = async (req, res) => {
         let shortageMaterials = []
 
         if (reqData.materialType === 'Raw Material') {
-            let rmModel = await rawMaterialSchema();
+            let rmModel = await rawMaterialSchema(dbYear);
             let rawMaterials = await rmModel.find({ isDeleted: false }, 'rmName rmUOM minQty rmCategory _id');
 
             shortageMaterials = rawMaterials
@@ -1763,7 +1793,7 @@ const getAllShourtageReport = async (req, res) => {
                 })
                 .filter(material => material.stock < material.minQty);
         } else {
-            let pmModel = await packingMaterialSchema();
+            let pmModel = await packingMaterialSchema(dbYear);
             let packingMaterials = await pmModel.find({ isDeleted: false }, 'pmName pmUOM pmMinQty pmCategory _id');
 
             shortageMaterials = packingMaterials
@@ -1800,6 +1830,7 @@ const getAllShourtageReport = async (req, res) => {
 
 const getAllNearExpiryReport = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
         let queryObject = {
@@ -1814,7 +1845,7 @@ const getAllNearExpiryReport = async (req, res) => {
             queryObject.packageMaterialId = { $exists: true, $ne: null };
         }
 
-        let gemDetailsModel = await grnEntryMaterialDetailsModel();
+        let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
         let response = await gemDetailsModel
             .find(queryObject)
             .populate({
@@ -1874,6 +1905,7 @@ const getAllNearExpiryReport = async (req, res) => {
 
 const getAllPurchaseOrderRegister = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
         let queryObject = {
@@ -1912,7 +1944,7 @@ const getAllPurchaseOrderRegister = async (req, res) => {
             status.push('Order Created', 'Email Sent', 'Order Approved');
         }
 
-        let pomDetailsModel = await purchaserOrderMaterialDetailsModel()
+        let pomDetailsModel = await purchaserOrderMaterialDetailsModel(dbYear)
         let response = await pomDetailsModel
             .find(queryObject)
             .populate({

@@ -15,10 +15,10 @@ const orderDetailsSalesOrderItemMappingSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const orderDetailsSalesOrderItemMappingModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await companyItems()
-    await orderDetailsSalesOrderEntryModel()
+const orderDetailsSalesOrderItemMappingModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await companyItems(dbYear)
+    await orderDetailsSalesOrderEntryModel(dbYear)
     return db.models.SalesOrderDetailsItemMapping || db.model("SalesOrderDetailsItemMapping", orderDetailsSalesOrderItemMappingSchema);
 }
 

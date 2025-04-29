@@ -17,11 +17,11 @@ const itemOtherDeliveryChallanSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const itemOtherDeliveryChalanModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await companyItems()
-    await otherDeliveryChallanModel()
-    await batchWiseProductStockModel()
+const itemOtherDeliveryChalanModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await companyItems(dbYear)
+    await otherDeliveryChallanModel(dbYear)
+    await batchWiseProductStockModel(dbYear)
     return db.models.ItemOtherDeliveryChallanModel || db.model("ItemOtherDeliveryChallanModel", itemOtherDeliveryChallanSchema);
 }
 

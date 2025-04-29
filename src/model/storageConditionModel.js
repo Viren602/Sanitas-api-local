@@ -8,8 +8,8 @@ const storageConditionSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const storageConditionModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const storageConditionModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.StorageConditionMasters || db.model("StorageConditionMasters", storageConditionSchema);
 }
 

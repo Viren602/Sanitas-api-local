@@ -8,8 +8,8 @@ const mfgLicSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const mfgLicModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const mfgLicModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.MfgLicMasters || db.model("MfgLicMasters", mfgLicSchema);
 }
 

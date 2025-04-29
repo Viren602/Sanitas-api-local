@@ -9,7 +9,8 @@ import bcrypt from "bcryptjs";
 
 const getUserProfile = async (req, res) => {
     try {
-        let CompanyGroupSchema = await companyGroupModel()
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let CompanyGroupSchema = await companyGroupModel(dbYear)
         let response = await CompanyGroupSchema.findOne({});
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -28,10 +29,11 @@ const getUserProfile = async (req, res) => {
 
 const addEditUserProfile = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let CompanyGroupSchema = await companyGroupModel()
+            let CompanyGroupSchema = await companyGroupModel(dbYear)
             const response = await CompanyGroupSchema.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -50,7 +52,7 @@ const addEditUserProfile = async (req, res) => {
                 res.status(404).json({ Message: "User Profile Not Found" });
             }
         } else {
-            let CompanyGroupSchema = await companyGroupModel()
+            let CompanyGroupSchema = await companyGroupModel(dbYear)
             const response = new CompanyGroupSchema(data);
             await response.save();
 

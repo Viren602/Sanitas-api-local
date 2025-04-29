@@ -28,11 +28,11 @@ const gstInvoicePMItemSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const gstInvoicePMItemModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await HNSCodesScHema()
-    await gstInvoicePMModel()
-    await packingMaterialSchema()
+const gstInvoicePMItemModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await HNSCodesScHema(dbYear)
+    await gstInvoicePMModel(dbYear)
+    await packingMaterialSchema(dbYear)
     return db.models.ItemsForGSTInvoicePM || db.model("ItemsForGSTInvoicePM", gstInvoicePMItemSchema);
 }
 

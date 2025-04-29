@@ -18,10 +18,10 @@ const ProductionRequisitionRMFormulaSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const ProductionRequisitionRMFormulaModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await productionPlanningEntryModel()
-    await productDetailsModel()
+const ProductionRequisitionRMFormulaModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await productionPlanningEntryModel(dbYear)
+    await productDetailsModel(dbYear)
     return db.models.ProductionRequisitionRMFormulaList || db.model("ProductionRequisitionRMFormulaList", ProductionRequisitionRMFormulaSchema);
 }
 

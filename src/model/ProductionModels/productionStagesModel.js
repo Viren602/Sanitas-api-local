@@ -11,8 +11,8 @@ const ProductionStagesSchema = mongoose.Schema(
   { timestamps: true }
 );
 
-const ProductionStagesModel = async () => {
-  const db = await connectToDatabase(globals.Database);
+const ProductionStagesModel = async (dbYear) => {
+  const db = await connectToDatabase(dbYear);
   return db.models.ProductionStage || db.model("ProductionStage", ProductionStagesSchema);
 }
 

@@ -18,10 +18,10 @@ const PackingRequisitionPMFormulaSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const PackingRequisitionPMFormulaModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await companyItems()
-    await productionPlanningEntryModel()
+const PackingRequisitionPMFormulaModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await companyItems(dbYear)
+    await productionPlanningEntryModel(dbYear)
     return db.models.PackingRequisitionPMFormulaList || db.model("PackingRequisitionPMFormulaList", PackingRequisitionPMFormulaSchema);
 }
 

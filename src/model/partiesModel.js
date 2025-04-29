@@ -73,8 +73,8 @@ const partySchema = mongoose.Schema({
 }, { timestamps: true })
 
 
-const partyModel = async () => {
-    const db = await connectToDatabase(globals.Database);
+const partyModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
     return db.models.AccountMasters || db.model("AccountMasters", partySchema);
 }
  

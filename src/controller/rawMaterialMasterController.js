@@ -5,10 +5,12 @@ import errorHandler from "../server/errorHandle.js";
 
 const addEditRawMaterial = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+
         let data = req.body.data
         let reqData = getRequestData(data, 'PostApi')
         if (reqData && reqData._id && reqData._id.trim() !== '') {
-            let rmModel = await rawMaterialSchema()
+            let rmModel = await rawMaterialSchema(dbYear)
             const response = await rmModel.findByIdAndUpdate(reqData._id, reqData, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
@@ -26,7 +28,7 @@ const addEditRawMaterial = async (req, res) => {
                 res.status(404).json({ Message: "Item not found" });
             }
         } else {
-            let rmModel = await rawMaterialSchema()
+            let rmModel = await rawMaterialSchema(dbYear)
             const existingItemByName = await rmModel.findOne({ rmName: reqData.rmName.trim(), isDeleted: false });
             if (existingItemByName) {
                 let encryptData = encryptionAPI(existingItemByName, 1)
@@ -39,7 +41,7 @@ const addEditRawMaterial = async (req, res) => {
                     },
                 });
             } else {
-                let rmModel = await rawMaterialSchema()
+                let rmModel = await rawMaterialSchema(dbYear)
                 const response = new rmModel(reqData);
                 await response.save();
                 let encryptData = encryptionAPI(response, 1)
@@ -63,6 +65,7 @@ const addEditRawMaterial = async (req, res) => {
 
 const getAllRawMaterials = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id, page = 1, limit = 100 } = req.query;
 
         const itemName = getRequestData(id)
@@ -77,10 +80,10 @@ const getAllRawMaterials = async (req, res) => {
         }
         const skip = (pageNo - 1) * pageLimit;
 
-        let rmModel = await rawMaterialSchema()
+        let rmModel = await rawMaterialSchema(dbYear)
         const totalCount = await rmModel.countDocuments(queryObject);
 
-        let rmModel1 = await rawMaterialSchema()
+        let rmModel1 = await rawMaterialSchema(dbYear)
         let data = await rmModel1
             .find(queryObject)
             .sort("rmName")
@@ -111,12 +114,12 @@ const getAllRawMaterials = async (req, res) => {
 
 const getRawMaterialById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let rmModel = await rawMaterialSchema()
+            let rmModel = await rawMaterialSchema(dbYear)
             response = await rmModel.findOne({ _id: reqId });
         }
 
@@ -140,12 +143,12 @@ const getRawMaterialById = async (req, res) => {
 
 const deleteRawMaterialById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let rmModel = await rawMaterialSchema()
+            let rmModel = await rawMaterialSchema(dbYear)
             response = await rmModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 

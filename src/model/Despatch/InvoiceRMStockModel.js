@@ -12,9 +12,9 @@ const InvoiceRMStockSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const InvoiceRMStockModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await rawMaterialSchema()
+const InvoiceRMStockModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await rawMaterialSchema(dbYear)
     return db.models.InvoiceRMStock || db.model("InvoiceRMStock", InvoiceRMStockSchema);
 }
 

@@ -35,13 +35,13 @@ const gstPurchaseItemListRMPMSchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const gstPurchaseItemListRMPMModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await gstPurchaseEntryRMPMModel()
-    await grnEntryPartyDetailsModel()
-    await grnEntryMaterialDetailsModel()
-    await rawMaterialSchema()
-    await packingMaterialSchema()
+const gstPurchaseItemListRMPMModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await gstPurchaseEntryRMPMModel(dbYear)
+    await grnEntryPartyDetailsModel(dbYear)
+    await grnEntryMaterialDetailsModel(dbYear)
+    await rawMaterialSchema(dbYear)
+    await packingMaterialSchema(dbYear)
     return db.models.GSTPurchaseItemListRMPM || db.model("GSTPurchaseItemListRMPM", gstPurchaseItemListRMPMSchema);
 }
 

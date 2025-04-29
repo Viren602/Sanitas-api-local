@@ -18,9 +18,9 @@ const contraEntrySchema = mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const contraEntryModel = async () => {
-    const db = await connectToDatabase(globals.Database);
-    await daybookMasterModel()
+const contraEntryModel = async (dbYear) => {
+    const db = await connectToDatabase(dbYear);
+    await daybookMasterModel(dbYear)
     return db.models.ContraEntry || db.model("ContraEntry", contraEntrySchema);
 }
 

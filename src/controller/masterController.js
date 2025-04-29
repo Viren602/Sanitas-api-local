@@ -24,10 +24,11 @@ import errorHandler from "../server/errorHandle.js";
 
 const addEditPackingMaterial = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data && data._id && data._id.trim() !== '') {
-            let mpModel = await packingMaterialSchema()
+            let mpModel = await packingMaterialSchema(dbYear)
             const response = await mpModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
@@ -45,7 +46,7 @@ const addEditPackingMaterial = async (req, res) => {
                 res.status(404).json({ Message: "Item not found" });
             }
         } else {
-            let mpModel = await packingMaterialSchema()
+            let mpModel = await packingMaterialSchema(dbYear)
             const existingItemByName = await mpModel.findOne({ pmName: data.pmName.trim(), isDeleted: false });
             if (existingItemByName) {
                 let encryptData = encryptionAPI(existingItemByName, 1)
@@ -58,7 +59,7 @@ const addEditPackingMaterial = async (req, res) => {
                     },
                 });
             } else {
-                let mpModel = await packingMaterialSchema()
+                let mpModel = await packingMaterialSchema(dbYear)
                 const response = new mpModel(data);
                 await response.save();
 
@@ -83,6 +84,7 @@ const addEditPackingMaterial = async (req, res) => {
 
 const getAllPackingMaterials = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id, page = 1, limit = 50 } = req.query;
 
         const itemName = getRequestData(id)
@@ -98,10 +100,10 @@ const getAllPackingMaterials = async (req, res) => {
 
         const skip = (pageNo - 1) * pageLimit;
 
-        let mpModel = await packingMaterialSchema()
+        let mpModel = await packingMaterialSchema(dbYear)
         const totalCount = await mpModel.countDocuments(queryObject);
 
-        let mpModel1 = await packingMaterialSchema()
+        let mpModel1 = await packingMaterialSchema(dbYear)
         let data = await mpModel1
             .find(queryObject)
             .sort("pmName")
@@ -133,12 +135,12 @@ const getAllPackingMaterials = async (req, res) => {
 
 const getPackingMaterialById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let mpModel = await packingMaterialSchema()
+            let mpModel = await packingMaterialSchema(dbYear)
             response = await mpModel.findOne({ _id: reqId });
         }
 
@@ -162,12 +164,12 @@ const getPackingMaterialById = async (req, res) => {
 
 const deletePackingMaterialById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let mpModel = await packingMaterialSchema()
+            let mpModel = await packingMaterialSchema(dbYear)
             response = await mpModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -191,10 +193,11 @@ const deletePackingMaterialById = async (req, res) => {
 
 const addEditRMCategory = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let rmCModel = await rmCategoryModel()
+            let rmCModel = await rmCategoryModel(dbYear)
             const response = await rmCModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -213,7 +216,7 @@ const addEditRMCategory = async (req, res) => {
                 res.status(404).json({ Message: "Category not found" });
             }
         } else {
-            let rmCModel = await rmCategoryModel()
+            let rmCModel = await rmCategoryModel(dbYear)
             const response = new rmCModel(data);
             await response.save();
 
@@ -237,11 +240,12 @@ const addEditRMCategory = async (req, res) => {
 
 const deleteRMCategoryById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let rmCModel = await rmCategoryModel()
+            let rmCModel = await rmCategoryModel(dbYear)
             response = await rmCModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -264,10 +268,11 @@ const deleteRMCategoryById = async (req, res) => {
 
 const addEditPMCategory = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let pmcModel = await pmCategoryModel()
+            let pmcModel = await pmCategoryModel(dbYear)
             const response = await pmcModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
@@ -284,7 +289,7 @@ const addEditPMCategory = async (req, res) => {
                 res.status(404).json({ Message: "Category not found" });
             }
         } else {
-            let pmcModel = await pmCategoryModel()
+            let pmcModel = await pmCategoryModel(dbYear)
             const response = new pmcModel(data);
             await response.save();
             let encryptData = encryptionAPI(response, 1)
@@ -307,11 +312,12 @@ const addEditPMCategory = async (req, res) => {
 
 const deletePMCategoryById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let pmcModel = await pmCategoryModel()
+            let pmcModel = await pmCategoryModel(dbYear)
             response = await pmcModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -334,10 +340,11 @@ const deletePMCategoryById = async (req, res) => {
 
 const addEditPackingMaterialSize = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let pmsModel = await packingMaterialSizeModel()
+            let pmsModel = await packingMaterialSizeModel(dbYear)
             const response = await pmsModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -355,7 +362,7 @@ const addEditPackingMaterialSize = async (req, res) => {
                 res.status(404).json({ Message: "Category not found" });
             }
         } else {
-            let pmsModel = await packingMaterialSizeModel()
+            let pmsModel = await packingMaterialSizeModel(dbYear)
             const response = new pmsModel(data);
             await response.save();
 
@@ -379,11 +386,12 @@ const addEditPackingMaterialSize = async (req, res) => {
 
 const deletePackingMaterialSizeById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let pmsModel = await packingMaterialSizeModel()
+            let pmsModel = await packingMaterialSizeModel(dbYear)
             response = await pmsModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
         let encryptData = encryptionAPI(response, 1)
@@ -405,10 +413,11 @@ const deletePackingMaterialSizeById = async (req, res) => {
 
 const addEditStates = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let sModel = stateModel()
+            let sModel = await stateModel(dbYear)
             const response = await sModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -426,7 +435,7 @@ const addEditStates = async (req, res) => {
                 res.status(404).json({ Message: "Category not found" });
             }
         } else {
-            let sModel = stateModel()
+            let sModel = await stateModel(dbYear)
             const response = new sModel(data);
             await response.save();
 
@@ -450,11 +459,12 @@ const addEditStates = async (req, res) => {
 
 const deleteStateById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let sModel = stateModel()
+            let sModel = await stateModel(dbYear)
             response = await sModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -477,10 +487,11 @@ const deleteStateById = async (req, res) => {
 
 const addEditStereo = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let sModel = await stereoModel()
+            let sModel = await stereoModel(dbYear)
             const response = await sModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -498,7 +509,7 @@ const addEditStereo = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            let sModel = await stereoModel()
+            let sModel = await stereoModel(dbYear)
             const response = new sModel(data);
             await response.save();
             let encryptData = encryptionAPI(response, 1)
@@ -521,11 +532,12 @@ const addEditStereo = async (req, res) => {
 
 const deleteStereoById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let sModel = await stereoModel()
+            let sModel = await stereoModel(dbYear)
             response = await sModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -548,10 +560,11 @@ const deleteStereoById = async (req, res) => {
 
 const addEditLabelClaims = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let lcModel = await labelClaimModel()
+            let lcModel = await labelClaimModel(dbYear)
             const response = await lcModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
@@ -568,7 +581,7 @@ const addEditLabelClaims = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            let lcModel = await labelClaimModel()
+            let lcModel = await labelClaimModel(dbYear)
             const response = new lcModel(data);
             await response.save();
             let encryptData = encryptionAPI(response, 1)
@@ -591,11 +604,12 @@ const addEditLabelClaims = async (req, res) => {
 
 const deleteLabelClaimById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let lcModel = await labelClaimModel()
+            let lcModel = await labelClaimModel(dbYear)
             response = await lcModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -618,10 +632,11 @@ const deleteLabelClaimById = async (req, res) => {
 
 const addEditStorageConditions = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let scModel = await storageConditionModel()
+            let scModel = await storageConditionModel(dbYear)
             const response = await scModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -640,7 +655,7 @@ const addEditStorageConditions = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            let scModel = await storageConditionModel()
+            let scModel = await storageConditionModel(dbYear)
             const response = new scModel(data);
             await response.save();
 
@@ -664,11 +679,12 @@ const addEditStorageConditions = async (req, res) => {
 
 const deleteStorageConditionById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let scModel = await storageConditionModel()
+            let scModel = await storageConditionModel(dbYear)
             response = await scModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -691,10 +707,11 @@ const deleteStorageConditionById = async (req, res) => {
 
 const addEditColors = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let cModel = await colorModel()
+            let cModel = await colorModel(dbYear)
             const response = await cModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
@@ -712,7 +729,7 @@ const addEditColors = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            let cModel = await colorModel()
+            let cModel = await colorModel(dbYear)
             const response = new cModel(data);
             await response.save();
             let encryptData = encryptionAPI(response, 1)
@@ -735,11 +752,12 @@ const addEditColors = async (req, res) => {
 
 const deleteColorById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let cModel = await colorModel()
+            let cModel = await colorModel(dbYear)
             response = await cModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -761,10 +779,11 @@ const deleteColorById = async (req, res) => {
 
 const addMfgLic = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let mlModel = await mfgLicModel()
+            let mlModel = await mfgLicModel(dbYear)
             const response = await mlModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
@@ -782,7 +801,7 @@ const addMfgLic = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            let mlModel = await mfgLicModel()
+            let mlModel = await mfgLicModel(dbYear)
             const response = new mlModel(data);
             await response.save();
             let encryptData = encryptionAPI(response, 1)
@@ -805,11 +824,12 @@ const addMfgLic = async (req, res) => {
 
 const deleteMfgLicById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let mlModel = await mfgLicModel()
+            let mlModel = await mfgLicModel(dbYear)
             response = await mlModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -832,10 +852,11 @@ const deleteMfgLicById = async (req, res) => {
 
 const addProductionStages = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let pstageModel = await productionStageModel()
+            let pstageModel = await productionStageModel(dbYear)
             const response = await pstageModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -854,7 +875,7 @@ const addProductionStages = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            let pstageModel = await productionStageModel()
+            let pstageModel = await productionStageModel(dbYear)
             const response = new pstageModel(data);
             await response.save();
 
@@ -879,11 +900,12 @@ const addProductionStages = async (req, res) => {
 
 const deleteProductionStageById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let pstageModel = await productionStageModel()
+            let pstageModel = await productionStageModel(dbYear)
             response = await pstageModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -906,10 +928,11 @@ const deleteProductionStageById = async (req, res) => {
 
 const addEditPunchSizeMaster = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let pSizeModel = await punchSizeModel()
+            let pSizeModel = await punchSizeModel(dbYear)
             const response = await pSizeModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -927,7 +950,7 @@ const addEditPunchSizeMaster = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            let pSizeModel = await punchSizeModel()
+            let pSizeModel = await punchSizeModel(dbYear)
             const response = new pSizeModel(data);
             await response.save();
 
@@ -951,11 +974,12 @@ const addEditPunchSizeMaster = async (req, res) => {
 
 const deletePunchSizeById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let pSizeModel = await punchSizeModel()
+            let pSizeModel = await punchSizeModel(dbYear)
             response = await pSizeModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -977,10 +1001,11 @@ const deletePunchSizeById = async (req, res) => {
 
 const addEditAccountGroup = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let acModel = await accountGroupModel()
+            let acModel = await accountGroupModel(dbYear)
             const response = await acModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -999,7 +1024,7 @@ const addEditAccountGroup = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            let acModel = await accountGroupModel()
+            let acModel = await accountGroupModel(dbYear)
             const response = new acModel(data);
             await response.save();
 
@@ -1024,11 +1049,12 @@ const addEditAccountGroup = async (req, res) => {
 
 const deleteAccountGroupById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let acModel = await accountGroupModel()
+            let acModel = await accountGroupModel(dbYear)
             response = await acModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -1050,10 +1076,11 @@ const deleteAccountGroupById = async (req, res) => {
 
 const addEditTransportCourier = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let tcModel = await transportCourierModel()
+            let tcModel = await transportCourierModel(dbYear)
             const response = await tcModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
@@ -1071,7 +1098,7 @@ const addEditTransportCourier = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            let tcModel = await transportCourierModel()
+            let tcModel = await transportCourierModel(dbYear)
             const response = new tcModel(data);
             await response.save();
             let encryptData = encryptionAPI(response, 1)
@@ -1095,11 +1122,12 @@ const addEditTransportCourier = async (req, res) => {
 
 const deleteTransportCourierById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let tcModel = await transportCourierModel()
+            let tcModel = await transportCourierModel(dbYear)
             response = await tcModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -1122,10 +1150,11 @@ const deleteTransportCourierById = async (req, res) => {
 
 const addEditDaybook = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data._id && data._id.trim() !== '') {
-            let dbMasterModel = await daybookMasterModel()
+            let dbMasterModel = await daybookMasterModel(dbYear)
             const response = await dbMasterModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -1144,7 +1173,7 @@ const addEditDaybook = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            let dbMasterModel = await daybookMasterModel()
+            let dbMasterModel = await daybookMasterModel(dbYear)
             const response = new dbMasterModel(data);
             await response.save();
 
@@ -1170,11 +1199,12 @@ const addEditDaybook = async (req, res) => {
 
 const deleteDaybookById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let dbMasterModel = await daybookMasterModel()
+            let dbMasterModel = await daybookMasterModel(dbYear)
             response = await dbMasterModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -1197,6 +1227,7 @@ const deleteDaybookById = async (req, res) => {
 
 const getAllParties = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
@@ -1205,7 +1236,7 @@ const getAllParties = async (req, res) => {
             queryObject.partyName = { $regex: `^${reqId}`, $options: "i" };
         }
 
-        let pModel = await partyModel()
+        let pModel = await partyModel(dbYear)
         let response = await pModel
             .find(queryObject)
             .select('partyName city email mobileNo1 transporterName gstnNo')
@@ -1242,17 +1273,17 @@ const getAllParties = async (req, res) => {
 
 const getPartyDetailsById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         let accountCode = {}
         if (reqId) {
-            let pModel = await partyModel()
+            let pModel = await partyModel(dbYear)
             response = await pModel.findOne({ _id: reqId });
         }
         if (response.acGroupCode) {
-            let acModel = await accountGroupModel()
+            let acModel = await accountGroupModel(dbYear)
             accountCode = await acModel.findOne({ accountGroupCode: response.acGroupCode });
         }
         response.accountCodeName = accountCode.accountGroupname
@@ -1277,16 +1308,17 @@ const getPartyDetailsById = async (req, res) => {
 
 const addEditPartyDetails = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let accountCode = {}
         if (data.accountCodeName) {
-            let acModel = await accountGroupModel()
+            let acModel = await accountGroupModel(dbYear)
             accountCode = await acModel.findOne({ accountGroupname: data.accountCodeName });
         }
         data.acGroupCode = accountCode.accountGroupCode
         if (data && data._id && data._id.trim() !== '') {
-            let pModel = await partyModel()
+            let pModel = await partyModel(dbYear)
             const response = await pModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -1306,7 +1338,7 @@ const addEditPartyDetails = async (req, res) => {
                 res.status(404).json({ Message: "Item not found" });
             }
         } else {
-            let pModel = await partyModel()
+            let pModel = await partyModel(dbYear)
             const existingItemByName = await pModel.findOne({ partyName: data.partyName.trim(), isDeleted: false });
             if (existingItemByName) {
                 let encryptData = encryptionAPI(existingItemByName, 1)
@@ -1319,7 +1351,7 @@ const addEditPartyDetails = async (req, res) => {
                     },
                 });
             } else {
-                let pModel = await partyModel()
+                let pModel = await partyModel(dbYear)
                 const response = new pModel(data);
                 await response.save();
 
@@ -1345,11 +1377,12 @@ const addEditPartyDetails = async (req, res) => {
 
 const deletePartyDetailsById = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let pModel = await partyModel()
+            let pModel = await partyModel(dbYear)
             response = await pModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -1373,10 +1406,11 @@ const deletePartyDetailsById = async (req, res) => {
 
 const addeditProductDetails = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data && data._id && data._id.trim() !== '') {
-            let pdModel = await productDetailsModel()
+            let pdModel = await productDetailsModel(dbYear)
             const response = await pdModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
@@ -1394,7 +1428,7 @@ const addeditProductDetails = async (req, res) => {
                 res.status(404).json({ Message: "Product not found" });
             }
         } else {
-            let pdModel = await productDetailsModel()
+            let pdModel = await productDetailsModel(dbYear)
             const existingItemByName = await pdModel.findOne({ productName: data.productName.trim(), isDeleted: false });
             if (existingItemByName) {
                 let encryptData = encryptionAPI(existingItemByName, 1)
@@ -1407,7 +1441,7 @@ const addeditProductDetails = async (req, res) => {
                     },
                 });
             } else {
-                let pdModel = await productDetailsModel()
+                let pdModel = await productDetailsModel(dbYear)
                 const response = new pdModel(data);
                 await response.save();
                 let encryptData = encryptionAPI(response, 1)
@@ -1431,6 +1465,7 @@ const addeditProductDetails = async (req, res) => {
 
 const getAllProductDetails = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id, page = 1, limit = 50 } = req.query;
 
         const itemName = getRequestData(id)
@@ -1445,11 +1480,11 @@ const getAllProductDetails = async (req, res) => {
         }
         const skip = (pageNo - 1) * pageLimit;
 
-        let pdModel = await productDetailsModel()
+        let pdModel = await productDetailsModel(dbYear)
         const totalCount = await pdModel.countDocuments(queryObject);
 
 
-        let pdModel1 = await productDetailsModel()
+        let pdModel1 = await productDetailsModel(dbYear)
         let data = await pdModel1
             .find(queryObject)
             .sort("productName")
@@ -1481,12 +1516,12 @@ const getAllProductDetails = async (req, res) => {
 
 const getProductDetailById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let pdModel = await productDetailsModel()
+            let pdModel = await productDetailsModel(dbYear)
             response = await pdModel.findOne({ _id: reqId });
         }
 
@@ -1510,12 +1545,12 @@ const getProductDetailById = async (req, res) => {
 
 const deleteProductDetailsById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let pdModel = await productDetailsModel()
+            let pdModel = await productDetailsModel(dbYear)
             response = await pdModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -1540,10 +1575,11 @@ const deleteProductDetailsById = async (req, res) => {
 
 const addEditpartyWiseNetRateDetails = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data && data._id && data._id.trim() !== '') {
-            let pwnrDetailsModel = await partyWiseNetRateDetailsModel()
+            let pwnrDetailsModel = await partyWiseNetRateDetailsModel(dbYear)
             const response = await pwnrDetailsModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
                 let encryptData = encryptionAPI(response, 1)
@@ -1562,7 +1598,7 @@ const addEditpartyWiseNetRateDetails = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            let pwnrDetailsModel = await partyWiseNetRateDetailsModel()
+            let pwnrDetailsModel = await partyWiseNetRateDetailsModel(dbYear)
             const response = new pwnrDetailsModel(data);
             await response.save();
 
@@ -1587,12 +1623,12 @@ const addEditpartyWiseNetRateDetails = async (req, res) => {
 
 const getPartyWiseNetRateDetailsByPartyId = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let pwnrDetailsModel = await partyWiseNetRateDetailsModel()
+            let pwnrDetailsModel = await partyWiseNetRateDetailsModel(dbYear)
             response = await pwnrDetailsModel.find({ partyId: reqId, isDeleted: false });
         }
 
@@ -1615,12 +1651,12 @@ const getPartyWiseNetRateDetailsByPartyId = async (req, res) => {
 
 const deletePartyWiseNetRateById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let pwnrDetailsModel = await partyWiseNetRateDetailsModel()
+            let pwnrDetailsModel = await partyWiseNetRateDetailsModel(dbYear)
             response = await pwnrDetailsModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -1644,12 +1680,12 @@ const deletePartyWiseNetRateById = async (req, res) => {
 
 const getRMFormulaByProductId = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let rmFModel = await rmFormulaModel()
+            let rmFModel = await rmFormulaModel(dbYear)
             response = await rmFModel.find({ productId: reqId, isDeleted: false })
                 .populate({
                     path: 'stageId',
@@ -1677,10 +1713,11 @@ const getRMFormulaByProductId = async (req, res) => {
 
 const addEditRMFormulaDetails = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         if (data && data._id && data._id.trim() !== '') {
-            let rmFModel = await rmFormulaModel()
+            let rmFModel = await rmFormulaModel(dbYear)
             const response = await rmFModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -1700,7 +1737,7 @@ const addEditRMFormulaDetails = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            let rmFModel = await rmFormulaModel()
+            let rmFModel = await rmFormulaModel(dbYear)
             const response = new rmFModel(data);
             await response.save();
 
@@ -1725,12 +1762,12 @@ const addEditRMFormulaDetails = async (req, res) => {
 
 const deleteRMFurmulaById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let rmFModel = await rmFormulaModel()
+            let rmFModel = await rmFormulaModel(dbYear)
             response = await rmFModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
@@ -1755,12 +1792,12 @@ const deleteRMFurmulaById = async (req, res) => {
 
 const getPMFormulaByItemId = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
         let response = {}
         if (reqId) {
-            let pmfModel = await pmFormulaModel()
+            let pmfModel = await pmFormulaModel(dbYear)
             response = await pmfModel.find({ itemId: reqId, isDeleted: false });
         }
 
@@ -1783,11 +1820,12 @@ const getPMFormulaByItemId = async (req, res) => {
 
 const addEditPMFormulaDetails = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
         if (data && data._id && data._id.trim() !== '') {
-            let pmfModel = await pmFormulaModel()
+            let pmfModel = await pmFormulaModel(dbYear)
             const response = await pmfModel.findByIdAndUpdate(data._id, data, { new: true });
             if (response) {
 
@@ -1805,7 +1843,7 @@ const addEditPMFormulaDetails = async (req, res) => {
                 res.status(404).json({ Message: "Details not found" });
             }
         } else {
-            let pmfModel = await pmFormulaModel()
+            let pmfModel = await pmFormulaModel(dbYear)
             const response = new pmfModel(data);
             await response.save();
 
@@ -1828,13 +1866,13 @@ const addEditPMFormulaDetails = async (req, res) => {
 
 const deletePMFurmulaById = async (req, res) => {
     try {
-
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
 
         let response = {}
         if (reqId) {
-            let pmfModel = await pmFormulaModel()
+            let pmfModel = await pmFormulaModel(dbYear)
             response = await pmfModel.findByIdAndUpdate(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
         }
 
