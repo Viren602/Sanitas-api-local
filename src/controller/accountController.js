@@ -2062,6 +2062,9 @@ const deleteGeneralDebitNoteEntryById = async (req, res) => {
         let gdnModel = await generalDebitNoteModel(dbYear);
         const response = await gdnModel.findByIdAndUpdate(reqId, { isDeleted: true });
 
+        let prEntryModel = await paymentReceiptEntryModel(dbYear);
+        await prEntryModel.deleteMany({ generalDebitNoteEntryId: reqId });
+
         let encryptData = encryptionAPI(response, 1)
 
         res.status(200).json({
@@ -2345,6 +2348,9 @@ const deleteGeneralCreditNoteEntryById = async (req, res) => {
 
         let gCreditNoteModel = await generalCreditNoteModel(dbYear);
         const response = await gCreditNoteModel.findByIdAndUpdate(reqId, { isDeleted: true });
+
+        let prEntryModel = await paymentReceiptEntryModel(dbYear);
+        await prEntryModel.deleteMany({ generalCreditNoteEntryId: reqId });
 
         let encryptData = encryptionAPI(response, 1)
 
