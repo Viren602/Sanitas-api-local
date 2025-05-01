@@ -2139,7 +2139,7 @@ const addEditGeneralCreditNoteEntry = async (req, res) => {
             }
 
             let prEntryModel = await paymentReceiptEntryModel(dbYear);
-            await prEntryModel.deleteMany({ generalCreditNoteEntryId: data.generalDebitNoteId });
+            await prEntryModel.deleteMany({ generalCreditNoteEntryId: data.generalCreditNoteId });
 
             // Create New Transactions
             let prEntryModel1 = await paymentReceiptEntryModel(dbYear);
