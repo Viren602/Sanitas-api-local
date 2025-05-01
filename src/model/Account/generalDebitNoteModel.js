@@ -38,7 +38,8 @@ const generalDebitNoteSchema = mongoose.Schema({
     amount4: { type: Number, default: '' },
     amount5: { type: Number, default: '' },
     subTotal: { type: Number, default: 0 },
-    grandTotal: { type: Number, default: '' },
+    grandTotal: { type: Number, default: 0 },
+    roundOff: { type: Number, default: 0 },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 

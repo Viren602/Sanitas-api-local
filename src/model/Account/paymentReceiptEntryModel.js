@@ -34,6 +34,8 @@ const paymentReceiptEntrySchema = mongoose.Schema({
     gstPurchaseEntryWithoutInventoryId: { type: mongoose.Schema.Types.ObjectId, ref: "GstPurchaseWithoutInventoryEntry", default: null },
     contraId: { type: mongoose.Schema.Types.ObjectId, ref: "ContraEntry", default: null },
     jvEntryId: { type: mongoose.Schema.Types.ObjectId, ref: "JVEntry", default: null },
+    generalDebitNoteEntryId: { type: mongoose.Schema.Types.ObjectId, ref: "GeneralDebitNote", default: null },
+    generalCreditNoteEntryId: { type: mongoose.Schema.Types.ObjectId, ref: "GeneralCreditNote", default: null },
     drcrDropDown: { type: String, default: false },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })

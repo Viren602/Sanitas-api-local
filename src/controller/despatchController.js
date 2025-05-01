@@ -574,10 +574,10 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
 
         if (invoiceDetails.changeShippedAdd === true) {
             shippedToAddress =
-                `${invoiceDetails.addressLine1 || ''} ` 
-                // `${invoiceDetails.addressLine2 || ''} ` +
-                // `${invoiceDetails.addressLine3 || ''} ` +
-                // `${invoiceDetails.addressLine4 || ''} `;
+                `${invoiceDetails.addressLine1 || ''} `
+            // `${invoiceDetails.addressLine2 || ''} ` +
+            // `${invoiceDetails.addressLine3 || ''} ` +
+            // `${invoiceDetails.addressLine4 || ''} `;
         } else {
             shippedToAddress =
                 `${invoiceDetails.partyId.corrspAddress1 || invoiceDetails.partyId.address1 || ''} ` +
@@ -1048,18 +1048,27 @@ const getGSTInvoiceRMInvoice = async (req, res) => {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let response = {}
         let girModel = await gstInvoiceRMModel(dbYear);
-        let gstNoRecord = await girModel
+        let gstNoRecordForRM = await girModel
             .findOne({ isDeleted: false })
             .sort({ _id: -1 })
             .select('invoiceNo');
 
-        if (gstNoRecord && gstNoRecord.invoiceNo) {
-            let lastNumber = parseInt(gstNoRecord.invoiceNo.replace('RM', ''), 10);
-            let newNumber = lastNumber + 1;
+        let gipModel = await gstInvoicePMModel(dbYear);
+        let gstNoRecordForPM = await gipModel
+            .findOne({ isDeleted: false })
+            .sort({ _id: -1 })
+            .select('invoiceNo');
 
-            response.invoiceNo = `RM${newNumber.toString().padStart(4, '0')}`;
+        if (gstNoRecordForRM || gstNoRecordForPM) {
+            let lastNumberForRM = (gstNoRecordForRM && gstNoRecordForRM.invoiceNo) ? parseInt(gstNoRecordForRM.invoiceNo.replace('P', ''), 10) : 0;
+            let lastNumberForPM = (gstNoRecordForPM && gstNoRecordForPM.invoiceNo) ? parseInt(gstNoRecordForPM.invoiceNo.replace('P', ''), 10) : 0;
+
+            let maxNumber = Math.max(lastNumberForRM, lastNumberForPM);
+            let newNumber = (maxNumber ? maxNumber : 1) + 1;
+
+            response.invoiceNo = `P${newNumber.toString().padStart(4, '0')}`;
         } else {
-            response.invoiceNo = 'RM0001';
+            response.invoiceNo = 'P0001';
         }
 
         let encryptData = encryptionAPI(response, 1);
@@ -1541,7 +1550,6 @@ const generateGSTInvoiceForRMById = async (req, res) => {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         const { id } = req.query;
         let reqId = getRequestData(id)
-
         let cgModel = await companyGroupModel(dbYear)
         let companyDetails = await cgModel.findOne({});
         let adminAddress = companyDetails.addressLine1 + ' '
@@ -1996,18 +2004,27 @@ const getGSTInvoicePMInvoiceNo = async (req, res) => {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let response = {}
         let gipModel = await gstInvoicePMModel(dbYear);
-        let gstNoRecord = await gipModel
+        let gstNoRecordForPM = await gipModel
             .findOne({ isDeleted: false })
             .sort({ _id: -1 })
             .select('invoiceNo');
 
-        if (gstNoRecord && gstNoRecord.invoiceNo) {
-            let lastNumber = parseInt(gstNoRecord.invoiceNo.replace('PM', ''), 10);
-            let newNumber = lastNumber + 1;
+        let girModel = await gstInvoiceRMModel(dbYear);
+        let gstNoRecordForRM = await girModel
+            .findOne({ isDeleted: false })
+            .sort({ _id: -1 })
+            .select('invoiceNo');
 
-            response.invoiceNo = `PM${newNumber.toString().padStart(4, '0')}`;
+        if (gstNoRecordForPM || gstNoRecordForRM) {
+            let lastNumberOfPMModel = (gstNoRecordForPM && gstNoRecordForPM.invoiceNo) ? parseInt(gstNoRecordForPM.invoiceNo.replace('P', ''), 10) : 0;
+            let lastNumberOfRMModel = (gstNoRecordForRM && gstNoRecordForRM.invoiceNo) ? parseInt(gstNoRecordForRM.invoiceNo.replace('P', ''), 10) : 0;
+
+            let maxNumber = Math.max(lastNumberOfPMModel, lastNumberOfRMModel);
+            let newNumber = (maxNumber ? maxNumber : 1) + 1;
+
+            response.invoiceNo = `P${newNumber.toString().padStart(4, '0')}`;
         } else {
-            response.invoiceNo = 'PM0001';
+            response.invoiceNo = 'P0001';
         }
 
         let encryptData = encryptionAPI(response, 1);
@@ -4542,7 +4559,7 @@ const getAllStockStatementReport = async (req, res) => {
                 acc[productId].items.push(item);
                 return acc;
             }, {})
-        );
+        ).filter(item => item.totalQty > 0);
 
         // let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
         // for (const details of groupedResponse) {
@@ -4555,6 +4572,7 @@ const getAllStockStatementReport = async (req, res) => {
 
         //     details.totalQty = (Number(details.totalQty) || 0) - totalReduceQty;
         // }
+        console.log(groupedResponse)
 
         let encryptData = encryptionAPI(groupedResponse, 1)
         res.status(200).json({

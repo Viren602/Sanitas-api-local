@@ -21,3 +21,5 @@ export const CompanyGroup = "SANITAS GROUP";
 
 export const ErrorMail = (isProd === 'true' ? "info@zyden-it.com" : "zyden.itsolutions@gmail.com");
 
+export const ErrorPass = (isProd === 'true' ? "fbaf cbzj fpwf yufg" : "fbaf cbzj fpwf yufg");
+

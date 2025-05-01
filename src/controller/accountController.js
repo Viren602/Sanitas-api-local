@@ -1853,6 +1853,46 @@ const addEditGeneralDebitNoteEntry = async (req, res) => {
                     },
                 });
             }
+
+            let prEntryModel = await paymentReceiptEntryModel(dbYear);
+            await prEntryModel.deleteMany({ generalDebitNoteEntryId: data.generalDebitNoteId });
+
+            // Create New Transactions
+            let prEntryModel1 = await paymentReceiptEntryModel(dbYear);
+            const debitTransaction = new prEntryModel1({
+                voucherNo: data.noteNo,
+                date: data.date,
+                partyId: data.partyId,
+                chqNo: '-',
+                debitAmount: data.grandTotal,
+                creditAmount: 0,
+                narration1: `${data.acNarration1} `,
+                narration2: data.acNarration2,
+                narration3: '',
+                entryType: 'DebitNote',
+                from: 'GeneralDebitNoteEntry',
+                generalDebitNoteEntryId: response._id
+            });
+
+            let prEntryModel2 = await paymentReceiptEntryModel(dbYear);
+            const creditTransaction = new prEntryModel2({
+                voucherNo: data.noteNo,
+                date: data.date,
+                partyId: data.acId,
+                chqNo: '-',
+                creditAmount: data.grandTotal,
+                debitAmount: 0,
+                narration1: `${data.acNarration1} `,
+                narration2: data.acNarration2,
+                narration3: '',
+                entryType: 'DebitNote',
+                from: 'GeneralDebitNoteEntry',
+                generalDebitNoteEntryId: response._id
+            });
+
+            await debitTransaction.save();
+            await creditTransaction.save();
+
             let encryptData = encryptionAPI(response, 1);
             res.status(200).json({
                 data: {
@@ -1866,6 +1906,42 @@ const addEditGeneralDebitNoteEntry = async (req, res) => {
             let gdnModel = await generalDebitNoteModel(dbYear);
             const response = new gdnModel(data);
             await response.save();
+
+            // Create New Transactions
+            let prEntryModel1 = await paymentReceiptEntryModel(dbYear);
+            const debitTransaction = new prEntryModel1({
+                voucherNo: data.noteNo,
+                date: data.date,
+                partyId: data.partyId,
+                chqNo: '-',
+                debitAmount: data.grandTotal,
+                creditAmount: 0,
+                narration1: `${data.acNarration1} `,
+                narration2: data.acNarration2,
+                narration3: '',
+                entryType: 'DebitNote',
+                from: 'GeneralDebitNoteEntry',
+                generalDebitNoteEntryId: response._id
+            });
+
+            let prEntryModel2 = await paymentReceiptEntryModel(dbYear);
+            const creditTransaction = new prEntryModel2({
+                voucherNo: data.noteNo,
+                date: data.date,
+                partyId: data.acId,
+                chqNo: '-',
+                creditAmount: data.grandTotal,
+                debitAmount: 0,
+                narration1: `${data.acNarration1} `,
+                narration2: data.acNarration2,
+                narration3: '',
+                entryType: 'DebitNote',
+                from: 'GeneralDebitNoteEntry',
+                generalDebitNoteEntryId: response._id
+            });
+
+            await debitTransaction.save();
+            await creditTransaction.save();
 
             let encryptData = encryptionAPI(response, 1);
             res.status(200).json({
@@ -2061,6 +2137,46 @@ const addEditGeneralCreditNoteEntry = async (req, res) => {
                     },
                 });
             }
+
+            let prEntryModel = await paymentReceiptEntryModel(dbYear);
+            await prEntryModel.deleteMany({ generalCreditNoteEntryId: data.generalDebitNoteId });
+
+            // Create New Transactions
+            let prEntryModel1 = await paymentReceiptEntryModel(dbYear);
+            const debitTransaction = new prEntryModel1({
+                voucherNo: data.noteNo,
+                date: data.date,
+                partyId: data.partyId,
+                chqNo: '-',
+                debitAmount: data.grandTotal,
+                creditAmount: 0,
+                narration1: `${data.acNarration1} `,
+                narration2: data.acNarration2,
+                narration3: '',
+                entryType: 'CreditNote',
+                from: 'GeneralCreditNoteEntry',
+                generalCreditNoteEntryId: response._id
+            });
+
+            let prEntryModel2 = await paymentReceiptEntryModel(dbYear);
+            const creditTransaction = new prEntryModel2({
+                voucherNo: data.noteNo,
+                date: data.date,
+                partyId: data.acId,
+                chqNo: '-',
+                creditAmount: data.grandTotal,
+                debitAmount: 0,
+                narration1: `${data.acNarration1} `,
+                narration2: data.acNarration2,
+                narration3: '',
+                entryType: 'CreditNote',
+                from: 'GeneralCreditNoteEntry',
+                generalCreditNoteEntryId: response._id
+            });
+
+            await debitTransaction.save();
+            await creditTransaction.save();
+
             let encryptData = encryptionAPI(response, 1);
             res.status(200).json({
                 data: {
@@ -2074,6 +2190,42 @@ const addEditGeneralCreditNoteEntry = async (req, res) => {
             let gCreditNoteModel = await generalCreditNoteModel(dbYear);
             const response = new gCreditNoteModel(data);
             await response.save();
+
+            // Create New Transactions
+            let prEntryModel1 = await paymentReceiptEntryModel(dbYear);
+            const debitTransaction = new prEntryModel1({
+                voucherNo: data.noteNo,
+                date: data.date,
+                partyId: data.partyId,
+                chqNo: '-',
+                debitAmount: data.grandTotal,
+                creditAmount: 0,
+                narration1: `${data.acNarration1} `,
+                narration2: data.acNarration2,
+                narration3: '',
+                entryType: 'CreditNote',
+                from: 'GeneralCreditNoteEntry',
+                generalCreditNoteEntryId: response._id
+            });
+
+            let prEntryModel2 = await paymentReceiptEntryModel(dbYear);
+            const creditTransaction = new prEntryModel2({
+                voucherNo: data.noteNo,
+                date: data.date,
+                partyId: data.acId,
+                chqNo: '-',
+                creditAmount: data.grandTotal,
+                debitAmount: 0,
+                narration1: `${data.acNarration1} `,
+                narration2: data.acNarration2,
+                narration3: '',
+                entryType: 'CreditNote',
+                from: 'GeneralCreditNoteEntry',
+                generalCreditNoteEntryId: response._id
+            });
+
+            await debitTransaction.save();
+            await creditTransaction.save();
 
             let encryptData = encryptionAPI(response, 1);
             res.status(200).json({
