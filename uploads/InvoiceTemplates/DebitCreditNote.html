@@ -1,0 +1,242 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Invoice</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <style>
+        .invoice-table thead tr th {
+            font-weight: 500 !important;
+            line-height: 14px;
+            padding-top: 3px;
+            padding-bottom: 3px;
+        }
+
+        .invoice-table tbody tr:not(:last-child) {
+            height: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="invoice h-[275mm] px-[20px] pt-[20px]">
+        <div class="invoice-inner h-full flex flex-col relative">
+            <p class="invoice-mark absolute text-[12px] right-[0] top-[5px]">#CopyType</p>
+            <div class="invoice-top shrink-0">
+                <p class="text-center font-medium">#NoteType</p>
+                <div class="invoice-top-inner h-fit ">
+                    <div class="company-details border p-[5px] text-center text-[12px] font-medium">
+                        <h1 class="text-[18px] leading-4 font-bold">#AdminCompanyName</h1>
+                        <p>#AdminAddress</p>
+                        <p>Email : #AdminEmail</p>
+                        <p>Mobile : #AdminMobile</p>
+                        <div class="extra-details flex justify-between">
+                            <p>GSTN no : #AdminGSTNNo</p>
+                            <p class="pl-[30px]">FSSAI no : #AdminFssaiNo</p>
+                            <p>MSME No. : #AdminMSMENo</p>
+                        </div>
+                    </div>
+                    <div class="invoice-details flex border border-t-0 text-[12px]">
+                        <div class="left w-[100%] border-r-[1px] px-[5px]">
+                            <p class="font-semibold">Reciptient's name:</p>
+                            <p class="text-[12px] font-bold">#CompanyName</p>
+                            <p class="font-medium">#RecipientAddress</p>
+                            <p class="font-medium">State : #RecipientState</p>
+                            <p><span class="font-medium">Mobile :</span> #MobielNo</p>
+                        </div>
+                        <div class="right w-[100%] border-r-[1px] px-[5px]">
+                            <p class="font-semibold">Consignee/Shipped to:</p>
+                            <p class="text-[12px] font-bold">#ConCompanyName</p>
+                            <p class="font-medium">#ShippedToAddress</p>
+                            <p class="font-medium">State : #ConRecipientState</p>
+                            <p><span class="font-medium">Mobile :</span> #ConMobielNo</p>
+                        </div>
+                    </div>
+                    <div class="invoice-details flex border border-t-0">
+                        <div class="left flex w-[50%] border-r-[1px] px-[5px] text-[12px]">
+                            <p class="w-[50%]"><span class="font-semibold">Debit Note no :</span> #InvoiceNo</p>
+                            <p class="w-[50%]"><span class="font-semibold">Date:</span> #InvoiceDate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="invoice-middle" style="height: calc(100% - 550px);">
+                <div
+                    class="invoice-table-container h-full flex flex-col grow justify-between border border-b-0 border-t-[0px]">
+                    <table class="invoice-table w-full h-full table-auto border-collapse">
+                        <thead class="border border-x-[0px] border-t-[0px] border-gray-400 text-[12px] !font-normal">
+                            <tr class="bg-gray-300">
+                                <th class="w-[25%] border border-x-[0px] border-t-[0px] px-[4px] text-start">Item name
+                                </th>
+                                <th class="w-[7%] border border-r-[0px] border-t-[0px] px-[4px] text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody class="align-top h-auto text-[14px]">
+                            <tr>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    #Desc1</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-right">
+                                    #Amount1</td>
+                            </tr>
+                            <tr>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    #Desc2</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-right">
+                                    #Amount2</td>
+                            </tr>
+                            <tr>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    #Desc3</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-right">
+                                    #Amount3</td>
+                            </tr>
+                            <tr>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
+                                    #Desc4</td>
+                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-right">
+                                    #Amount4</td>
+                            </tr>
+                            <tr>
+                                <td class="border border-x border-y border-t-[0px] px-[4px] py-[2px] text-start">
+                                    #Desc5</td>
+                                <td class="border border-x border-y border-t-[0px] px-[4px] py-[2px] text-right">
+                                    #Amount5</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <!-- <table class="invoice-table-total w-full">
+                        <tbody class="border border-x-[0px] border-b-0 text-[12px]">
+                            <tr>
+                                <td class="w-[7%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[8%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[8%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[7%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[7%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[6%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[5%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[5%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[6%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                            </tr>
+                        </tbody>
+                    </table> -->
+                </div>
+            </div>
+            <div class="invoice-bottom shrink-0 mb-[10px]">
+                <div class="gst-price-table flex  w-full">
+                    <div class="gst-details flex w-[65%] flex-col justify-between border border-t-0 border-r-[0px]">
+                        <table class="gst-table w-full h-full table-auto border-collapse">
+                            <thead class="border border-x-[0px] border-t-[0px] text-[12px]">
+                                <tr>
+                                    <td
+                                        class="w-[15%] px-[3px] border border-t-0 border-gray-400 border-l-0 font-medium">
+                                        Class</td>
+                                    <td class="w-[10%] px-[3px] border border-t-0 border-gray-400 font-medium">Total
+                                    </td>
+                                    <td class="w-[12%] px-[3px] border border-t-0 border-gray-400 font-medium">SGST Rate
+                                    </td>
+                                    <td class="w-[9%] px-[3px] border border-t-0 border-gray-400 font-medium">SGST</td>
+                                    <td class="w-[12%] px-[3px] border border-t-0 border-gray-400 font-medium">CGST Rate
+                                    </td>
+                                    <td class="w-[9%] px-[3px] border border-t-0 border-gray-400 font-medium">CGST</td>
+                                    <td class="w-[12%] px-[3px] border border-t-0 border-gray-400 font-medium">IGST Rate
+                                    </td>
+                                    <td class="w-[9%] px-[3px] border border-t-0 border-gray-400 font-medium">IGST</td>
+                                    <td
+                                        class="w-[12%] px-[3px] border border-t-0 border-gray-400 border-r-0 font-medium">
+                                        Total GST</td>
+                                </tr>
+                            </thead>
+                            <tbody class="align-top text-[12px]">
+                                <tr>
+                                    <td class="px-[5px]">#HSNSacCode</td>
+                                    <td class="px-[5px]">#SubTotalAmountForGST</td>
+                                    <td class="px-[5px]">#SGST%</td>
+                                    <td class="px-[5px]">#SGSTAmount</td>
+                                    <td class="px-[5px]">#CGST%</td>
+                                    <td class="px-[5px]">#CGSTAmount</td>
+                                    <td class="px-[5px]">#IGST%</td>
+                                    <td class="px-[5px]">#IGSTAmount</td>
+                                    <td class="px-[5px]">#GSTAmountForTable</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="price-details w-[35%]">
+                        <table class="price-table w-full border-collapse border border-t-[0px] ">
+                            <tbody class="text-[12px]">
+                                <tr>
+                                    <td class="px-[5px]">Sub total</td>
+                                    <td class="px-[5px] text-right">#SubTotalAmountForSub</td>
+                                </tr>
+                                <!-- <tr>
+                                    <td class="px-[5px]">SGST payable</td>
+                                    <td class="px-[5px] text-right">#SGSTAmount</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-[5px]">CGST payable</td>
+                                    <td class="px-[5px] text-right">#CGSTAmount</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-[5px]">IGST payable</td>
+                                    <td class="px-[5px] text-right">#IGSTAmount</td>
+                                </tr> -->
+                                <tr>
+                                    <td class="px-[5px]">Total GST</td>
+                                    <td class="px-[5px] text-right">#GSTAmountForSummary</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-[5px]">Round off</td>
+                                    <td class="px-[5px] text-right">-#RoundOffAmount</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-[5px] "><b>Grand Total</b></td>
+                                    <td class="px-[5px] text-right"><b>#GrandTotal</b></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="price-words flex h-fit justify-between border-x">
+                    <!-- <p class="w-[65%] px-[5px] text-[12px] font-bold"><span></span> </p>
+                    <div class="flex w-[35%] justify-between px-[5px] text-[12px]">
+                        <p class="font-bold">Grand Total</p>
+                        <p class="font-bold">#GrandTotal</p>
+                    </div> -->
+                </div>
+                <div class="invoice-bottom-inner flex border p-[5px]">
+                    <div class="terms-condition w-[65%]">
+                        <p class="text-[11px] font-medium underline">Terms and condition :</p>
+                        <p class="text-[11px] leading-4">#TermsConditionLine1</p>
+                        <p class="text-[11px] leading-4">#TermsConditionLine2</p>
+                        <p class="text-[11px] leading-4">#TermsConditionLine3</p>
+                        <p class="text-[11px] leading-4">#TermsConditionLine4</p>
+                        <div class="bank-details mt-[5px]">
+                            <p class="mb-[2px] text-[11px] font-medium underline">Bank details:</p>
+                            <div class="bank-info grid grid-cols-2">
+                                <p class="text-[12px] leading-4"><span class="font-medium">Bank name :</span>
+                                    #AdminBankName</p>
+                                <p class="text-[12px] leading-4"><span class="font-medium">IFSC code :</span>
+                                    #AdminIFSCCode</p>
+                                <p class="text-[12px] leading-4"><span class="font-medium">A/c No. :</span> #ADMINACNo
+                                </p>
+                                <p class="text-[12px] leading-4"><span class="font-medium">Branch :</span>
+                                    #AdminBankBranch</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="company-stamp flex w-[35%] flex-col justify-between p-[10px]">
+                        <p class="text-[12px] font-semibold">FOR #AdminCompanyName</p>
+                        <div class="signature grid h-fit w-full grid-cols-2">
+                            <p class="text-[10px]">Checked by</p>
+                            <p class="text-right text-[10px]">Auhtorised signature</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

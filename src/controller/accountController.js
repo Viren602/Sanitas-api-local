@@ -18,6 +18,14 @@ import grnEntryPartyDetailsModel from "../model/InventoryModels/grnEntryPartyDet
 import partyModel from "../model/partiesModel.js";
 import errorHandler from "../server/errorHandle.js";
 import accountGroupModel from "../model/accountGroupModel.js";
+import companyGroupModel from "../model/companyGroup.js";
+import path from "path";
+import fs from 'fs'
+import { fileURLToPath } from "node:url";
+import puppeteer from "puppeteer";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Receipt Entry
 const getReceiptEntryVoucherNo = async (req, res) => {
@@ -2082,6 +2090,147 @@ const deleteGeneralDebitNoteEntryById = async (req, res) => {
     }
 };
 
+const generateDebitNoteEntryById = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        let cgModel = await companyGroupModel(dbYear)
+        let companyDetails = await cgModel.findOne({});
+        let adminAddress = companyDetails.addressLine1 + ' '
+            + companyDetails.addressLine2 + ' '
+            + companyDetails.addressLine3 + ' '
+            + companyDetails.pinCode + '(' + companyDetails.state + ')'
+
+        let gdnModel = await generalDebitNoteModel(dbYear);
+        let invoiceDetails = await gdnModel
+            .findOne({ _id: reqId, isDeleted: false })
+            .populate({
+                path: 'partyId',
+                select: 'partyName address1 address2 address3 address4 corrspAddress1 corrspAddress2 corrspAddress3 corrspAddress4 state pinCode gstnNo mobileNo1 mobileNo2 crdays person dlNo1 dlNo2 fssaiNo bankName city',
+            });
+
+        let recipientAddress = invoiceDetails.partyId.address1 + ' '
+            + invoiceDetails.partyId.address2 + ' '
+            + invoiceDetails.partyId.address3 + ' '
+            + invoiceDetails.partyId.address4 + '-'
+            + ((invoiceDetails.partyId.pinCode !== '' && invoiceDetails.partyId.pinCode) ? invoiceDetails.partyId.pinCode : '')
+
+        let shippedToAddress =
+            `${invoiceDetails.partyId.corrspAddress1 || invoiceDetails.partyId.address1 || ''} ` +
+            `${invoiceDetails.partyId.corrspAddress2 || invoiceDetails.partyId.address2 || ''} ` +
+            `${invoiceDetails.partyId.corrspAddress3 || invoiceDetails.partyId.address3 || ''} ` +
+            `${invoiceDetails.partyId.corrspAddress4 || invoiceDetails.partyId.address4 || ''} -` +
+            `${(invoiceDetails.partyId.pinCode !== '' && invoiceDetails.partyId.pinCode) ? invoiceDetails.partyId.pinCode : ''}`;
+
+
+        let mobileNo = invoiceDetails.partyId.mobileNo1 + (invoiceDetails.partyId.mobileNo2 !== '' ? ',' + invoiceDetails.partyId.mobileNo2 : '')
+
+        let htmlTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "DebitCreditNote.html"), "utf8");
+
+        // Injecting CSS for empty pages
+        htmlTemplate = htmlTemplate + `
+                                <style>
+                                    @page {
+                                        size: A4;
+                                        margin: 0;
+                                    }
+                                    .empty-page {
+                                        page-break-before: always;
+                                        height: 100vh;
+                                    }
+                                </style>
+                                `;
+
+        const generatePage = (copyType) => {
+            return htmlTemplate.replace("#CompanyName", invoiceDetails.partyId.partyName)
+                .replace('#NoteType', 'DEBIT NOTE')
+                .replace('#CopyType', copyType)
+                .replace('#ConCompanyName', invoiceDetails.partyId.partyName)
+                .replace('#ConRecipientState', invoiceDetails.partyId.state ? invoiceDetails.partyId.state : '')
+                .replace('#ConMobielNo', mobileNo)
+                .replace('#RecipientAddress', recipientAddress)
+                .replace('#ShippedToAddress', shippedToAddress)
+                .replace('#RecipientState', invoiceDetails.partyId.state)
+                .replace('#RecpGSTNNo', invoiceDetails.partyId.gstnNo ? invoiceDetails.partyId.gstnNo : '-')
+                .replace('#FSSAINo', invoiceDetails.partyId.fssaiNo ? invoiceDetails.partyId.fssaiNo : '-')
+                .replace('#RecpDLNo', (invoiceDetails.partyId.dlNo1 !== '' ? invoiceDetails.partyId.dlNo1 : '') + (invoiceDetails.partyId.dlNo2 ? (', ' + invoiceDetails.partyId.dlNo2) : ''))
+                .replace('#MobielNo', mobileNo)
+                .replace('#Destination', invoiceDetails.partyId.city)
+                .replace('#InvoiceNo', invoiceDetails.noteNo)
+                .replace('#HSNSacCode', invoiceDetails.hsnSacCode)
+                .replace('#InvoiceDate', dayjs(invoiceDetails.date).format("DD-MM-YYYY"))
+                .replace('#Desc1', invoiceDetails.description1)
+                .replace('#Desc2', invoiceDetails.description2)
+                .replace('#Desc3', invoiceDetails.description3)
+                .replace('#Desc4', invoiceDetails.description4)
+                .replace('#Desc5', invoiceDetails.description5)
+                .replace('#Amount1', invoiceDetails.amount1 ? invoiceDetails.amount1 : '')
+                .replace('#Amount2', invoiceDetails.amount2 ? invoiceDetails.amount2 : '')
+                .replace('#Amount3', invoiceDetails.amount3 ? invoiceDetails.amount3 : '')
+                .replace('#Amount4', invoiceDetails.amount4 ? invoiceDetails.amount4 : '')
+                .replace('#Amount5', invoiceDetails.amount5 ? invoiceDetails.amount5 : '')
+                .replace('#SubTotalAmountForGST', invoiceDetails.subTotal ? invoiceDetails.subTotal : 0)
+                .replace('#SubTotalAmountForSub', invoiceDetails.subTotal ? invoiceDetails.subTotal : 0)
+                .replace('#SGSTAmount', invoiceDetails.sgstAmount ? invoiceDetails.sgstAmount : 0)
+                .replace('#CGSTAmount', invoiceDetails.cgstAmount ? invoiceDetails.cgstAmount : 0)
+                .replace('#IGSTAmount', invoiceDetails.igstAmount ? invoiceDetails.igstAmount : 0)
+                .replace('#SGST', invoiceDetails.sgst ? invoiceDetails.sgst : 0)
+                .replace('#CGST', invoiceDetails.cgst ? invoiceDetails.cgst : 0)
+                .replace('#IGST', invoiceDetails.igst ? invoiceDetails.igst : 0)
+                .replace('#CRDRNote', 0)
+                .replace('#GSTAmountForTable', (invoiceDetails.sgstAmount ? invoiceDetails.sgstAmount : 0) + (invoiceDetails.cgstAmount ? invoiceDetails.cgstAmount : 0) + (invoiceDetails.igstAmount ? invoiceDetails.igstAmount : 0))
+                .replace('#GSTAmountForSummary', (invoiceDetails.sgstAmount ? invoiceDetails.sgstAmount : 0) + (invoiceDetails.cgstAmount ? invoiceDetails.cgstAmount : 0) + (invoiceDetails.igstAmount ? invoiceDetails.igstAmount : 0))
+                .replace('#RoundOffAmount', invoiceDetails.roundOff ? invoiceDetails.roundOff : 0)
+                .replace('#GrandTotal', invoiceDetails.grandTotal ? invoiceDetails.grandTotal : 0)
+                .replaceAll('#AdminCompanyName', companyDetails.CompanyName)
+                .replace('#AdminAddress', adminAddress)
+                .replace('#AdminEmail', companyDetails.email)
+                .replace('#AdminMobile', companyDetails.mobile)
+                .replace('#AdminMfgLicNo', companyDetails.mfgLicNo)
+                .replace('#AdminFssaiNo', companyDetails.fssaiNo)
+                .replace('#AdminMSMENo', companyDetails.msmeNo)
+                .replace('#AdminGSTNNo', companyDetails.gstnNo)
+                .replace('#AdminPanNo', companyDetails.panNo)
+                .replace('#TermsConditionLine1', companyDetails.termsConditionLine1)
+                .replace('#TermsConditionLine2', companyDetails.termsConditionLine2)
+                .replace('#TermsConditionLine3', companyDetails.termsConditionLine3)
+                .replace('#TermsConditionLine4', companyDetails.termsConditionLine4)
+                .replace('#AdminBankName', companyDetails.bankName)
+                .replace('#AdminIFSCCode', companyDetails.ifscCode)
+                .replace('#ADMINACNo', companyDetails.acNo)
+                .replace('#AdminBankBranch', companyDetails.branch)
+        }
+
+
+        htmlTemplate = `
+                <div class="empty-page">${generatePage("Original for Recipient")}</div>
+                <div class="page-break"></div>
+            `;
+
+        const browser = await puppeteer.launch({
+            headless: "new",
+            args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        });
+        const page = await browser.newPage();
+
+        await page.setContent(htmlTemplate, { waitUntil: "load" });
+
+        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+
+        await browser.close();
+
+        res.setHeader("Content-Disposition", 'inline; filename="document.pdf"');
+        res.setHeader("Content-Type", "application/pdf");
+
+        res.end(pdfBuffer);
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
 // General Credit Note Entry
 const getGeneralCreditNoteEntrySRNo = async (req, res) => {
     try {
@@ -2368,6 +2517,148 @@ const deleteGeneralCreditNoteEntryById = async (req, res) => {
         errorHandler(error, req, res, "Error in Account controller")
     }
 };
+
+const generateCreditNoteEntryById = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+
+        let cgModel = await companyGroupModel(dbYear)
+        let companyDetails = await cgModel.findOne({});
+        let adminAddress = companyDetails.addressLine1 + ' '
+            + companyDetails.addressLine2 + ' '
+            + companyDetails.addressLine3 + ' '
+            + companyDetails.pinCode + '(' + companyDetails.state + ')'
+
+        let gdnModel = await generalCreditNoteModel(dbYear);
+        let invoiceDetails = await gdnModel
+            .findOne({ _id: reqId, isDeleted: false })
+            .populate({
+                path: 'partyId',
+                select: 'partyName address1 address2 address3 address4 corrspAddress1 corrspAddress2 corrspAddress3 corrspAddress4 state pinCode gstnNo mobileNo1 mobileNo2 crdays person dlNo1 dlNo2 fssaiNo bankName city',
+            });
+
+        let recipientAddress = invoiceDetails.partyId.address1 + ' '
+            + invoiceDetails.partyId.address2 + ' '
+            + invoiceDetails.partyId.address3 + ' '
+            + invoiceDetails.partyId.address4 + '-'
+            + ((invoiceDetails.partyId.pinCode !== '' && invoiceDetails.partyId.pinCode) ? invoiceDetails.partyId.pinCode : '')
+
+        let shippedToAddress =
+            `${invoiceDetails.partyId.corrspAddress1 || invoiceDetails.partyId.address1 || ''} ` +
+            `${invoiceDetails.partyId.corrspAddress2 || invoiceDetails.partyId.address2 || ''} ` +
+            `${invoiceDetails.partyId.corrspAddress3 || invoiceDetails.partyId.address3 || ''} ` +
+            `${invoiceDetails.partyId.corrspAddress4 || invoiceDetails.partyId.address4 || ''} -` +
+            `${(invoiceDetails.partyId.pinCode !== '' && invoiceDetails.partyId.pinCode) ? invoiceDetails.partyId.pinCode : ''}`;
+
+
+        let mobileNo = invoiceDetails.partyId.mobileNo1 + (invoiceDetails.partyId.mobileNo2 !== '' ? ',' + invoiceDetails.partyId.mobileNo2 : '')
+
+        let htmlTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "DebitCreditNote.html"), "utf8");
+
+        // Injecting CSS for empty pages
+        htmlTemplate = htmlTemplate + `
+                                <style>
+                                    @page {
+                                        size: A4;
+                                        margin: 0;
+                                    }
+                                    .empty-page {
+                                        page-break-before: always;
+                                        height: 100vh;
+                                    }
+                                </style>
+                                `;
+
+        const generatePage = (copyType) => {
+            return htmlTemplate.replace("#CompanyName", invoiceDetails.partyId.partyName)
+                .replace('#CopyType', copyType)
+                .replace('#NoteType', 'CREDIT NOTE')
+                .replace('#ConCompanyName', invoiceDetails.partyId.partyName)
+                .replace('#ConRecipientState', invoiceDetails.partyId.state ? invoiceDetails.partyId.state : '')
+                .replace('#ConMobielNo', mobileNo)
+                .replace('#RecipientAddress', recipientAddress)
+                .replace('#ShippedToAddress', shippedToAddress)
+                .replace('#RecipientState', invoiceDetails.partyId.state)
+                .replace('#RecpGSTNNo', invoiceDetails.partyId.gstnNo ? invoiceDetails.partyId.gstnNo : '-')
+                .replace('#FSSAINo', invoiceDetails.partyId.fssaiNo ? invoiceDetails.partyId.fssaiNo : '-')
+                .replace('#RecpDLNo', (invoiceDetails.partyId.dlNo1 !== '' ? invoiceDetails.partyId.dlNo1 : '') + (invoiceDetails.partyId.dlNo2 ? (', ' + invoiceDetails.partyId.dlNo2) : ''))
+                .replace('#MobielNo', mobileNo)
+                .replace('#Destination', invoiceDetails.partyId.city)
+                .replace('#InvoiceNo', invoiceDetails.noteNo)
+                .replace('#HSNSacCode', invoiceDetails.hsnSacCode)
+                .replace('#InvoiceDate', dayjs(invoiceDetails.date).format("DD-MM-YYYY"))
+                .replace('#Desc1', invoiceDetails.description1)
+                .replace('#Desc2', invoiceDetails.description2)
+                .replace('#Desc3', invoiceDetails.description3)
+                .replace('#Desc4', invoiceDetails.description4)
+                .replace('#Desc5', invoiceDetails.description5)
+                .replace('#Amount1', invoiceDetails.amount1 ? invoiceDetails.amount1 : '')
+                .replace('#Amount2', invoiceDetails.amount2 ? invoiceDetails.amount2 : '')
+                .replace('#Amount3', invoiceDetails.amount3 ? invoiceDetails.amount3 : '')
+                .replace('#Amount4', invoiceDetails.amount4 ? invoiceDetails.amount4 : '')
+                .replace('#Amount5', invoiceDetails.amount5 ? invoiceDetails.amount5 : '')
+                .replace('#SubTotalAmountForGST', invoiceDetails.subTotal ? invoiceDetails.subTotal : 0)
+                .replace('#SubTotalAmountForSub', invoiceDetails.subTotal ? invoiceDetails.subTotal : 0)
+                .replace('#SGSTAmount', invoiceDetails.sgstAmount ? invoiceDetails.sgstAmount : 0)
+                .replace('#CGSTAmount', invoiceDetails.cgstAmount ? invoiceDetails.cgstAmount : 0)
+                .replace('#IGSTAmount', invoiceDetails.igstAmount ? invoiceDetails.igstAmount : 0)
+                .replace('#SGST', invoiceDetails.sgst ? invoiceDetails.sgst : 0)
+                .replace('#CGST', invoiceDetails.cgst ? invoiceDetails.cgst : 0)
+                .replace('#IGST', invoiceDetails.igst ? invoiceDetails.igst : 0)
+                .replace('#CRDRNote', 0)
+                .replace('#GSTAmountForTable', (invoiceDetails.sgstAmount ? invoiceDetails.sgstAmount : 0) + (invoiceDetails.cgstAmount ? invoiceDetails.cgstAmount : 0) + (invoiceDetails.igstAmount ? invoiceDetails.igstAmount : 0))
+                .replace('#GSTAmountForSummary', (invoiceDetails.sgstAmount ? invoiceDetails.sgstAmount : 0) + (invoiceDetails.cgstAmount ? invoiceDetails.cgstAmount : 0) + (invoiceDetails.igstAmount ? invoiceDetails.igstAmount : 0))
+                .replace('#RoundOffAmount', invoiceDetails.roundOff ? invoiceDetails.roundOff : 0)
+                .replace('#GrandTotal', invoiceDetails.grandTotal ? invoiceDetails.grandTotal : 0)
+                .replaceAll('#AdminCompanyName', companyDetails.CompanyName)
+                .replace('#AdminAddress', adminAddress)
+                .replace('#AdminEmail', companyDetails.email)
+                .replace('#AdminMobile', companyDetails.mobile)
+                .replace('#AdminMfgLicNo', companyDetails.mfgLicNo)
+                .replace('#AdminFssaiNo', companyDetails.fssaiNo)
+                .replace('#AdminMSMENo', companyDetails.msmeNo)
+                .replace('#AdminGSTNNo', companyDetails.gstnNo)
+                .replace('#AdminPanNo', companyDetails.panNo)
+                .replace('#TermsConditionLine1', companyDetails.termsConditionLine1)
+                .replace('#TermsConditionLine2', companyDetails.termsConditionLine2)
+                .replace('#TermsConditionLine3', companyDetails.termsConditionLine3)
+                .replace('#TermsConditionLine4', companyDetails.termsConditionLine4)
+                .replace('#AdminBankName', companyDetails.bankName)
+                .replace('#AdminIFSCCode', companyDetails.ifscCode)
+                .replace('#ADMINACNo', companyDetails.acNo)
+                .replace('#AdminBankBranch', companyDetails.branch)
+        }
+
+
+        htmlTemplate = `
+                <div class="empty-page">${generatePage("Original for Recipient")}</div>
+                <div class="page-break"></div>
+            `;
+
+        const browser = await puppeteer.launch({
+            headless: "new",
+            args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        });
+        const page = await browser.newPage();
+
+        await page.setContent(htmlTemplate, { waitUntil: "load" });
+
+        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+
+        await browser.close();
+
+        res.setHeader("Content-Disposition", 'inline; filename="document.pdf"');
+        res.setHeader("Content-Type", "application/pdf");
+
+        res.end(pdfBuffer);
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
 
 // J.V. Entry
 const getJVEntryVoucherNo = async (req, res) => {
@@ -3300,6 +3591,8 @@ export {
     getAllGeneralCreditNoteEntry,
     getGeneralCreditNoteEntryById,
     deleteGeneralCreditNoteEntryById,
+    generateCreditNoteEntryById,
+    generateDebitNoteEntryById,
     getJVEntryVoucherNo,
     addEditJVEntry,
     getAllJVEntry,
