@@ -2922,6 +2922,123 @@ const getAllAccountLedger = async (req, res) => {
     }
 };
 
+const getAllPendingInvoicePaymentReport = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        let queryObject = {
+            isDeleted: false,
+            pendingAmount: { $gt: 0 }
+        }
+
+        if (data.partyId && data.partyId.trim() !== '') {
+            queryObject.partyId = data.partyId
+        }
+
+        let response = []
+        if (data.searchFor === 'pendingPayment') {
+            let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
+            const finishGoodsData = await gifgModel
+                .find(queryObject)
+                .select('invoiceNo partyId invoiceDate pendingAmount grandTotal')
+                .populate({
+                    path: 'partyId',
+                    select: 'partyName maintainAc'
+                })
+                .lean();
+
+            let girModel = await gstInvoiceRMModel(dbYear);
+            const rmData = await girModel
+                .find(queryObject)
+                .select('invoiceNo partyId invoiceDate pendingAmount grandTotal')
+                .populate({
+                    path: 'partyId',
+                    select: 'partyName maintainAc'
+                })
+                .lean();
+
+            let gipModel = await gstInvoicePMModel(dbYear);
+            const pmData = await gipModel
+                .find(queryObject)
+                .select('invoiceNo partyId invoiceDate pendingAmount grandTotal')
+                .populate({
+                    path: 'partyId',
+                    select: 'partyName maintainAc'
+                })
+                .lean();
+
+            response = [
+                ...finishGoodsData.map(item => ({
+                    ...item,
+                    gstInvoiceFinishGoodsId: item._id,
+                    _id: undefined
+                })),
+                ...rmData.map(item => ({
+                    ...item,
+                    gstRMInvoiceId: item._id,
+                    _id: undefined
+                })),
+                ...pmData.map(item => ({
+                    ...item,
+                    gstPMInvoiceId: item._id,
+                    _id: undefined
+                }))
+            ];
+        } else {
+            let gpeRMPMModel = await gstPurchaseEntryRMPMModel(dbYear);
+            const gstPurchaseEntryData = await gpeRMPMModel
+                .find(queryObject)
+                .select('invoiceNo partyId invoiceDate pendingAmount grandTotal')
+                .populate({
+                    path: 'partyId',
+                    select: 'partyName maintainAc'
+                })
+                .lean();
+
+            let gpWithoutInventoryEntryModel = await gstPurchaseWithoutInventoryEntryModel(dbYear);
+            const gstPurchaseWithoutInventoryData = await gpWithoutInventoryEntryModel
+                .find(queryObject)
+                .select('invoiceNo partyId invoiceDate pendingAmount grandTotal')
+                .populate({
+                    path: 'partyId',
+                    select: 'partyName maintainAc'
+                })
+                .lean();
+
+            response = [
+                ...gstPurchaseEntryData.map(item => ({
+                    ...item,
+                    gstPurchaseEntryRMPMId: item._id,
+                    _id: undefined
+                })),
+                ...gstPurchaseWithoutInventoryData.map(item => ({
+                    ...item,
+                    gstPurchaseEntryWithoutInventoryId: item._id,
+                    _id: undefined
+                })),
+
+            ];
+        }
+
+        const filteredData = response.filter(item => item.partyId && item.partyId.maintainAc === 'B');
+        let encryptData = encryptionAPI(filteredData, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Account Ledger Fetch Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
 const getRunningBalanceByPartyId = async (req, res) => {
     try {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
@@ -3599,6 +3716,7 @@ export {
     getJVEntryById,
     deleteJVEntryById,
     getAllAccountLedger,
+    getAllPendingInvoicePaymentReport,
     getRunningBalanceByPartyId,
     getAllBankWiseCashBankBookReport,
     getAllMonthWiseCashBankBookReportbyBankId,
