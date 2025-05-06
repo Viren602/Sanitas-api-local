@@ -39,6 +39,7 @@ const generalCreditNoteSchema = mongoose.Schema({
     amount5: { type: Number, default: '' },
     subTotal: { type: Number, default: 0 },
     grandTotal: { type: Number, default: '' },
+    roundOff: { type: Number, default: 0 },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
