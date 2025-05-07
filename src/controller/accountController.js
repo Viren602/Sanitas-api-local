@@ -330,8 +330,8 @@ const getAllReceiptEntry = async (req, res) => {
             from: data.from
         }
 
-        let sortOption = { voucherNo: 1 };
-        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+        let sortOption = { voucherNo: -1 };
+        if (data.arrangedBy && data.arrangedBy.trim() !== '' && data.arrangedBy !== 'Select') {
             sortOption = { [data.arrangedBy]: 1 };
         }
 
@@ -754,8 +754,8 @@ const getAllPaymnetEntry = async (req, res) => {
             from: data.from
         }
 
-        let sortOption = { voucherNo: 1 };
-        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+        let sortOption = { voucherNo: -1 };
+        if (data.arrangedBy && data.arrangedBy.trim() !== '' && data.arrangedBy !== 'Select') {
             sortOption = { [data.arrangedBy]: 1 };
         }
 
@@ -1067,14 +1067,14 @@ const getAllContraEntry = async (req, res) => {
             isDeleted: false,
         }
 
-        let sortBy = 'voucherNo'
+        let sortBy = { createdAt: -1 };
 
         if (data.search && data.search.trim() !== "") {
             queryObject.voucherNo = { $regex: `^${data.search}`, $options: "i" };
         }
 
-        if (data.arrangedBy && data.arrangedBy.trim() !== "") {
-            sortBy = data.arrangedBy;
+        if (data.arrangedBy && data.arrangedBy.trim() !== "" && data.arrangedBy !== "Select") {
+            sortBy = { [data.arrangedBy]: 1 };
         }
 
         let response = []
@@ -1415,8 +1415,9 @@ const getAllGSTPurchaseEntryRMPM = async (req, res) => {
             isDeleted: false,
         }
 
-        let sortOption = { srNo: 1 };
-        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+        let sortOption = { srNo: -1 };
+
+        if (data.arrangedBy && data.arrangedBy.trim() !== '' && data.arrangedBy !== 'Select') {
             sortOption = { [data.arrangedBy]: 1 };
         }
 
@@ -1689,8 +1690,8 @@ const getAllPurchaseEntryWithoutInventory = async (req, res) => {
             isDeleted: false,
         }
 
-        let sortOption = { srNo: 1 };
-        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+        let sortOption = { srNo: -1 };
+        if (data.arrangedBy && data.arrangedBy.trim() !== '' && data.arrangedBy !== 'Select') {
             sortOption = { [data.arrangedBy]: 1 };
         }
 
@@ -1978,8 +1979,8 @@ const getAllGeneralDebitNoteEntry = async (req, res) => {
             isDeleted: false,
         }
 
-        let sortOption = { noteNo: 1 };
-        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+        let sortOption = { noteNo: -1 };
+        if (data.arrangedBy && data.arrangedBy.trim() !== '' && data.arrangedBy !== 'Select') {
             sortOption = { [data.arrangedBy]: 1 };
         }
 
@@ -2406,8 +2407,8 @@ const getAllGeneralCreditNoteEntry = async (req, res) => {
             isDeleted: false,
         }
 
-        let sortOption = { noteNo: 1 };
-        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
+        let sortOption = { noteNo: -1 };
+        if (data.arrangedBy && data.arrangedBy.trim() !== '' && data.arrangedBy !== 'Select') {
             sortOption = { [data.arrangedBy]: 1 };
         }
 
@@ -2784,10 +2785,10 @@ const getAllJVEntry = async (req, res) => {
             isDeleted: false,
         }
 
-        let arrangedBy = 'srNo'
+        let arrangedBy = { createdAt: -1 };
 
-        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
-            arrangedBy = data.arrangedBy
+        if (data.arrangedBy && data.arrangedBy.trim() !== '' && data.arrangedBy !== 'Select') {
+            arrangedBy = { [data.arrangedBy]: 1 };
         }
 
         let jvEModel = await jvEntryModel(dbYear);

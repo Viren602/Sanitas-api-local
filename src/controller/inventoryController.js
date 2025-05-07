@@ -109,10 +109,10 @@ const getAllPartyListForGRNEntry = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
 
-        let filterBy = 'grnNo'
+        let filterBy = { createdAt: -1 };
 
         if (data.filterBy && data.filterBy.trim() !== '') {
-            filterBy = data.filterBy
+            filterBy = { [data.filterBy]: 1 };
         }
 
         if (data.materialType && data.materialType !== 'Select' && data.materialType.trim() !== '') {
@@ -462,10 +462,10 @@ const getAllAdditionalEntryList = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
-        let filterBy = 'slipNo'
+        let filterBy = { createdAt: -1 };
 
         if (data.filterBy && data.filterBy.trim() !== '') {
-            filterBy = data.filterBy
+            filterBy = { [data.filterBy]: 1 };
         }
 
         if (data.materialType && data.materialType !== 'Select' && data.materialType.trim() !== '') {
@@ -630,10 +630,10 @@ const getAllPurchaseOrders = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
-        let filterBy = 'purchaseOrderNo'
+        let filterBy = { createdAt: -1 };
 
         if (data.filterBy && data.filterBy.trim() !== '') {
-            filterBy = data.filterBy
+            filterBy = { [data.filterBy]: 1 };
         }
 
         if (data.materialType && data.materialType !== 'Select' && data.materialType.trim() !== '') {
@@ -1035,7 +1035,8 @@ const getallInquiryDetails = async (req, res) => {
         }
         let idModel = await inquiryDetailsModel(dbYear);
         let response = await idModel
-            .find(queryObject);
+            .find(queryObject)
+            .sort({ createdAt: -1 });
 
         let encryptData = encryptionAPI(response, 1)
 

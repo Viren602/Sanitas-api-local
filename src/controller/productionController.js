@@ -97,10 +97,10 @@ const getAllProductionPlanningEntry = async (req, res) => {
       isDeleted: false,
     };
 
-    let filterBy = "updatedAt";
+    let filterBy = { createdAt: -1 };;
 
-    if (data.filterBy && data.filterBy.trim() !== "") {
-      filterBy = data.filterBy;
+    if (data.filterBy && data.filterBy.trim() !== "" && data.filterBy !== "Select") {
+      filterBy = { [data.filterBy]: 1 };
     }
 
     if (Array.isArray(data.productionStageId) && data.productionStageId.length > 0) {
@@ -1125,7 +1125,7 @@ const deleteBatchCLearingEntryById = async (req, res) => {
 
       // Update Stock
       if (oldRecord) {
-        
+
         const oldQty = oldRecord.quantity
 
         await batchwiseProdStkModel.findOneAndUpdate(

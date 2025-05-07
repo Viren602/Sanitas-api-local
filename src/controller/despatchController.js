@@ -366,14 +366,14 @@ const getAllGSTInvoiceFinishGoodsRecords = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
 
-        let sortBy = 'invoiceNo'
+        let sortBy = { createdAt: -1 };
 
-        if (data.invoiceNo && data.invoiceNo.trim() !== "") {
+        if (data.invoiceNo && data.invoiceNo.trim() !== "" && data.invoiceNo !== 'Select') {
             queryObject.invoiceNo = { $regex: `^${data.invoiceNo}`, $options: "i" };
         }
 
         if (data.arrangedBy && data.arrangedBy.trim() !== "") {
-            sortBy = data.arrangedBy;
+            sortBy = { [data.arrangedBy]: 1 };
         }
 
         let response = []
@@ -1375,14 +1375,14 @@ const getAllGSTInvoiceRMRecords = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
 
-        let sortBy = 'invoiceNo'
+        let sortBy = { createdAt: -1 };
 
         if (data.invoiceNo && data.invoiceNo.trim() !== "") {
             queryObject.invoiceNo = { $regex: `^${data.invoiceNo}`, $options: "i" };
         }
 
-        if (data.arrangedBy && data.arrangedBy.trim() !== "") {
-            sortBy = data.arrangedBy;
+        if (data.arrangedBy && data.arrangedBy.trim() !== "" && data.arrangedBy !== 'Select') {
+            sortBy = { [data.arrangedBy]: 1 };
         }
 
         let response = []
@@ -2333,14 +2333,14 @@ const getAllGSTInvoicePMRecords = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
 
-        let sortBy = 'invoiceNo'
+        let sortBy = { createdAt: -1 };
 
         if (data.invoiceNo && data.invoiceNo.trim() !== "") {
             queryObject.invoiceNo = { $regex: `^${data.invoiceNo}`, $options: "i" };
         }
 
-        if (data.arrangedBy && data.arrangedBy.trim() !== "") {
-            sortBy = data.arrangedBy;
+        if (data.arrangedBy && data.arrangedBy.trim() !== "" && data.arrangedBy !== 'Select') {
+            sortBy = { [data.arrangedBy]: 1 };
         }
 
         let response = []
@@ -3073,10 +3073,10 @@ const getAllSalesOrderEntry = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
 
-        let arrangedBy = 'orderNo'
+        let arrangedBy = { createdAt: -1 };
 
         if (data.arrangedBy && data.arrangedBy.trim() !== '') {
-            arrangedBy = data.arrangedBy
+            arrangedBy = { [data.arrangedBy]: 1 };
         }
 
         let odsoEntryModel = await orderDetailsSalesOrderEntryModel(dbYear)
@@ -3424,14 +3424,14 @@ const getAllSalesGoodsReturnEntry = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = { isDeleted: false }
 
-        let sortBy = 'serialNo'
+        let sortBy = { createdAt: -1 };
 
         if (data.invoiceNo && data.invoiceNo.trim() !== "") {
             queryObject.invoiceNo = { $regex: `^${data.invoiceNo}`, $options: "i" };
         }
 
-        if (data.arrangedBy && data.arrangedBy.trim() !== "") {
-            sortBy = data.arrangedBy;
+        if (data.arrangedBy && data.arrangedBy.trim() !== "" && data.arrangedBy !== 'Select') {
+            sortBy = { [data.arrangedBy]: 1 };
         }
 
         let response = []
@@ -3803,9 +3803,9 @@ const getallOtherDeliveryChallanList = async (req, res) => {
         //     });
 
 
-        let sortOption = { serialNo: 1 };
-        if (data.arrangedBy && data.arrangedBy.trim() !== '') {
-            sortOption = { [data.arrangedBy]: 1 };
+        let sortOption = { serialNo: -1 };
+        if (data.arrangeBy && data.arrangeBy.trim() !== '' && data.arrangeBy !== 'Select') {
+            sortOption = { [data.arrangeBy]: 1 };
         }
 
         let odcModel = await otherDeliveryChallanModel(dbYear);
@@ -5160,6 +5160,7 @@ const addEditOutwardPost = async (req, res) => {
 };
 const getAllOutwardPost = async (req, res) => {
     try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
         let queryObject = {
