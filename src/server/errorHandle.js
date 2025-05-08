@@ -23,7 +23,7 @@ function errorHandler(err, req, res, message) {
     let emaildata = {
         toMail: ErrorMail,
         subject: ErrorSubject,
-        fromMail: ErrorMail,
+        fromMail: 'zyden.itsolutions@gmail.com',
         html: html,
         pass: ErrorPass
     };
