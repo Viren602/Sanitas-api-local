@@ -12,6 +12,8 @@ import batchClearingEntryModel from '../model/ProductionModels/batchClearingEntr
 import batchWiseProductStockModel from '../model/Despatch/batchWiseProductStockModel.js';
 import productionStageModel from '../model/productionStageModel.js';
 import { getRequestData } from '../middleware/encryption.js';
+import mailsender from '../utils/sendingEmail.js';
+import { ErrorPass } from '../middleware/appSetting.js';
 
 const dbYear = 'PharmaSoftware'
 
@@ -376,6 +378,133 @@ const showEntryptedData = async (req, res) => {
     }
 }
 
+const sendInquiryToAdmin = async (req, res) => {
+    try {
+
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        let html = `<!DOCTYPE html>
+                <html lang="en">
+
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+                    <style>
+                        /* .email {
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                        } */
+                        .email .email-top {
+                            background-color: #53a8341a;
+                            width: 100%;
+                            height: fit-content;
+                            padding: 50px;
+                            display: flex;
+                            justify-content: center;
+                        }
+                        .email .email-top img {
+                            height: 70px;
+                            width: auto;
+                            margin: 0 auto;
+                        }
+                        .email .email-bottom {
+                            width: 70%;
+                            background-color: white;
+                            padding: 30px;
+                            margin-top: -50px;
+                            border-radius: 15px;
+                            margin-bottom: 50px !important;
+                            margin: 0 auto;
+                            /* box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px; */
+                        }
+                        .email .email-bottom h1 {
+                            text-align: center;
+                            margin-bottom: 10px;
+                            font-weight: 600;
+                            font-size: 24px;
+                        }
+                        .email .email-bottom .text {
+                            font-size: 16px;
+                            font-weight: 400;
+                            color: #223645;
+                            text-align: center;
+                        }
+                        .email .email-bottom .form {
+                            margin-top: 20px;
+                        }
+                        .email .email-bottom .form .input-grp{
+                            margin-bottom: 20px;
+                        }
+                        .email .email-bottom .form .input-grp label{
+                            font-size: 14px;
+                            font-weight: 700;
+                            color: #6d6d6d;
+                        }
+                        .email .email-bottom .form .input-grp p{
+                            font-size: 16px;
+                            font-weight: 400;
+                            line-height: 24px;
+                            border-bottom: 1px solid #ebebeb;
+                            color: #6d6d6d;
+                        }
+                    </style>
+                </head>
+
+                <body>
+                    <div class="email flex flex-col items-center" >
+                        <div class="email-top bg-[#53a8341a] w-full h-[25vh] p-[30px] flex justify-center" >
+                            <img src="https://www.fortuneorganics.in/fortune-logo.png" alt="Fortune Organics"
+                                class="h-[70px] w-auto" />
+                        </div>
+                        <div class="email-bottom w-[80%] bg-white p-[30px] mt-[-50px] rounded-[15px] mb-[50px]">
+                            <h1 class="text-center mb-2.5 font-semibold text-[24px]">Congratulations!</h1>
+                            <p class="text text-[16px] font-regular text-[#223645] text-center">You’ve received a new inquiry from your website contact
+                                form. Here are the details:</p>
+                            <div class="form">
+                                <div class="input-grp">
+                                    <label class="text-[14px] font-bold text-[#6d6d6d]">Name</label>
+                                    <p class="text-[16px] font-regular leading-[24px] border-b border-b-[#ebebeb]">${data.fullName}</p>
+                                </div>
+                                <div class="input-grp">
+                                    <label class="text-[14px] font-bold text-[#6d6d6d]">Mobile No.</label>
+                                    <p class="text-[16px] font-regular leading-[24px] border-b border-b-[#ebebeb]">${data.mobileNo}</p>
+                                </div>
+                                <div class="input-grp">
+                                    <label class="text-[14px] font-bold text-[#6d6d6d]">Subject</label>
+                                    <p class="text-[16px] font-regular leading-[24px] border-b border-b-[#ebebeb]">${data.subject}</p>
+                                </div>
+                                <div class="input-grp">
+                                    <label class="text-[14px] font-bold text-[#6d6d6d]">Message</label>
+                                    <p class="text-[16px] font-regular leading-[24px] border-b border-b-[#ebebeb]">${data.message}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </body>
+
+                </html>`
+
+        let emaildata = {
+            toMail: data.toMail.toLowerCase(),
+            subject: 'Inquiry from ' + data.fullName,
+            fromMail: 'zyden.itsolutions@gmail.com',
+            html: html,
+            pass: ErrorPass,
+            contentType: "application/pdf"
+        };
+
+        mailsender(emaildata)
+
+        res.send({ status: 200, success: true, data: data })
+    } catch (error) {
+        res.send({ status: 400, success: false, msg: error.message })
+    }
+}
+
 export {
     importRMFormula,
     importPMFormula,
@@ -385,5 +514,6 @@ export {
     packingMaterialOpeningStock,
     partyOpeningBalance,
     productOpeningStock,
-    showEntryptedData
+    showEntryptedData,
+    sendInquiryToAdmin
 };
