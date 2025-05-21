@@ -1839,15 +1839,15 @@ const sendGSTInvoiceRMToClient = async (req, res) => {
             const hsnCodeTableRows = hsnCodeListForTable && hsnCodeListForTable.length > 0
                 ? hsnCodeListForTable.map(item => `
                             <tr>
-                        <td class="px-[3px] border-gray-400 border border-y-0 border-x border-l-0">${item.HSNCode}</td>
-                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.taxableAmount}</td>
-                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.SGST}%</td>
-                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.sgstAmount}</td>
-                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.CGST}%</td>
-                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.cgstAmount}</td>
-                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.IGST}%</td>
-                        <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.igstAmount}</td>
-                        <td class="px-[3px] border-gray-400 border border-y-0 border-x border-r-0">${item.totalAmount}</td>
+                        <td class="w-[15%] px-[3px] border-gray-400 border border-y-0 border-x border-l-0">${item.HSNCode}</td>
+                        <td class="w-[10%] px-[3px] border-gray-400 border border-y-0 border-x">${item.taxableAmount}</td>
+                        <td class="w-[12%] px-[3px] border-gray-400 border border-y-0 border-x">${item.SGST}%</td>
+                        <td class="w-[9%] px-[3px] border-gray-400 border border-y-0 border-x">${item.sgstAmount}</td>
+                        <td class="w-[12%] px-[3px] border-gray-400 border border-y-0 border-x">${item.CGST}%</td>
+                        <td class="w-[9%] px-[3px] border-gray-400 border border-y-0 border-x">${item.cgstAmount}</td>
+                        <td class="w-[12%] px-[3px] border-gray-400 border border-y-0 border-x">${item.IGST}%</td>
+                        <td class="w-[9%] px-[3px] border-gray-400 border border-y-0 border-x">${item.igstAmount}</td>
+                        <td class="w-[12%] px-[3px] border-gray-400 border border-y-0 border-x border-r-0">${item.totalAmount}</td>
                         </tr>
             `).join('')
                 : '';

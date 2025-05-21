@@ -13,6 +13,10 @@
             padding-top: 3px;
             padding-bottom: 3px;
         }
+
+        .invoice-table tbody tr:not(:last-child) {
+            height: 20px;
+        }
     </style>
 </head>
 
@@ -80,11 +84,11 @@
                     </div>
                 </div>
             </div>
-            <div class="invoice-middle grow">
+            <div class="invoice-middle" style="height: calc(100% - 550px);">
                 <div
-                    class="invoice-table-container h-full flex flex-col justify-between border border-t-[0px] border-b-0">
+                    class="invoice-table-container h-full flex flex-col grow justify-between border border-b-0 border-t-[0px]">
                     <table class="invoice-table w-full h-full table-auto border-collapse">
-                        <thead class="border border-x-[0px] border-t-[0px] border-gray-400 text-[12px] font-semibold">
+                        <thead class="border border-x-[0px] border-t-[0px] border-gray-400 text-[12px] !font-normal">
                             <tr class="bg-gray-300">
                                 <th class="w-[30%] border border-x-[0px] border-t-[0px] px-[4px] text-start">Item name
                                 </th>
@@ -98,8 +102,28 @@
                                 </th>
                             </tr>
                         </thead>
-                        <tbody class="align-top text-[11px]">
-                            #ItemListingRows
+                        <tbody class="align-top h-auto text-[11px]">
+                            <!-- #ItemListingRows -->
+                            <tr>
+                                <td class="border px-[4px]">Paracetamol 500mg Tablets</td>
+                                <td class="border px-[4px]">3004</td>
+                                <td class="border px-[4px]">BATCH001</td>
+                                <td class="border px-[4px]">01/01/2025</td>
+                                <td class="border px-[4px]">01/01/2027</td>
+                                <td class="border px-[4px]">100</td>
+                                <td class="border px-[4px]">₹1.50</td>
+                                <td class="border px-[4px]">₹150.00</td>
+                            </tr>
+                            <tr>
+                                <td class="border px-[4px]">Amoxicillin 250mg Capsules</td>
+                                <td class="border px-[4px]">3003</td>
+                                <td class="border px-[4px]">BATCH002</td>
+                                <td class="border px-[4px]">15/02/2025</td>
+                                <td class="border px-[4px]">15/02/2026</td>
+                                <td class="border px-[4px]">200</td>
+                                <td class="border px-[4px]">₹2.00</td>
+                                <td class="border px-[4px]">₹400.00</td>
+                            </tr>
                         </tbody>
                     </table>
                     <table class="invoice-table-total w-full">
@@ -156,21 +180,21 @@
                                 class="border border-x border-t-[1px] border-x-0 border-b-[0px] border-gray-400 text-[12px]">
                                 <tr>
                                     <td
-                                        class="w-[15%] border border-gray-400 px-[3px] border-y-0 border-l-0 font-medium">
+                                        class="w-[15%] border border-gray-400 px-[2px] border-y-0 border-l-0 font-medium">
                                         Total</td>
-                                    <td class="w-[10%] border border-gray-400 px-[3px] border-y-0">
+                                    <td class="w-[10%] border border-gray-400 px-[2px] border-y-0">
                                         #TaxableAmountTotal
                                     </td>
-                                    <td class="w-[12%] border border-gray-400 px-[3px] border-y-0"></td>
-                                    <td class="w-[9%] border border-gray-400 px-[3px] border-y-0">
+                                    <td class="w-[12%] border border-gray-400 px-[2px] border-y-0"></td>
+                                    <td class="w-[9%] border border-gray-400 px-[2px] border-y-0">
                                         #SGSTTotalAmount</td>
-                                    <td class="w-[12%] border border-gray-400 px-[3px] border-y-0"></td>
-                                    <td class="w-[9%] border border-gray-400 px-[3px] border-y-0">
+                                    <td class="w-[12%] border border-gray-400 px-[2px] border-y-0"></td>
+                                    <td class="w-[9%] border border-gray-400 px-[2px] border-y-0">
                                         #CGSTTotalAmount</td>
-                                    <td class="w-[12%] border border-gray-400 px-[3px] border-y-0"></td>
-                                    <td class="w-[9%] border border-gray-400 px-[3px] border-y-0">
+                                    <td class="w-[12%] border border-gray-400 px-[2px] border-y-0"></td>
+                                    <td class="w-[9%] border border-gray-400 px-[2px] border-y-0">
                                         #IGSTTotalAmount</td>
-                                    <td class="w-[12%] border border-gray-400 px-[3px] border-y-0 border-r-0">
+                                    <td class="w-[12%] border border-gray-400 px-[2px] border-y-0 border-r-0">
                                         #TotalGSTCalculation</td>
                                 </tr>
                             </tbody>
