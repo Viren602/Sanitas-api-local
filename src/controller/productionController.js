@@ -963,7 +963,7 @@ const getAllBatchClearedRecords = async (req, res) => {
     let apiData = req.body.data;
     let data = getRequestData(apiData, "PostApi");
     let queryObject = {
-      isDeleted: false,
+      // isDeleted: false,
       // clearBatch: true
     };
 
