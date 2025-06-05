@@ -9,7 +9,7 @@ const showHSNCodes = (itemListing, hsnCodeList, state) => {
     }, {});
 
     const summarizedList = Object.values(hsnCodeSummary);
-
+    
     const hsnCodeListForTable = summarizedList.map(summary => {
         let hsnDetails = hsnCodeList.find(hsn => String(hsn._id) === String(summary.hsnCodeId)) || {};
 
@@ -20,7 +20,7 @@ const showHSNCodes = (itemListing, hsnCodeList, state) => {
 
         hsnDetails.IGST = state !== 'GUJARAT' ? hsnDetails.IGST : 0
         hsnDetails.CGST = state === 'GUJARAT' ? hsnDetails.CGST : 0;
-        hsnDetails.SGST = state === 'GUJARAT' ? hsnDetails.UTGST : 0;
+        hsnDetails.SGST = state === 'GUJARAT' ? hsnDetails.SGST : 0;
 
         const sgstAmount = (Number(summary.taxableAmount) * ((hsnDetails.SGST || 0) / 100)).toFixed(2);
         const cgstAmount = (Number(summary.taxableAmount) * ((hsnDetails.CGST || 0) / 100)).toFixed(2);
