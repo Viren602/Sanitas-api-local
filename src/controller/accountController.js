@@ -3214,7 +3214,8 @@ const getAllBankWiseCashBankBookReport = async (req, res) => {
                 openingBalance: x.openBalance,
                 totalCreditAmount,
                 totalDebitAmount,
-                closingBalance
+                closingBalance,
+                shortName: x.shortName,
             };
         }));
 
