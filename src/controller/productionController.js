@@ -1560,7 +1560,7 @@ const getBatchCostingReportRMFormulaId = async (req, res) => {
         if (lastRecord) {
           itemObject.grnRate = lastRecord.rate;
           itemObject.lastPurchaseDate = lastRecord.createdAt;
-          itemObject.grnNo = lastRecord.grnEntryPartyDetailId.grnNo;
+          itemObject.grnNo = lastRecord?.grnEntryPartyDetailId?.grnNo;
           itemObject.isGrnRecord = true;
         } else {
           itemObject.grnRate = 0;
@@ -1617,7 +1617,7 @@ const getBatchCostingReportPMFormulaById = async (req, res) => {
         if (lastRecord) {
           itemObject.grnRate = lastRecord.rate;
           itemObject.lastPurchaseDate = lastRecord.createdAt;
-          itemObject.grnNo = lastRecord.grnEntryPartyDetailId.grnNo;
+          itemObject.grnNo = lastRecord?.grnEntryPartyDetailId?.grnNo;
           itemObject.isGrnRecord = true;
         } else {
           itemObject.grnRate = 0;
