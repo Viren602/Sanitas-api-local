@@ -14,6 +14,7 @@ import gstinvoiceRMItemModel from "../model/Despatch/gstInvoiceRMItemsModel.js";
 import gstInvoicePMItemModel from "../model/Despatch/gstInvoicePMItemsModel.js";
 import rawMaterialSchema from "../model/rawMaterialModel.js";
 import batchWiseProductStockModel from "../model/Despatch/batchWiseProductStockModel.js";
+import productionStageModel from "../model/productionStageModel.js";
 
 const addEditProductionPlanningEntry = async (req, res) => {
   try {
@@ -440,10 +441,24 @@ const getProductionRMFOrmulaByProductionDetailsId = async (req, res) => {
     let reqId = getRequestData(id)
 
     let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
+    let stages = await productionStageModel(dbYear);
+
+    let stagesResponse = await stages.find({ isDeleted: false }).select('seqNo stageName _id');
+
+
     const response = await prRMFormulaModel
       .find({ productDetialsId: reqId, isDeleted: false });
 
-    let encryptData = encryptionAPI(response, 1);
+    const stageOrderMap = stagesResponse.reduce((map, obj) => {
+      map[obj.stageName] = parseInt(obj.seqNo);
+      return map;
+    }, {});
+
+    const sortedData = response.sort((a, b) => {
+      return stageOrderMap[a.stageName] - stageOrderMap[b.stageName];
+    });
+    
+    let encryptData = encryptionAPI(sortedData, 1);
 
     res.status(200).json({
       data: {
