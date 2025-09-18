@@ -26,10 +26,10 @@ const getAllProductionPlanningNumber = async (req, res) => {
         let ppeModel = await productionPlanningEntryModel(dbYear)
 
         let response = {
-            productionPlanningEntries: await ppeModel.countDocuments({ productionStageStatusId: productionPlanningStatusId._id, isDeleted: false }),
-            productionRequisitionEntries: await ppeModel.countDocuments({ productionStageStatusId: productionRequisitionStatusId._id, isDeleted: false }),
-            productionPackingRequisitionEntries: await ppeModel.countDocuments({ productionStageStatusId: productionPackingStatusId._id, isDeleted: false }),
-            productionPendingBatchesEntries: await ppeModel.countDocuments({ productionStageStatusId: productionPendingBatchesStatusId._id, isDeleted: false }),
+            productionPlanningEntries: await ppeModel.countDocuments({ productionStageStatusId: productionPlanningStatusId?._id, isDeleted: false }),
+            productionRequisitionEntries: await ppeModel.countDocuments({ productionStageStatusId: productionRequisitionStatusId?._id, isDeleted: false }),
+            productionPackingRequisitionEntries: await ppeModel.countDocuments({ productionStageStatusId: productionPackingStatusId?._id, isDeleted: false }),
+            productionPendingBatchesEntries: await ppeModel.countDocuments({ productionStageStatusId: productionPendingBatchesStatusId?._id, isDeleted: false }),
         }
 
         let encryptData = encryptionAPI(response, 1);

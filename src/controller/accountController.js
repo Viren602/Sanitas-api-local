@@ -3670,6 +3670,68 @@ const getAllGSTPurchaseRegister = async (req, res) => {
     }
 };
 
+const getGSTCalculationList = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        let queryObject = {
+            isDeleted: false,
+        }
+
+        let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
+        const finishGoodsData = await gifgModel
+            .find(queryObject)
+            .select('subTotal discount sgst cgst igst ugst grandTotal')
+            .lean();
+        console.log(finishGoodsData)
+        // let girModel = await gstInvoiceRMModel(dbYear);
+        // const rmData = await girModel
+        //     .find(queryObject)
+        //     .select('invoiceNo partyId invoiceDate pendingAmount grandTotal')
+        //     .lean();
+
+        // let gipModel = await gstInvoicePMModel(dbYear);
+        // const pmData = await gipModel
+        //     .find(queryObject)
+        //     .select('invoiceNo partyId invoiceDate pendingAmount grandTotal')
+        //     .lean();
+
+        // response = [
+        //     ...finishGoodsData.map(item => ({
+        //         ...item,
+        //         gstInvoiceFinishGoodsId: item._id,
+        //         _id: undefined
+        //     })),
+        //     ...rmData.map(item => ({
+        //         ...item,
+        //         gstRMInvoiceId: item._id,
+        //         _id: undefined
+        //     })),
+        //     ...pmData.map(item => ({
+        //         ...item,
+        //         gstPMInvoiceId: item._id,
+        //         _id: undefined
+        //     }))
+        // ];
+        let encryptData = encryptionAPI(finishGoodsData, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "GST Calculation Fetched Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account Controller", error);
+        errorHandler(error, req, res, "Error in Account Controller")
+    }
+};
+
 export {
     getReceiptEntryVoucherNo,
     getAllPendingInvoiceByPartyId,
@@ -3727,5 +3789,6 @@ export {
     getAllOpeningBalanceReport,
     getAllGSTSalesRegister,
     getAllGSTPurchaseRegister,
-    getBankBalanceByBankId
+    getBankBalanceByBankId,
+    getGSTCalculationList
 };
