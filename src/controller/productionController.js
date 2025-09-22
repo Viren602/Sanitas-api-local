@@ -193,7 +193,7 @@ const getProductionPlanningEntryById = async (req, res) => {
         })
         .populate({
           path: "productId",
-          select: "productName color sizeName _id",
+          select: "productName color sizeName _id expiryMonth productNote",
         })
         .populate({
           path: "productionStageStatusId",
@@ -457,7 +457,7 @@ const getProductionRMFOrmulaByProductionDetailsId = async (req, res) => {
     const sortedData = response.sort((a, b) => {
       return stageOrderMap[a.stageName] - stageOrderMap[b.stageName];
     });
-    
+
     let encryptData = encryptionAPI(sortedData, 1);
 
     res.status(200).json({

@@ -3195,7 +3195,8 @@ const getAllBankWiseCashBankBookReport = async (req, res) => {
         let financialYear = getFinancialYear()
 
         const startDateOfYear = dayjs(`${financialYear}-04-01`).startOf("day").toDate();
-        const endDateOfYear = dayjs(`${financialYear + 1}-03-31`).endOf("day").toDate();
+        // const endDateOfYear = dayjs(`${financialYear + 1}-03-31`).endOf("day").toDate();
+        const endDateOfYear = dayjs().endOf("day").toDate();
 
 
         let finalResponse = await Promise.all(response.map(async (x) => {
@@ -3259,7 +3260,8 @@ const getAllMonthWiseCashBankBookReportbyBankId = async (req, res) => {
         let financialYear = getFinancialYear()
 
         const startDateOfYear = dayjs(`${financialYear}-04-01`).startOf("day").toDate();
-        const endDateOfYear = dayjs(`${financialYear + 1}-03-31`).endOf("day").toDate();
+        // const endDateOfYear = dayjs(`${financialYear + 1}-03-31`).endOf("day").toDate();
+        const endDateOfYear = dayjs().endOf("day").toDate();
 
         let dbMasterModel = await daybookMasterModel(dbYear)
         const bankDetails = await dbMasterModel.findOne({ _id: bankId }).select("openBalance openBalanceDRCR");
@@ -3356,7 +3358,8 @@ const getAllDateWiseCashBankBookReportbyBankId = async (req, res) => {
         const transactions = await prEntryModel.find({
             isDeleted: false,
             bankId,
-            date: { $gte: data.startDate, $lte: data.endDate }
+            // date: { $gte: data.startDate, $lte: data.endDate }
+            date: { $gte: data.startDate, $lte: new Date() }
         }).select("date debitAmount creditAmount partyId voucherNo chqNo")
             .populate({
                 path: 'partyId',

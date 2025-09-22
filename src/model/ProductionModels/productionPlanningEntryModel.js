@@ -37,6 +37,7 @@ const productionPlanningEntrySchema = mongoose.Schema(
     productionRequisitionReqDate: { type: Date, default: "" },
     packingItemId: { type: mongoose.Schema.Types.ObjectId, ref: "CompanyItem", default: null },
     packQty: { type: Number, default: "" },
+    productNote: { type: String, default: "" },
     isRMFormulaCreated: { type: Boolean, default: false },
     isPMFormulaCreated: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },

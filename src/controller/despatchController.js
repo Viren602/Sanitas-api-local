@@ -4816,7 +4816,7 @@ const getAllStockLedgerReport = async (req, res) => {
                 otherDeliveryChallanId: null,
                 partyName: 'SELF PRODUCTION',
                 partyId: '1',
-                refNo: item.productDetialsId.productionNo,
+                refNo: item.productDetialsId?.productionNo,
                 batchNo: item.productDetialsId.batchNo,
                 refDate: item.productDetialsId.despDate,
                 updatedAt: item.updatedAt,
