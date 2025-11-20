@@ -20,7 +20,8 @@ import stereoModel from "../model/stereoMasterModel.js";
 import storageConditionModel from "../model/storageConditionModel.js";
 import transportCourierModel from "../model/transportCourierModel.js";
 import errorHandler from "../server/errorHandle.js";
-
+import axios from "axios";
+import { parseIndianAddress } from "../utils/parseIndianAddress.js";
 
 const addEditPackingMaterial = async (req, res) => {
     try {
@@ -1397,7 +1398,62 @@ const deletePartyDetailsById = async (req, res) => {
             },
         });
 
-        // res.status(201).json({ Message: "Item has been deleted", responseContent: response });
+    } catch (error) {
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
+    }
+};
+
+const getCompanyDetailsByGSTNumber = async (req, res) => {
+    try {
+        const { id } = req.query;
+        let gstNo = getRequestData(id)
+        if (gstNo) {
+            const options = {
+                method: 'GET',
+                url: `https://gst-return-status.p.rapidapi.com/free/gstin/${gstNo}`,
+                headers: {
+                    'x-rapidapi-key': 'ffa84bc22emsh2985731817d6630p1af3d5jsn681c887f6de1',
+                    'x-rapidapi-host': 'gst-return-status.p.rapidapi.com',
+                    'Content-Type': 'application/json'
+                }
+            };
+
+            let response = await axios.request(options);
+            let obj = {};
+
+            if (response.data.success && response.data.data) {
+                const d = response.data.data;
+
+                obj.companyName = d.tradeName || "";
+                obj.panNumber = d.pan || "";
+                obj.gstin = gstNo;
+                let address = parseIndianAddress(d.adr || "");
+                obj.addressLines = address.addressLines || "";
+                obj.city = address.city || "";
+                obj.state = address.state || "";
+                obj.pincode = address.pincode || "";
+                let encryptData = encryptionAPI(obj, 1)
+
+                res.status(200).json({
+                    data: {
+                        statusCode: 200,
+                        Message: "Details found successfully",
+                        responseData: encryptData,
+                        isEnType: true
+                    },
+                });
+            } else {
+                res.status(200).json({
+                    data: {
+                        statusCode: 200,
+                        Message: "Details not found",
+                        responseData: obj,
+                        isEnType: true
+                    },
+                });
+            }
+        }
     } catch (error) {
         console.log("Error in item master controller", error);
         errorHandler(error, req, res, "Error in Master controller")
@@ -1929,6 +1985,7 @@ export {
     deleteTransportCourierById,
     addEditPartyDetails,
     deletePartyDetailsById,
+    getCompanyDetailsByGSTNumber,
     addEditDaybook,
     deleteDaybookById,
     addeditProductDetails,
