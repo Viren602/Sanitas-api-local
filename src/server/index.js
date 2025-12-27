@@ -12,16 +12,17 @@ const flag = config.PRODUCTION; // Flag to determine the environment (production
 
 // Check the flag to determine which type of server to create
 if (flag == "true") {
-    console.log(flag)
-    // Read SSL certificate files for HTTPS server
-    const options = {
-        key: fs.readFileSync('./certs/privkey.pem'), // Private key
-        cert: fs.readFileSync('./certs/cert.pem'), // Certificate
-        requestCert: false,
-        rejectUnauthorized: false
-    };
-    // Create HTTPS server with the given options and app
-    server = https.createServer(options, app);
+    // console.log(flag)
+    // // Read SSL certificate files for HTTPS server
+    // const options = {
+    //     key: fs.readFileSync('./certs/privkey.pem'), // Private key
+    //     cert: fs.readFileSync('./certs/cert.pem'), // Certificate
+    //     requestCert: false,
+    //     rejectUnauthorized: false
+    // };
+    // // Create HTTPS server with the given options and app
+    // server = https.createServer(options, app);
+    server = http.createServer(app);
 } else {
     // Create HTTP server with the app
     server = http.createServer(app);
