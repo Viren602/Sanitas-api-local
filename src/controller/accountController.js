@@ -3172,8 +3172,11 @@ const getBankBalanceByBankId = async (req, res) => {
 const getAllBankWiseCashBankBookReport = async (req, res) => {
     try {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
-        // let apiData = req.body.data
-        // let data = getRequestData(apiData, 'PostApi')
+        const { id, id2 } = req.query;
+
+        let startDate = getRequestData(id)
+        let endDate = getRequestData(id2)
+
         let queryObject = {
             isDeleted: false,
             bookType: { $in: ['Bank Book', 'Cash Book'] },
@@ -3194,9 +3197,12 @@ const getAllBankWiseCashBankBookReport = async (req, res) => {
 
         let financialYear = getFinancialYear()
 
-        const startDateOfYear = dayjs(`${financialYear}-04-01`).startOf("day").toDate();
+        // const startDateOfYear = dayjs(`${financialYear}-04-01`).startOf("day").toDate();
         // const endDateOfYear = dayjs(`${financialYear + 1}-03-31`).endOf("day").toDate();
-        const endDateOfYear = dayjs().endOf("day").toDate();
+
+        const startDateOfYear = startDate;
+        const endDateOfYear = endDate;
+        // const endDateOfYear = dayjs().endOf("day").toDate();
 
 
         let finalResponse = await Promise.all(response.map(async (x) => {
@@ -3240,8 +3246,10 @@ const getAllBankWiseCashBankBookReport = async (req, res) => {
 const getAllMonthWiseCashBankBookReportbyBankId = async (req, res) => {
     try {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
-        const { id } = req.query;
+        const { id, id2, id3 } = req.query;
         let reqId = getRequestData(id)
+        let startDate = getRequestData(id2)
+        let endDate = getRequestData(id3)
 
         const months = [
             "April", "May", "June", "July", "August", "September",
@@ -3259,9 +3267,12 @@ const getAllMonthWiseCashBankBookReportbyBankId = async (req, res) => {
         let bankId = reqId
         let financialYear = getFinancialYear()
 
-        const startDateOfYear = dayjs(`${financialYear}-04-01`).startOf("day").toDate();
+        // const startDateOfYear = dayjs(`${financialYear}-04-01`).startOf("day").toDate();
         // const endDateOfYear = dayjs(`${financialYear + 1}-03-31`).endOf("day").toDate();
-        const endDateOfYear = dayjs().endOf("day").toDate();
+
+        const startDateOfYear = startDate;
+        const endDateOfYear = endDate;
+        // const endDateOfYear = dayjs().endOf("day").toDate();
 
         let dbMasterModel = await daybookMasterModel(dbYear)
         const bankDetails = await dbMasterModel.findOne({ _id: bankId }).select("openBalance openBalanceDRCR");
@@ -3285,8 +3296,14 @@ const getAllMonthWiseCashBankBookReportbyBankId = async (req, res) => {
             let monthIndex = (index + 3) % 12; // Convert from financial to calendar year index
             let year = monthIndex >= 3 ? financialYear : financialYear + 1;
 
-            let startDate = dayjs(`${year}-${monthIndex + 1}-01`).startOf("month").toDate();
-            let endDate = dayjs(`${year}-${monthIndex + 1}-01`).endOf("month").toDate();
+            let monthStart = dayjs().year(year).month(monthIndex).startOf("month").toDate();
+            let monthEnd = dayjs().year(year).month(monthIndex).endOf("month").toDate();
+
+            let startDateOfYearDate = new Date(startDateOfYear);
+            let endDateOfYearDate = new Date(endDateOfYear);
+
+            let constrainedStartDate = monthStart < startDateOfYearDate ? startDateOfYearDate : monthStart;
+            let constrainedEndDate = monthEnd > endDateOfYearDate ? endDateOfYearDate : monthEnd;
 
             return {
                 month,
@@ -3297,8 +3314,8 @@ const getAllMonthWiseCashBankBookReportbyBankId = async (req, res) => {
                 closingBalance: 0,
                 closingBalanceDRCR: "Dr",
                 bankId: reqId,
-                startDate,
-                endDate
+                startDate: constrainedStartDate,
+                endDate: constrainedEndDate
             };
         });
 
@@ -3316,17 +3333,17 @@ const getAllMonthWiseCashBankBookReportbyBankId = async (req, res) => {
 
         monthlyData.forEach((monthData, index) => {
             if (index === 0) {
-                monthData.openingBalance = Math.abs(runningBalance);
+                monthData.openingBalance = runningBalance;
                 monthData.openingBalanceDRCR = runningBalance >= 0 ? "Dr" : "Cr";
             } else {
-                monthData.openingBalance = Math.abs(monthlyData[index - 1].closingBalance);
+                monthData.openingBalance = monthlyData[index - 1].closingBalance;
                 monthData.openingBalanceDRCR = monthlyData[index - 1].closingBalanceDRCR;
             }
 
             runningBalance += monthData.receipt;
             runningBalance -= monthData.payment;
 
-            monthData.closingBalance = Math.abs(runningBalance);
+            monthData.closingBalance = runningBalance;
             monthData.closingBalanceDRCR = runningBalance >= 0 ? "Dr" : "Cr";
         });
 
@@ -3358,8 +3375,8 @@ const getAllDateWiseCashBankBookReportbyBankId = async (req, res) => {
         const transactions = await prEntryModel.find({
             isDeleted: false,
             bankId,
-            // date: { $gte: data.startDate, $lte: data.endDate }
-            date: { $gte: data.startDate, $lte: new Date() }
+            date: { $gte: data.startDate, $lte: data.endDate }
+            // date: { $gte: data.startDate, $lte: new Date() }
         }).select("date debitAmount creditAmount partyId voucherNo chqNo")
             .populate({
                 path: 'partyId',
