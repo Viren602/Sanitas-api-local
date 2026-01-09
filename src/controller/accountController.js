@@ -1508,6 +1508,44 @@ const getGSTPurchaseEntryRMPMById = async (req, res) => {
     }
 };
 
+
+const getLastPurchaseRawmaterialRate = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id, id2 } = req.query;
+        let grnId = getRequestData(id)
+        let grnType = getRequestData(id2)
+
+        let queryObject = { isDeleted: false };
+        if (grnType === 'Raw') {
+            queryObject.rawMaterialId = grnId;
+        } else if (grnType === 'Packing') {
+            queryObject.packageMaterialId = grnId;
+        }
+
+        let gpitemListRMPMModel = await gstPurchaseItemListRMPMModel(dbYear);
+        let lastPurchasedRecord = await gpitemListRMPMModel
+            .findOne(queryObject);
+        let response = {
+            lastPurchasedRecord: lastPurchasedRecord
+        }
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Account controller", error);
+        errorHandler(error, req, res, "Error in Account controller")
+    }
+};
+
 const deleteGSTPurchaseEntryRMPMById = async (req, res) => {
     try {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
@@ -3776,6 +3814,7 @@ export {
     addEditGSTPurchaseEntryRMPM,
     getAllGSTPurchaseEntryRMPM,
     getGSTPurchaseEntryRMPMById,
+    getLastPurchaseRawmaterialRate,
     deleteGSTPurchaseEntryRMPMById,
     getGSTPurchseWithoutInventoryEntrySRNo,
     addEditGSTPurchaseEntryWithoutInventory,

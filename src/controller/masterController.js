@@ -22,6 +22,7 @@ import transportCourierModel from "../model/transportCourierModel.js";
 import errorHandler from "../server/errorHandle.js";
 import axios from "axios";
 import { parseIndianAddress } from "../utils/parseIndianAddress.js";
+import testMasterModel from "../model/testMasterModel.js";
 
 const addEditPackingMaterial = async (req, res) => {
     try {
@@ -1949,6 +1950,101 @@ const deletePMFurmulaById = async (req, res) => {
     }
 };
 
+// Test Master
+const addEditTestMaster = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+        if (data._id && data._id.trim() !== '') {
+            let cModel = await testMasterModel(dbYear)
+            const response = await cModel.findByIdAndUpdate(data._id, data, { new: true });
+            if (response) {
+                let encryptData = encryptionAPI(response, 1)
+
+                res.status(200).json({
+                    data: {
+                        statusCode: 200,
+                        Message: "Details updated successfully",
+                        responseData: encryptData,
+                        isEnType: true
+                    },
+                });
+
+            } else {
+                res.status(404).json({ Message: "Details not found" });
+            }
+        } else {
+            let cModel = await testMasterModel(dbYear)
+            const response = new cModel(data);
+            await response.save();
+            let encryptData = encryptionAPI(response, 1)
+
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "Details added successfully",
+                    responseData: encryptData,
+                    isEnType: true
+                },
+            });
+        }
+
+    } catch (error) {
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
+    }
+};
+
+const deleteTestById = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = {}
+        if (reqId) {
+            let cModel = await testMasterModel(dbYear)
+            response = await cModel.findByIdAndDelete(reqId, { isDeleted: true }, { new: true, useFindAndModify: false });
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Item has been deleted",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+    } catch (error) {
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
+    }
+};
+
+const getAllTestMaster = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let cModel = await testMasterModel(dbYear)
+        let response = await cModel.find({});
+
+        let encryptData = encryptionAPI(response, 1)
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetch successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+        // res.status(201).json({ Message: "Data fetch successfully", responseContent: response });
+    } catch (error) {
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
+    }
+};
 
 export {
     addEditPackingMaterial,
@@ -2000,5 +2096,8 @@ export {
     deleteRMFurmulaById,
     getPMFormulaByItemId,
     addEditPMFormulaDetails,
-    deletePMFurmulaById
+    deletePMFurmulaById,
+    addEditTestMaster,
+    deleteTestById,
+    getAllTestMaster
 };
