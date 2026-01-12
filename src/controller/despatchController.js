@@ -54,7 +54,7 @@ const getProductionStockByProductId = async (req, res) => {
 
         let queryObject = {
             isDeleted: false,
-            packingItemId: reqId
+            // packingItemId: reqId
         };
 
         // let batchClrModel = await batchClearingEntryModel()
