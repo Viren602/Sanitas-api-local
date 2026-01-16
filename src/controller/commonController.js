@@ -491,7 +491,7 @@ const getAllRMDropdown = async (req, res) => {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let queryObject = { isDeleted: false }
         let rmModel = await rawMaterialSchema(dbYear)
-        let data = await rmModel.find(queryObject).select("rmName rmUOM").sort("rmName");
+        let data = await rmModel.find(queryObject).select("rmName rmUOM specification").sort("rmName");
 
         let encryptData = encryptionAPI(data, 1)
 
@@ -515,7 +515,7 @@ const getAllPackingMaterialDropdown = async (req, res) => {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let queryObject = { isDeleted: false }
         let mpModel = await packingMaterialSchema(dbYear)
-        let data = await mpModel.find(queryObject).select('pmName pmUOM').sort("pmName");
+        let data = await mpModel.find(queryObject).select('pmName pmUOM specification').sort("pmName");
 
         let encryptData = encryptionAPI(data, 1)
 

@@ -1,5 +1,5 @@
 import express from "express";
-import { addEditAccountGroup, addEditColors, addEditDaybook, addEditLabelClaims, addEditPackingMaterial, addEditPackingMaterialSize, addEditPartyDetails, addEditpartyWiseNetRateDetails, addEditPMCategory, addEditPMFormulaDetails, addeditProductDetails, addEditPunchSizeMaster, addEditRMCategory, addEditRMFormulaDetails, addEditStates, addEditStereo, addEditStorageConditions, addEditTestMaster, addEditTransportCourier, addMfgLic, addProductionStages, deleteAccountGroupById, deleteColorById, deleteDaybookById, deleteLabelClaimById, deleteMfgLicById, deletePackingMaterialById, deletePackingMaterialSizeById, deletePartyDetailsById, deletePartyWiseNetRateById, deletePMCategoryById, deletePMFurmulaById, deleteProductDetailsById, deleteProductionStageById, deletePunchSizeById, deleteRMCategoryById, deleteRMFurmulaById, deleteStateById, deleteStereoById, deleteStorageConditionById, deleteTestById, deleteTransportCourierById, getAllPackingMaterials, getAllParties, getAllProductDetails, getAllTestMaster, getCompanyDetailsByGSTNumber, getPackingMaterialById, getPartyDetailsById, getPartyWiseNetRateDetailsByPartyId, getPMFormulaByItemId, getProductDetailById, getRMFormulaByProductId } from "../controller/masterController.js";
+import { addEditAccountGroup, addEditColors, addEditDaybook, addEditLabelClaims, addEditPackingMaterial, addEditPackingMaterialSize, addEditPartyDetails, addEditpartyWiseNetRateDetails, addEditPMCategory, addEditPMFormulaDetails, addeditProductDetails, addEditPunchSizeMaster, addEditRMCategory, addEditRMFormulaDetails, addEditStates, addEditStereo, addEditStorageConditions, addEditTestMaster, addEditTransportCourier, addMfgLic, addProductionStages, addQCMonoGram, deleteAccountGroupById, deleteColorById, deleteDaybookById, deleteLabelClaimById, deleteMfgLicById, deletePackingMaterialById, deletePackingMaterialSizeById, deletePartyDetailsById, deletePartyWiseNetRateById, deletePMCategoryById, deletePMFurmulaById, deleteProductDetailsById, deleteProductionStageById, deletePunchSizeById, deleteQCMonogramById, deleteRMCategoryById, deleteRMFurmulaById, deleteStateById, deleteStereoById, deleteStorageConditionById, deleteTestById, deleteTransportCourierById, getAllPackingMaterials, getAllParties, getAllProductDetails, getAllTestMaster, getCompanyDetailsByGSTNumber, getPackingMaterialById, getPartyDetailsById, getPartyWiseNetRateDetailsByPartyId, getPMFormulaByItemId, getProductDetailById, getQCMonogramByPMId, getQCMonogramByProductId, getQCMonogramByRMId, getRMFormulaByProductId, updateQCMonoGram } from "../controller/masterController.js";
 import checkAuth from "../middleware/checkAuth.js";
 
 const masterRoute = express.Router();
@@ -98,5 +98,14 @@ masterRoute.get("/itemMaster/DeletePMFurmulaById", checkAuth, deletePMFurmulaByI
 masterRoute.post("/testMaster/AddEditTestMaster", checkAuth, addEditTestMaster);
 masterRoute.get("/testMaster/DeleteTestById", checkAuth, deleteTestById);
 masterRoute.get("/testMaster/GetAllTestMaster", checkAuth, getAllTestMaster);
+
+// QC Monogram Master
+masterRoute.post("/testMaster/AddQCMonoGram", checkAuth, addQCMonoGram);
+masterRoute.post("/testMaster/UpdateQCMonoGram", checkAuth, updateQCMonoGram);
+masterRoute.get("/testMaster/GetQCMonogramByRMId", checkAuth, getQCMonogramByRMId);
+masterRoute.get("/testMaster/DeleteQCMonogramById", checkAuth, deleteQCMonogramById);
+masterRoute.get("/testMaster/GetQCMonogramByPMId", checkAuth, getQCMonogramByPMId);
+masterRoute.get("/testMaster/GetQCMonogramByProductId", checkAuth, getQCMonogramByProductId);
+
 
 export default masterRoute;

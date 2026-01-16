@@ -23,6 +23,7 @@ import errorHandler from "../server/errorHandle.js";
 import axios from "axios";
 import { parseIndianAddress } from "../utils/parseIndianAddress.js";
 import testMasterModel from "../model/testMasterModel.js";
+import monoGramModel from "../model/monogramModel.js";
 
 const addEditPackingMaterial = async (req, res) => {
     try {
@@ -2046,6 +2047,317 @@ const getAllTestMaster = async (req, res) => {
     }
 };
 
+// QC Monogram Raw Material
+const addQCMonoGram = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        if (data.monoGramType === 'RM') {
+            if (!data?.rawMaterialId || typeof data.rawMaterialId !== 'string' || !data.rawMaterialId.trim()) {
+                return res.status(200).json({
+                    data: {
+                        statusCode: 401,
+                        Message: "rawMaterialId is required",
+                        responseData: null,
+                        isEnType: true
+                    },
+                });
+            }
+        }
+
+        if (data.monoGramType === 'PM') {
+            if (!data?.packingMaterialId || typeof data.packingMaterialId !== 'string' || !data.packingMaterialId.trim()) {
+                return res.status(200).json({
+                    data: {
+                        statusCode: 401,
+                        Message: "packingMaterialId is required",
+                        responseData: null,
+                        isEnType: true
+                    },
+                });
+            }
+        }
+
+        const MonoModel = await monoGramModel(dbYear);
+        const savedData = await MonoModel.create(data);
+
+        const encryptData = encryptionAPI(savedData, 1);
+
+        return res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Monogram Added Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+    } catch (error) {
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
+    }
+};
+
+const updateQCMonoGram = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        if (data.monoGramType === 'RM') {
+            if (!data?.rawMaterialId || typeof data.rawMaterialId !== 'string' || !data.rawMaterialId.trim()) {
+                return res.status(200).json({
+                    data: {
+                        statusCode: 401,
+                        Message: "rawMaterialId is required",
+                        responseData: null,
+                        isEnType: true
+                    },
+                });
+            }
+        }
+
+        if (data.monoGramType === 'PM') {
+            if (!data?.packingMaterialId || typeof data.packingMaterialId !== 'string' || !data.packingMaterialId.trim()) {
+                return res.status(200).json({
+                    data: {
+                        statusCode: 401,
+                        Message: "packingMaterialId is required",
+                        responseData: null,
+                        isEnType: true
+                    },
+                });
+            }
+        }
+
+        if (!data?.monoGramId || typeof data.monoGramId !== 'string' || !data.monoGramId.trim()) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 401,
+                    Message: "monoGramId is required",
+                    responseData: null,
+                    isEnType: true
+                },
+            });
+        }
+
+        const MonoModel = await monoGramModel(dbYear);
+        const existingRecord = await MonoModel.findById(data.monoGramId);
+        if (!existingRecord) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 404,
+                    Message: "Monogram not found",
+                    responseData: null,
+                    isEnType: false
+                }
+            });
+        }
+
+        const response = await MonoModel.findByIdAndUpdate(data.monoGramId, data, { new: true, runValidators: true });
+
+        const encryptData = encryptionAPI(response, 1);
+
+        return res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Monogram Updated Successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+    } catch (error) {
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
+    }
+};
+
+const getQCMonogramByRMId = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = {}
+        if (reqId) {
+            let MonoModel = await monoGramModel(dbYear)
+            response = await MonoModel
+                .find({ rawMaterialId: reqId, isDeleted: false })
+                .populate({
+                    path: "testId",
+                    select: "testName"
+                })
+                .lean();
+
+            response = response.map(item => ({
+                _id: item._id,
+                rawMaterialId: item.rawMaterialId,
+                testId: item.testId?._id || null,
+                testName: item.testId?.testName || null,
+                result: item.result,
+                limit: item.limit,
+                isOwnLaboratory: item.isOwnLaboratory ? "Yes" : "No",
+            }));
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
+    }
+};
+
+const deleteQCMonogramById = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+        let monoGramId = getRequestData(id)
+
+        if (!monoGramId || typeof monoGramId !== 'string' || !monoGramId.trim()) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 400,
+                    Message: "monoGramId is required",
+                    responseData: null,
+                    isEnType: false
+                }
+            });
+        }
+
+        const MonoModel = await monoGramModel(dbYear);
+        const existingRecord = await MonoModel.findById(monoGramId);
+        if (!existingRecord) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 404,
+                    Message: "Monogram not found",
+                    responseData: null,
+                    isEnType: false
+                }
+            });
+        }
+
+        await MonoModel.findByIdAndUpdate(
+            monoGramId,
+            { isDeleted: true },
+            { new: true }
+        );
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Monogram Deleted Successfully",
+                responseData: null,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
+    }
+};
+
+// QC Monogram Packing Material
+const getQCMonogramByPMId = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = {}
+        if (reqId) {
+            let MonoModel = await monoGramModel(dbYear)
+            response = await MonoModel
+                .find({ packingMaterialId: reqId, isDeleted: false })
+                .populate({
+                    path: "testId",
+                    select: "testName"
+                })
+                .lean();
+
+            response = response.map(item => ({
+                _id: item._id,
+                packingMaterialId: item.packingMaterialId,
+                testId: item.testId?._id || null,
+                testName: item.testId?.testName || null,
+                result: item.result,
+                limit: item.limit,
+                isOwnLaboratory: item.isOwnLaboratory ? "Yes" : "No",
+            }));
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
+    }
+};
+
+// QC Monogram Product
+const getQCMonogramByProductId = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+        let reqId = getRequestData(id)
+        let response = {}
+        if (reqId) {
+            let MonoModel = await monoGramModel(dbYear)
+            response = await MonoModel
+                .find({ productId: reqId, isDeleted: false })
+                .populate({
+                    path: "testId",
+                    select: "testName"
+                })
+                .lean();
+
+            response = response.map(item => ({
+                _id: item._id,
+                productId: item.productId,
+                testId: item.testId?._id || null,
+                testName: item.testId?.testName || null,
+                result: item.result,
+                limit: item.limit,
+                isOwnLaboratory: item.isOwnLaboratory ? "Yes" : "No",
+            }));
+        }
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Items fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in item master controller", error);
+        errorHandler(error, req, res, "Error in Master controller")
+    }
+};
+
 export {
     addEditPackingMaterial,
     getAllPackingMaterials,
@@ -2099,5 +2411,11 @@ export {
     deletePMFurmulaById,
     addEditTestMaster,
     deleteTestById,
-    getAllTestMaster
+    getAllTestMaster,
+    addQCMonoGram,
+    updateQCMonoGram,
+    getQCMonogramByRMId,
+    deleteQCMonogramById,
+    getQCMonogramByPMId,
+    getQCMonogramByProductId
 };
