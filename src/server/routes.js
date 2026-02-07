@@ -12,6 +12,7 @@ import despatchRoute from "../routes/despatchRoute.js";
 import accountRoute from "../routes/accountRoute.js";
 import utilityRoute from "../routes/utilityRoute.js";
 import dashboard from "../routes/dashboardRoute.js";
+import qc from "../routes/qcRoute.js";
 
 // app.use("/auth",employeeRouter);
 // app.use("/auth",auth);
@@ -42,5 +43,7 @@ app.use("/api", utilityRoute);
 app.use("/api", migration);
 
 app.use("/api", dashboard);
+
+app.use("/api", qc);
 
 export default app;

@@ -24,6 +24,7 @@ const productDetailSchema = mongoose.Schema({
     weight: { type: Number, default: '' },
     testchg: { type: Number, default: '' },
     productNote: { type: String, default: '' },
+    labTestRequire: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 

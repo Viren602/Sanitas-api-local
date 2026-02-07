@@ -12,11 +12,8 @@ import { fileURLToPath } from "node:url";
 import HNSCodesScHema from "../model/hnsCode.js";
 import { showHSNCodes } from "../utils/hsnCodeCountTable.js";
 import gstInvoiceRMModel from "../model/Despatch/gstInvoiceRMModel.js";
-import ProductionRequisitionRMFormulaModel from "../model/InventoryModels/productionRequisitionRMFormulaModel.js";
-import grnEntryMaterialDetailsModel from "../model/InventoryModels/grnEntryMaterialDetailsModel.js";
 import gstinvoiceRMItemModel from "../model/Despatch/gstInvoiceRMItemsModel.js";
 import InvoiceRMStockModel from "../model/Despatch/InvoiceRMStockModel.js";
-import PackingRequisitionPMFormulaModel from "../model/InventoryModels/packingRequisitionPMFormulaModel.js";
 import InvoicePMStockModel from "../model/Despatch/invoicePMStockModel.js";
 import gstInvoicePMModel from "../model/Despatch/gstInvoicePMModel.js";
 import gstInvoicePMItemModel from "../model/Despatch/gstInvoicePMItemsModel.js";
@@ -28,17 +25,17 @@ import mongoose from "mongoose";
 import partyModel from "../model/partiesModel.js";
 import inwardPostModel from "../model/Despatch/inwardPostEntry.js";
 import paymentReceiptEntryModel from "../model/Account/paymentReceiptEntryModel.js";
-import { populate } from "dotenv";
 import outwardPostModel from "../model/Despatch/outwardPostEntry.js";
 import companyGroupModel from "../model/companyGroup.js";
 import mailsender from "../utils/sendingEmail.js";
 import emailTemplateModel from "../model/emailTemplateModel.js";
-import { FromMail } from "../middleware/appSetting.js";
-import additionalEntryMaterialDetailsModel from "../model/InventoryModels/additionalEntryMaterialDetailsModel.js";
 import productionPlanningEntryModel from "../model/ProductionModels/productionPlanningEntryModel.js";
 import ProductionStagesModel from "../model/ProductionModels/productionStagesModel.js";
 import otherDeliveryChallanModel from "../model/Despatch/otherDeliveryChallanModel.js";
 import itemOtherDeliveryChalanModel from "../model/Despatch/itemOtherDeliveryChallanModel.js";
+import { calculateStock, fetchAllRecords } from "../utils/fetchRMPMStock.js";
+import { fetchBatchWiseProductStock } from "../utils/fetchFinishGoodsStock.js";
+const { ObjectId } = mongoose.Types;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,57 +54,6 @@ const getProductionStockByProductId = async (req, res) => {
             // packingItemId: reqId
         };
 
-        // let batchClrModel = await batchClearingEntryModel()
-        // let batchClearingData = await batchClrModel
-        //     .find(queryObject)
-        //     .populate({
-        //         path: "productDetialsId",
-        //         select: "productionNo productId batchNo packing batchSize mfgDate expDate",
-        //         populate: {
-        //             path: 'partyId',
-        //             select: 'partyName _id',
-        //         },
-        //     })
-        //     .populate({
-        //         path: "packingItemId",
-        //         select: "HSNCode",
-        //     });
-
-        // const totalStock = batchClearingData.map(item => ({
-        //     productionNo: item?.productDetialsId?.productionNo,
-        //     batchClearingEntryId: item._id,
-        //     productId: item?.packingItemId?._id,
-        //     batchNo: item?.productDetialsId?.batchNo,
-        //     expDate: item?.productDetialsId?.expDate,
-        //     mfgDate: item?.productDetialsId?.mfgDate,
-        //     quantity: item.quantity,
-        //     mrp: item.mrp,
-        //     hsnCode: item?.packingItemId?.HSNCode,
-        //     isFromOpeningStock: item?.isFromOpeningStock,
-        // }));
-
-        // for (let stockItem of totalStock) {
-        //     let batchwiseProdStkModel = await batchWiseProductStockModel()
-        //     if (stockItem.isFromOpeningStock !== true && stockItem?.batchClearingEntryId !== null && stockItem?.batchClearingEntryId !== undefined && stockItem?.batchClearingEntryId !== '' && stockItem?.batchNo !== null && stockItem?.batchNo !== undefined && stockItem?.batchNo !== '' && stockItem?.productId !== null && stockItem?.productId !== undefined && stockItem?.productId !== '') {
-        //         const existingStock = await batchwiseProdStkModel.findOne({
-        //             batchNo: stockItem?.batchNo,
-        //             batchClearingEntryId: stockItem?.batchClearingEntryId,
-        //             productId: stockItem?.productId,
-        //         });
-        //         if (!existingStock) {
-        //             let batchwiseProdStkModel = await batchWiseProductStockModel()
-        //             await batchwiseProdStkModel.create(stockItem);
-        //         } else {
-        //             console.log(stockItem)
-        //             await batchwiseProdStkModel.findOneAndUpdate(
-        //                 { batchClearingEntryId: stockItem?.batchClearingEntryId },
-        //                 stockItem,
-        //                 { new: true }
-        //             )
-        //         }
-        //     }
-        // }
-
         let psModel = await ProductionStagesModel(dbYear)
         const stage = await psModel.findOne({
             productionStageId: 5,
@@ -123,15 +69,28 @@ const getProductionStockByProductId = async (req, res) => {
         let batchNoList = batchNos.map(item => item.batchNo);
 
 
-        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
-        let response = await batchwiseProdStkModel.find({
-            productId: reqId,
-            $or: [
-                { batchNo: { $in: batchNoList } },
-                { isFromOpeningStock: true }
-            ]
-        }).sort({ updatedAt: -1 });
+        // let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
+        // let response = await batchwiseProdStkModel.find({
+        //     productId: reqId,
+        //     $or: [
+        //         { batchNo: { $in: batchNoList } },
+        //         { isFromOpeningStock: true }
+        //     ]
+        // }).sort({ updatedAt: -1 });
 
+        const response = await fetchBatchWiseProductStock(
+            dbYear,
+            {
+                productId: new ObjectId(reqId),
+                $or: [
+                    { batchNo: { $in: batchNoList } },
+                    { isFromOpeningStock: true }
+                ]
+            },
+            { sort: { updatedAt: -1 } }
+        );
+        console.log(response[0])
+        console.log(response.length)
 
         let encryptData = encryptionAPI(response, 1);
 
@@ -1022,87 +981,142 @@ const getGSTInvoiceRMInvoice = async (req, res) => {
     }
 };
 
+// const getrawMaterialStockByRMId = async (req, res) => {
+//     try {
+//         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+//         let apiData = req.body.data
+//         let data = getRequestData(apiData, 'PostApi')
+
+//         let queryObject = {
+//             isDeleted: false,
+//             rawMaterialId: data.id
+//         };
+
+//         // From GRN Entry
+//         let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
+//         const rawMaterialData = await gemDetailsModel
+//             .find(queryObject)
+//             .populate({
+//                 path: 'rawMaterialId',
+//                 select: 'rmName rmCategory _id',
+//             })
+//             .populate({
+//                 path: 'grnEntryPartyDetailId',
+//                 select: 'partyId grnNo grnDate invoiceNo _id',
+//                 populate: {
+//                     path: 'partyId',
+//                     select: 'partyName _id',
+//                 },
+//             });
+
+//         const totalPurchaseQty = rawMaterialData.reduce((sum, item) => sum + item.qty, 0);
+
+//         // From Production Used Qty
+//         let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
+//         const responseFromUsedQty = await prRMFormulaModel
+//             .find({ rmName: data.rmName, isDeleted: false })
+//             .populate({
+//                 path: 'productDetialsId',
+//                 select: 'partyId productionNo productionPlanningDate batchNo _id',
+//                 populate: {
+//                     path: 'partyId',
+//                     select: 'partyName _id',
+//                 },
+//             });
+
+//         const totalUsedQtyInProduction = responseFromUsedQty.reduce((sum, item) => sum + item.netQty, 0);
+
+//         // From Invoice Used Qty
+//         let iRMStock = await InvoiceRMStockModel(dbYear);
+//         const responseFromUsedQtyGSTInvoice = await iRMStock.find({ rmId: data.id, isDeleted: false });
+
+//         const totalUsedQtyInGSTInvoice = responseFromUsedQtyGSTInvoice.reduce((sum, item) => sum + item.qty, 0);
+
+//         let isFromGSTInvoiceRecord = false
+
+//         if (responseFromUsedQtyGSTInvoice.length > 0 && totalUsedQtyInGSTInvoice > 0) {
+//             isFromGSTInvoiceRecord = true
+//         }
+
+//         // From Additional Entry
+//         let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear);
+//         let additionalEntry = await addEntryModel.find({ rawMaterialId: data.id, isDeleted: false }).select('qty');
+//         const totalUsedQtyInAdditionalEntry = additionalEntry.reduce((sum, item) => sum + item.qty, 0);
+
+//         let totalStock = {
+//             productionNo: '',
+//             batchClearingEntryId: null,
+//             productId: data.id,
+//             batchNo: '',
+//             expDate: '',
+//             mfgDate: '',
+//             quantity: totalPurchaseQty - totalUsedQtyInProduction - (Number(totalUsedQtyInGSTInvoice) || 0) - (Number(totalUsedQtyInAdditionalEntry) || 0),
+//             mrp: '',
+//             hsnCode: '',
+//             name: data.rmName,
+//             uom: data.uom,
+//             isFromGSTInvoiceRecord: isFromGSTInvoiceRecord
+
+//         }
+
+//         let array = []
+//         array.push(totalStock)
+//         let encryptData = encryptionAPI(array, 1);
+
+//         res.status(200).json({
+//             data: {
+//                 statusCode: 200,
+//                 Message: "Data fetched successfully",
+//                 responseData: encryptData,
+//                 isEnType: true,
+//             },
+//         });
+
+//     } catch (error) {
+//         console.log("Error in Despatch controller", error);
+//         errorHandler(error, req, res, "Error in Despatch controller")
+//     }
+// };
+
 const getrawMaterialStockByRMId = async (req, res) => {
     try {
-        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
-        let apiData = req.body.data
-        let data = getRequestData(apiData, 'PostApi')
+        const dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const apiData = req.body.data;
+        const data = getRequestData(apiData, "PostApi");
 
-        let queryObject = {
-            isDeleted: false,
-            rawMaterialId: data.id
+        const item = {
+            _id: data.id,
+            rmName: data.rmName,
         };
 
-        // From GRN Entry
-        let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
-        const rawMaterialData = await gemDetailsModel
-            .find(queryObject)
-            .populate({
-                path: 'rawMaterialId',
-                select: 'rmName rmCategory _id',
-            })
-            .populate({
-                path: 'grnEntryPartyDetailId',
-                select: 'partyId grnNo grnDate invoiceNo _id',
-                populate: {
-                    path: 'partyId',
-                    select: 'partyName _id',
-                },
-            });
+        const records = await fetchAllRecords(
+            dbYear,
+            item,
+            "Raw Material"
+        );
 
-        const totalPurchaseQty = rawMaterialData.reduce((sum, item) => sum + item.qty, 0);
+        const stockSummary = calculateStock(records);
 
-        // From Production Used Qty
-        let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
-        const responseFromUsedQty = await prRMFormulaModel
-            .find({ rmName: data.rmName, isDeleted: false })
-            .populate({
-                path: 'productDetialsId',
-                select: 'partyId productionNo productionPlanningDate batchNo _id',
-                populate: {
-                    path: 'partyId',
-                    select: 'partyName _id',
-                },
-            });
+        const isFromGSTInvoiceRecord = records.some(
+            r => r.isGSTInvoiceRecord === true
+        );
 
-        const totalUsedQtyInProduction = responseFromUsedQty.reduce((sum, item) => sum + item.netQty, 0);
-
-        // From Invoice Used Qty
-        let iRMStock = await InvoiceRMStockModel(dbYear);
-        const responseFromUsedQtyGSTInvoice = await iRMStock.find({ rmId: data.id, isDeleted: false });
-
-        const totalUsedQtyInGSTInvoice = responseFromUsedQtyGSTInvoice.reduce((sum, item) => sum + item.qty, 0);
-
-        let isFromGSTInvoiceRecord = false
-
-        if (responseFromUsedQtyGSTInvoice.length > 0 && totalUsedQtyInGSTInvoice > 0) {
-            isFromGSTInvoiceRecord = true
-        }
-
-        // From Additional Entry
-        let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear);
-        let additionalEntry = await addEntryModel.find({ rawMaterialId: data.id, isDeleted: false }).select('qty');
-        const totalUsedQtyInAdditionalEntry = additionalEntry.reduce((sum, item) => sum + item.qty, 0);
-
-        let totalStock = {
-            productionNo: '',
+        const totalStock = {
+            productionNo: "",
             batchClearingEntryId: null,
             productId: data.id,
-            batchNo: '',
-            expDate: '',
-            mfgDate: '',
-            quantity: totalPurchaseQty - totalUsedQtyInProduction - (Number(totalUsedQtyInGSTInvoice) || 0) - (Number(totalUsedQtyInAdditionalEntry) || 0),
-            mrp: '',
-            hsnCode: '',
+            batchNo: "",
+            expDate: "",
+            mfgDate: "",
+            quantity: Number(stockSummary.totalStock),
+            mrp: "",
+            hsnCode: "",
             name: data.rmName,
             uom: data.uom,
-            isFromGSTInvoiceRecord: isFromGSTInvoiceRecord
+            isFromGSTInvoiceRecord
+        };
 
-        }
-
-        let array = []
-        array.push(totalStock)
-        let encryptData = encryptionAPI(array, 1);
+        const encryptData = encryptionAPI([totalStock], 1);
 
         res.status(200).json({
             data: {
@@ -1115,9 +1129,10 @@ const getrawMaterialStockByRMId = async (req, res) => {
 
     } catch (error) {
         console.log("Error in Despatch controller", error);
-        errorHandler(error, req, res, "Error in Despatch controller")
+        errorHandler(error, req, res, "Error in Despatch controller");
     }
 };
+
 
 const addEditInvoiceRM = async (req, res) => {
     try {
@@ -1978,89 +1993,144 @@ const getGSTInvoicePMInvoiceNo = async (req, res) => {
     }
 };
 
+// const getPakcingMaterialStockByPMID = async (req, res) => {
+//     try {
+//         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+//         let apiData = req.body.data
+//         let data = getRequestData(apiData, 'PostApi')
+
+//         let queryObject = {
+//             isDeleted: false,
+//             packageMaterialId: data.id
+//         };
+
+//         // From GRN Entry
+//         let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
+//         const packingMaterialData = await gemDetailsModel
+//             .find(queryObject)
+//             .populate({
+//                 path: 'packageMaterialId',
+//                 select: 'pmName pmCategory _id',
+//             })
+//             .populate({
+//                 path: 'grnEntryPartyDetailId',
+//                 select: 'partyId grnNo grnDate invoiceNo _id',
+//                 populate: {
+//                     path: 'partyId',
+//                     select: 'partyName _id',
+//                 },
+//             });
+
+//         const totalPurchaseQty = packingMaterialData.reduce((sum, item) => sum + item.qty, 0);
+
+//         // From Production Used Qty
+//         let prPMFormualModel = await PackingRequisitionPMFormulaModel(dbYear)
+//         const responseFromUsedQty = await prPMFormualModel
+//             .find({ pmName: data.pmName, isDeleted: false })
+//             .populate({
+//                 path: 'productDetialsId',
+//                 select: 'partyId productionNo productionPlanningDate batchNo _id',
+//                 populate: {
+//                     path: 'partyId',
+//                     select: 'partyName _id',
+//                 },
+//             });
+
+//         const totalUsedQtyInProduction = responseFromUsedQty.reduce((sum, item) => sum + item.netQty, 0);
+
+//         // From Invoice Used Qty
+//         let iPMStockModel = await InvoicePMStockModel(dbYear)
+//         const responseFromUsedQtyGSTInvoice = await iPMStockModel
+//             .find({ pmId: data.id, isDeleted: false });
+
+//         const totalUsedQtyInGSTInvoice = responseFromUsedQtyGSTInvoice.reduce((sum, item) => sum + item.qty, 0);
+
+//         let isFromGSTInvoiceRecord = false
+
+//         if (responseFromUsedQtyGSTInvoice.length > 0 && totalUsedQtyInGSTInvoice > 0) {
+//             isFromGSTInvoiceRecord = true
+//         }
+
+//         // From Additional Entry
+//         let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear);
+//         let additionalEntry = await addEntryModel.find({ packageMaterialId: data.id, isDeleted: false }).select('qty');
+//         const totalUsedQtyInAdditionalEntry = additionalEntry.reduce((sum, item) => sum + item.qty, 0);
+
+
+//         let totalStock = {
+//             productionNo: '',
+//             batchClearingEntryId: null,
+//             productId: data.id,
+//             batchNo: '',
+//             expDate: '',
+//             mfgDate: '',
+//             quantity: totalPurchaseQty - totalUsedQtyInProduction - (Number(totalUsedQtyInGSTInvoice) || 0) - (Number(totalUsedQtyInAdditionalEntry) || 0),
+//             mrp: '',
+//             hsnCode: '',
+//             name: data.pmName,
+//             uom: data.uom,
+//             isFromGSTInvoiceRecord: isFromGSTInvoiceRecord
+
+//         }
+
+//         let array = []
+//         array.push(totalStock)
+//         let encryptData = encryptionAPI(array, 1);
+
+//         res.status(200).json({
+//             data: {
+//                 statusCode: 200,
+//                 Message: "Data fetched successfully",
+//                 responseData: encryptData,
+//                 isEnType: true,
+//             },
+//         });
+
+//     } catch (error) {
+//         console.log("Error in Despatch controller", error);
+//         errorHandler(error, req, res, "Error in Despatch controller")
+//     }
+// };
+
 const getPakcingMaterialStockByPMID = async (req, res) => {
     try {
-        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
-        let apiData = req.body.data
-        let data = getRequestData(apiData, 'PostApi')
+        const dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const apiData = req.body.data;
+        const data = getRequestData(apiData, "PostApi");
 
-        let queryObject = {
-            isDeleted: false,
-            packageMaterialId: data.id
+        const item = {
+            _id: data.id,
+            pmName: data.pmName,
         };
 
-        // From GRN Entry
-        let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
-        const packingMaterialData = await gemDetailsModel
-            .find(queryObject)
-            .populate({
-                path: 'packageMaterialId',
-                select: 'pmName pmCategory _id',
-            })
-            .populate({
-                path: 'grnEntryPartyDetailId',
-                select: 'partyId grnNo grnDate invoiceNo _id',
-                populate: {
-                    path: 'partyId',
-                    select: 'partyName _id',
-                },
-            });
+        const records = await fetchAllRecords(
+            dbYear,
+            item,
+            "Packing Material"
+        );
 
-        const totalPurchaseQty = packingMaterialData.reduce((sum, item) => sum + item.qty, 0);
+        const stockSummary = calculateStock(records);
 
-        // From Production Used Qty
-        let prPMFormualModel = await PackingRequisitionPMFormulaModel(dbYear)
-        const responseFromUsedQty = await prPMFormualModel
-            .find({ pmName: data.pmName, isDeleted: false })
-            .populate({
-                path: 'productDetialsId',
-                select: 'partyId productionNo productionPlanningDate batchNo _id',
-                populate: {
-                    path: 'partyId',
-                    select: 'partyName _id',
-                },
-            });
+        const isFromGSTInvoiceRecord = records.some(
+            r => r.isGSTInvoiceRecord === true
+        );
 
-        const totalUsedQtyInProduction = responseFromUsedQty.reduce((sum, item) => sum + item.netQty, 0);
-
-        // From Invoice Used Qty
-        let iPMStockModel = await InvoicePMStockModel(dbYear)
-        const responseFromUsedQtyGSTInvoice = await iPMStockModel
-            .find({ pmId: data.id, isDeleted: false });
-
-        const totalUsedQtyInGSTInvoice = responseFromUsedQtyGSTInvoice.reduce((sum, item) => sum + item.qty, 0);
-
-        let isFromGSTInvoiceRecord = false
-
-        if (responseFromUsedQtyGSTInvoice.length > 0 && totalUsedQtyInGSTInvoice > 0) {
-            isFromGSTInvoiceRecord = true
-        }
-
-        // From Additional Entry
-        let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear);
-        let additionalEntry = await addEntryModel.find({ packageMaterialId: data.id, isDeleted: false }).select('qty');
-        const totalUsedQtyInAdditionalEntry = additionalEntry.reduce((sum, item) => sum + item.qty, 0);
-
-
-        let totalStock = {
-            productionNo: '',
+        const totalStock = {
+            productionNo: "",
             batchClearingEntryId: null,
             productId: data.id,
-            batchNo: '',
-            expDate: '',
-            mfgDate: '',
-            quantity: totalPurchaseQty - totalUsedQtyInProduction - (Number(totalUsedQtyInGSTInvoice) || 0) - (Number(totalUsedQtyInAdditionalEntry) || 0),
-            mrp: '',
-            hsnCode: '',
+            batchNo: "",
+            expDate: "",
+            mfgDate: "",
+            quantity: Number(stockSummary.totalStock),
+            mrp: "",
+            hsnCode: "",
             name: data.pmName,
             uom: data.uom,
-            isFromGSTInvoiceRecord: isFromGSTInvoiceRecord
+            isFromGSTInvoiceRecord
+        };
 
-        }
-
-        let array = []
-        array.push(totalStock)
-        let encryptData = encryptionAPI(array, 1);
+        const encryptData = encryptionAPI([totalStock], 1);
 
         res.status(200).json({
             data: {
@@ -2073,9 +2143,10 @@ const getPakcingMaterialStockByPMID = async (req, res) => {
 
     } catch (error) {
         console.log("Error in Despatch controller", error);
-        errorHandler(error, req, res, "Error in Despatch controller")
+        errorHandler(error, req, res, "Error in Despatch controller");
     }
 };
+
 
 const addEditInvoicePM = async (req, res) => {
     try {
@@ -4464,17 +4535,18 @@ const getAllPartyWiseMonthlySalesByPartyId = async (req, res) => {
 const getAllStockStatementReport = async (req, res) => {
     try {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
-        let apiData = req.body.data
-        let data = getRequestData(apiData, 'PostApi')
-        let queryObject = { isDeleted: false }
+        // let apiData = req.body.data
+        // let data = getRequestData(apiData, 'PostApi')
+        // let queryObject = { isDeleted: false }
 
-        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
-        const response = await batchwiseProdStkModel.find(queryObject)
-            .populate({
-                path: 'productId',
-                select: 'ItemName',
-            });
+        // let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
+        // const response = await batchwiseProdStkModel.find(queryObject)
+        //     .populate({
+        //         path: 'productId',
+        //         select: 'ItemName',
+        //     });
 
+        const response = await fetchBatchWiseProductStock(dbYear);
         const groupedResponse = Object.values(
             response.reduce((acc, item) => {
                 const productId = item.productId._id.toString();
@@ -4494,19 +4566,6 @@ const getAllStockStatementReport = async (req, res) => {
                 return acc;
             }, {})
         ).filter(item => item.totalQty > 0);
-
-        // let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel()
-        // for (const details of groupedResponse) {
-        //     let issuedItemStock = await gifinishGoodsITemModel.find({ batchClearingEntryId: details.batchClearingEntryId, isDeleted: false }).select('qty free');
-        //     console.log("issuedItemStock", issuedItemStock)
-
-        //     let totalReduceQty = issuedItemStock.reduce((sum, item) => {
-        //         return sum + Number(item.qty || 0) + Number(item.free || 0);
-        //     }, 0);
-
-        //     details.totalQty = (Number(details.totalQty) || 0) - totalReduceQty;
-        // }
-        console.log(groupedResponse)
 
         let encryptData = encryptionAPI(groupedResponse, 1)
         res.status(200).json({
@@ -4669,16 +4728,18 @@ const getALLStockStatementByProductId = async (req, res) => {
 const getAllBatchWiseStockStatementReport = async (req, res) => {
     try {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
-        let apiData = req.body.data
-        let data = getRequestData(apiData, 'PostApi')
-        let queryObject = { isDeleted: false }
+        // let apiData = req.body.data
+        // let data = getRequestData(apiData, 'PostApi')
+        // let queryObject = { isDeleted: false }
 
-        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
-        const response = await batchwiseProdStkModel.find(queryObject)
-            .populate({
-                path: 'productId',
-                select: 'ItemName',
-            });
+        // let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
+        // const response = await batchwiseProdStkModel.find(queryObject)
+        //     .populate({
+        //         path: 'productId',
+        //         select: 'ItemName',
+        //     });
+
+        const response = await fetchBatchWiseProductStock(dbYear);
 
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -4811,20 +4872,24 @@ const getAllStockLedgerReportBatchStock = async (req, res) => {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
-        let queryObject = {
-            isDeleted: false,
-            productId: data.itemId
-        }
+        // let queryObject = {
+        //     isDeleted: false,
+        //     productId: data.itemId
+        // }
 
-        let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
-        const response = await batchwiseProdStkModel.find(queryObject)
-            .populate({
-                path: 'productId',
-                select: 'ItemName',
-            })
-            .sort({ updatedAt: -1 });;
-
-
+        // let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
+        // const response = await batchwiseProdStkModel.find(queryObject)
+        //     .populate({
+        //         path: 'productId',
+        //         select: 'ItemName',
+        //     })
+        //     .sort({ updatedAt: -1 });
+        const response = await fetchBatchWiseProductStock(
+            dbYear,
+            { productId: new ObjectId(data.itemId) },
+            { sort: { updatedAt: -1 } }
+        );
+        console.log(response)
         let encryptData = encryptionAPI(response, 1)
         res.status(200).json({
             data: {

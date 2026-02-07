@@ -19,6 +19,7 @@ import gstInvoicePMItemModel from "../model/Despatch/gstInvoicePMItemsModel.js";
 import rawMaterialSchema from "../model/rawMaterialModel.js";
 import packingMaterialSchema from "../model/packingMaterialModel.js";
 import companyGroupModel from "../model/companyGroup.js";
+import { calculateStock, fetchAllRecords } from "../utils/fetchRMPMStock.js";
 
 const addEditGRNEntryMaterialMapping = async (req, res) => {
     try {
@@ -1375,167 +1376,117 @@ const getAllMaterialWisePurchaseReport = async (req, res) => {
 
 const getAllItemsForStockLedgerReport = async (req, res) => {
     try {
-        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
-        let data = req.body.data
-        let reqData = getRequestData(data, 'PostApi')
-        let queryObject = {
-            isDeleted: false,
-        };
+        const dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const reqData = getRequestData(req.body.data, "PostApi");
+        const { materialType, endingDate, categoryName } = reqData;
 
-        if (reqData.endingDate) {
-            let endDate = new Date(reqData.endingDate);
+        const grnQuery = { isDeleted: false };
+
+        if (endingDate) {
+            const endDate = new Date(endingDate);
             endDate.setHours(23, 59, 59, 999);
-            queryObject.createdAt = { $lte: endDate };
+            grnQuery.createdAt = { $lte: endDate };
         }
 
-        if (reqData.materialType === 'Raw Material') {
-            queryObject.rawMaterialId = { $exists: true, $ne: null };
-            queryObject.packageMaterialId = null;
-            if (reqData.rawMaterialId !== '' && reqData.rawMaterialId.trim() !== '') {
-                queryObject.rawMaterialId = reqData.rawMaterialId;
+        if (materialType === "Raw Material") {
+            grnQuery.rawMaterialId = { $exists: true, $ne: null };
+            grnQuery.packageMaterialId = null;
+            if (reqData.rawMaterialId && reqData.rawMaterialId.trim() !== "") {
+                grnQuery.rawMaterialId = reqData.rawMaterialId;
             }
         }
 
-        if (reqData.materialType === 'Packing Material') {
-            queryObject.packageMaterialId = { $exists: true, $ne: null };
-            queryObject.rawMaterialId = null;
-            if (reqData.packageMaterialId !== '' && reqData.packageMaterialId.trim() !== '') {
-                queryObject.packageMaterialId = reqData.packageMaterialId;
+        if (materialType === "Packing Material") {
+            grnQuery.packageMaterialId = { $exists: true, $ne: null };
+            grnQuery.rawMaterialId = null;
+            if (reqData.packageMaterialId && reqData.packageMaterialId.trim() !== "") {
+                grnQuery.packageMaterialId = reqData.packageMaterialId;
             }
         }
-        let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
-        let response = await gemDetailsModel
-            .find(queryObject)
-            .select('rawMaterialId packageMaterialId grnEntryPartyDetailId qty rate amount')
+
+        const gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
+        let grnRecords = await gemDetailsModel
+            .find(grnQuery)
+            .select("rawMaterialId packageMaterialId grnEntryPartyDetailId qty rate amount")
+            .populate({ path: "rawMaterialId", select: "rmName rmCategory rmUOM _id" })
+            .populate({ path: "packageMaterialId", select: "pmName pmCategory pmUOM _id" })
             .populate({
-                path: 'rawMaterialId',
-                select: 'rmName rmCategory rmUOM _id',
-            })
-            .populate({
-                path: 'packageMaterialId',
-                select: 'pmName pmCategory pmUOM _id',
-            })
-            .populate({
-                path: 'grnEntryPartyDetailId',
-                select: 'partyId purchaseOrderNo purchaseOrderDate _id',
-                populate: {
-                    path: 'partyId',
-                    select: 'partyName _id',
-                },
+                path: "grnEntryPartyDetailId",
+                select: "partyId purchaseOrderNo purchaseOrderDate _id",
+                populate: { path: "partyId", select: "partyName _id" },
             });
 
-        if (reqData.materialType === 'Raw Material') {
-            response = response.sort((a, b) => {
-                const nameA = a.rawMaterialId?.rmName?.toLowerCase() || '';
-                const nameB = b.rawMaterialId?.rmName?.toLowerCase() || '';
-                return nameA.localeCompare(nameB);
-            });
-
-            if (reqData.categoryName && reqData.categoryName !== 'Select' && reqData.categoryName.trim() !== '') {
-                response = response.filter((x) => {
-                    return x.rawMaterialId.rmCategory === reqData.categoryName;
-                });
-            }
-
-        } else if (reqData.materialType === 'Packing Material') {
-            response = response.sort((a, b) => {
-                const nameA = a.packageMaterialId?.pmName?.toLowerCase() || '';
-                const nameB = b.packageMaterialId?.pmName?.toLowerCase() || '';
-                return nameA.localeCompare(nameB);
-            });
-
-            if (reqData.categoryName && reqData.categoryName !== 'Select' && reqData.categoryName.trim() !== '') {
-                response = response.filter((x) => {
-                    return x.packageMaterialId.pmCategory === reqData.categoryName;
-                });
-            }
-        }
-
-        let processedData = response.reduce((acc, curr) => {
-            if (reqData.materialType === "Raw Material") {
-                const existingItem = acc.find((item) =>
-                    item.rawMaterialId?._id.toString() === curr.rawMaterialId?._id.toString()
-                );
-
-                if (existingItem) {
-                    existingItem.qty += curr.qty || 0;
-                    existingItem.rate = curr.rate || existingItem.rate;
-                    existingItem.totalAmount = existingItem.qty * (existingItem.rate || 0);
-                } else {
-                    acc.push({
-                        rawMaterialId: curr.rawMaterialId,
-                        qty: curr.qty || 0,
-                        rate: curr.rate || 0,
-                        totalAmount: (curr.qty || 0) * (curr.rate || 0)
-                    });
-                }
+        if (categoryName && categoryName !== "Select" && categoryName.trim() !== "") {
+            if (materialType === "Raw Material") {
+                grnRecords = grnRecords.filter((x) => x.rawMaterialId?.rmCategory === categoryName);
             } else {
-                const existingItem = acc.find((item) =>
-                    item.packageMaterialId?._id.toString() === curr.packageMaterialId?._id.toString()
-                );
+                grnRecords = grnRecords.filter((x) => x.packageMaterialId?.pmCategory === categoryName);
+            }
+        }
 
-                if (existingItem) {
-                    existingItem.qty += curr.qty || 0;
-                    existingItem.totalAmount = existingItem.qty * (existingItem.rate || 0);
-                } else {
-                    acc.push({
-                        packageMaterialId: curr.packageMaterialId,
-                        qty: curr.qty || 0,
-                        rate: curr.rate || 0,
-                        totalAmount: (curr.qty || 0) * (curr.rate || 0)
-                    });
-                }
+        if (materialType === "Raw Material") {
+            grnRecords.sort((a, b) =>
+                (a.rawMaterialId?.rmName?.toLowerCase() || "").localeCompare(
+                    b.rawMaterialId?.rmName?.toLowerCase() || ""
+                )
+            );
+        } else {
+            grnRecords.sort((a, b) =>
+                (a.packageMaterialId?.pmName?.toLowerCase() || "").localeCompare(
+                    b.packageMaterialId?.pmName?.toLowerCase() || ""
+                )
+            );
+        }
+
+        const groupedByMaterial = grnRecords.reduce((acc, curr) => {
+            const idField = materialType === "Raw Material" ? "rawMaterialId" : "packageMaterialId";
+            const currentId = curr[idField]?._id?.toString();
+
+            const existing = acc.find((item) => item[idField]?._id?.toString() === currentId);
+
+            if (existing) {
+                existing.qty += curr.qty || 0;
+                existing.rate = curr.rate || existing.rate;
+                existing.totalAmount = existing.qty * (existing.rate || 0);
+            } else {
+                acc.push({
+                    [idField]: curr[idField],
+                    qty: curr.qty || 0,
+                    rate: curr.rate || 0,
+                    totalAmount: (curr.qty || 0) * (curr.rate || 0),
+                });
             }
             return acc;
         }, []);
 
-        // Removing Production and GSTInvoice Qty 
-        let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
-        let prPMFormulaModel = await PackingRequisitionPMFormulaModel(dbYear);
+        const processedData = await Promise.all(
+            groupedByMaterial.map(async (details) => {
+                const item =
+                    materialType === "Raw Material"
+                        ? { _id: details.rawMaterialId._id, rmName: details.rawMaterialId.rmName }
+                        : { _id: details.packageMaterialId._id, pmName: details.packageMaterialId.pmName };
 
-        let giRMItemModel = await gstinvoiceRMItemModel(dbYear)
-        let giPMItemModel = await gstInvoicePMItemModel(dbYear)
+                const records = await fetchAllRecords(dbYear, item, materialType);
 
-        let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear)
+                const stock = calculateStock(records);
 
-        processedData = await Promise.all(
-            processedData.map(async (details) => {
-                if (reqData.materialType === 'Raw Material') {
-                    let productionUsedQty = await prRMFormulaModel.find({ isDeleted: false, rmName: details.rawMaterialId.rmName }).select('netQty');
-                    let gstInvoiceUsedQty = await giRMItemModel.find({ itemId: details.rawMaterialId._id, isDeleted: false }).select('qty');
-                    let additionalEntry = await addEntryModel.find({ rawMaterialId: details.rawMaterialId._id, isDeleted: false }).select('qty');
-                    let totalUsedQty = productionUsedQty.reduce((sum, item) => sum + (item.netQty || 0), 0);
-                    let totalGSTInvoiceUsed = gstInvoiceUsedQty.reduce((sum, item) => sum + (item.qty || 0), 0);
-                    let additionalEntryUsed = additionalEntry.reduce((sum, item) => sum + (item.qty || 0), 0);
-
-                    return {
-                        ...details,
-                        qty: (details.qty || 0) - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed
-                    };
-                } else {
-                    let productionUsedQty = await prPMFormulaModel.find({ isDeleted: false, pmName: details.packageMaterialId.pmName }).select('netQty');
-                    let gstInvoiceUsedQty = await giPMItemModel.find({ itemId: details.packageMaterialId._id, isDeleted: false }).select('qty');
-                    let additionalEntry = await addEntryModel.find({ packageMaterialId: details.packageMaterialId._id, isDeleted: false }).select('qty');
-                    let totalUsedQty = productionUsedQty.reduce((sum, item) => sum + (item.netQty || 0), 0);
-                    let totalGSTInvoiceUsed = gstInvoiceUsedQty.reduce((sum, item) => sum + (item.qty || 0), 0);
-                    let additionalEntryUsed = additionalEntry.reduce((sum, item) => sum + (item.qty || 0), 0);
-
-                    return {
-                        ...details,
-                        qty: (details.qty || 0) - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed
-                    };
-                }
+                return {
+                    ...details,
+                    qty: stock.totalStock,
+                };
             })
         );
 
-        let encryptData = encryptionAPI(processedData, 1)
+        const totalCount = processedData.length;
+        const encryptData = encryptionAPI(processedData, 1);
 
         res.status(200).json({
             data: {
                 statusCode: 200,
-                Message: "Details fetched successfully",
+                Message: totalCount === 0 ? "No Record Found" : "Details fetched successfully",
                 responseData: encryptData,
-                isEnType: true
+                isEnType: true,
+                totalCount,
             },
         });
 
@@ -1547,186 +1498,34 @@ const getAllItemsForStockLedgerReport = async (req, res) => {
 
 const getAllStatementForPurchaseItemByItemId = async (req, res) => {
     try {
-        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
-        let data = req.body.data
-        let reqData = getRequestData(data, 'PostApi')
-        let queryObject = {
-            isDeleted: false,
-        };
-        if (reqData.materialType === 'Raw Material') {
-            queryObject.rawMaterialId = reqData.item._id
-        }
+        const dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const reqData = getRequestData(req.body.data, "PostApi");
 
-        if (reqData.materialType === 'Packing Material') {
-            queryObject.packageMaterialId = reqData.item._id
-        }
+        const records = await fetchAllRecords(dbYear, reqData.item, reqData.materialType);
+        let stockSummary = calculateStock(records);
 
-        let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
-        let response = await gemDetailsModel
-            .find(queryObject)
-            .populate({
-                path: 'rawMaterialId',
-                select: 'rmName rmCategory _id',
-            })
-            .populate({
-                path: 'packageMaterialId',
-                select: 'pmName pmCategory _id',
-            })
-            .populate({
-                path: 'grnEntryPartyDetailId',
-                select: 'partyId grnNo grnDate invoiceNo _id',
-                populate: {
-                    path: 'partyId',
-                    select: 'partyName _id',
-                },
-            });
+        const firstGRNRecord = records.find(
+            (record) => !record.isIssuedRecord && !record.isGSTInvoiceRecord
+        );
+        const materialName = reqData.materialType === "Raw Material"
+            ? firstGRNRecord?.rawMaterialId?.rmName || ""
+            : firstGRNRecord?.packageMaterialId?.pmName || "";
 
-        let queryObject1 = {
-            isDeleted: false,
-        };
-
-        // Additional Entry 
-        let responseFromAdditionalEntry = [];
-        if (reqData.materialType === 'Raw Material') {
-            let giRMItemModel = await additionalEntryMaterialDetailsModel(dbYear)
-            responseFromAdditionalEntry = await giRMItemModel
-                .find({ rawMaterialId: reqData.item._id, isDeleted: false }).populate({
-                    path: 'additionalEntryDetailsId',
-                    select: 'batchNo reqDate slipNo productName type'
-                });
-        }
-
-        if (reqData.materialType === 'Packing Material') {
-            let giPMItemModel = await additionalEntryMaterialDetailsModel(dbYear)
-            responseFromAdditionalEntry = await giPMItemModel
-                .find({ packageMaterialId: reqData.item._id, isDeleted: false })
-                .populate({
-                    path: 'additionalEntryDetailsId',
-                    select: 'batchNo reqDate slipNo productName type',
-                });
-        }
-        responseFromAdditionalEntry = responseFromAdditionalEntry.map(x => {
-            return {
-                ...x._doc,
-                issueQty: x.qty,
-                isAdditionalEntryRecord: true,
-                isIssuedRecord: true,
-            };
-        });
-
-
-        //Production Usage
-        let responseFromUsedQty = [];
-        if (reqData.materialType === 'Raw Material') {
-            queryObject1.rmName = reqData.item.rmName
-
-            let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
-            responseFromUsedQty = await prRMFormulaModel
-                .find(queryObject1)
-                .populate({
-                    path: 'productDetialsId',
-                    select: 'partyId productionNo productionPlanningDate batchNo _id',
-                    populate: {
-                        path: 'partyId',
-                        select: 'partyName _id',
-                    },
-                })
-                .populate({
-                    path: 'productId',
-                    select: 'productName',
-                });
-        }
-
-        if (reqData.materialType === 'Packing Material') {
-            queryObject1.pmName = reqData.item.pmName
-
-            let prPMFormualModel = await PackingRequisitionPMFormulaModel(dbYear)
-            responseFromUsedQty = await prPMFormualModel
-                .find(queryObject1)
-                .populate({
-                    path: 'productDetialsId',
-                    select: 'partyId productionNo productionPlanningDate batchNo _id',
-                    populate: {
-                        path: 'partyId',
-                        select: 'partyName _id',
-                    },
-                })
-                .populate({
-                    path: 'packingItemId',
-                    select: 'ItemName',
-                });
-        }
-        responseFromUsedQty = responseFromUsedQty.map(x => {
-            return {
-                ...x._doc,
-                issueQty: x.netQty,
-                isIssuedRecord: true,
-            };
-        });
-
-
-        // GST Invoice 
-        let responseFromUsedGSTInvoice = [];
-        if (reqData.materialType === 'Raw Material') {
-            queryObject1.rmName = reqData.item.rmName
-
-            let giRMItemModel = await gstinvoiceRMItemModel(dbYear)
-            responseFromUsedGSTInvoice = await giRMItemModel
-                .find({ itemId: reqData.item._id, isDeleted: false })
-                .populate({
-                    path: 'gstInvoiceRMID',
-                    select: 'invoiceNo invoiceDate partyId',
-                    populate: {
-                        path: 'partyId',
-                        select: 'partyName _id',
-                    },
-                });
-        }
-
-        if (reqData.materialType === 'Packing Material') {
-            queryObject1.pmName = reqData.item.pmName
-
-            let giPMItemModel = await gstInvoicePMItemModel(dbYear)
-            responseFromUsedGSTInvoice = await giPMItemModel
-                .find({ itemId: reqData.item._id, isDeleted: false })
-                .populate({
-                    path: 'gstInvoicePMID',
-                    select: 'invoiceNo invoiceDate partyId',
-                    populate: {
-                        path: 'partyId',
-                        select: 'partyName _id',
-                    },
-                });
-        }
-        responseFromUsedGSTInvoice = responseFromUsedGSTInvoice.map(x => {
-            return {
-                ...x._doc,
-                issueQty: x.qty,
-                isGSTInvoiceRecord: true,
-            };
-        });
-
-        let combinedResponse = [
-            ...response,
-            ...responseFromUsedQty,
-            ...responseFromUsedGSTInvoice,
-            ...responseFromAdditionalEntry
-        ];
-        combinedResponse.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
-        let encryptData = encryptionAPI(combinedResponse, 1)
+        stockSummary.materialName = materialName;
+        stockSummary.records = records;
+        const encryptData = encryptionAPI(stockSummary, 1);
 
         res.status(200).json({
             data: {
                 statusCode: 200,
                 Message: "Details fetched successfully",
                 responseData: encryptData,
-                isEnType: true
+                isEnType: true,
             },
         });
-
     } catch (error) {
         console.log("Error in Inventory controller", error);
-        errorHandler(error, req, res, "Error in Inventory controller")
+        errorHandler(error, req, res, "Error in Inventory controller");
     }
 };
 

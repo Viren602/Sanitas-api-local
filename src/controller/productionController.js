@@ -15,6 +15,9 @@ import gstInvoicePMItemModel from "../model/Despatch/gstInvoicePMItemsModel.js";
 import rawMaterialSchema from "../model/rawMaterialModel.js";
 import batchWiseProductStockModel from "../model/Despatch/batchWiseProductStockModel.js";
 import productionStageModel from "../model/productionStageModel.js";
+import { calculateStock, fetchAllRecords } from "../utils/fetchRMPMStock.js";
+import packingMaterialSchema from "../model/packingMaterialModel.js";
+const { ObjectId } = mongoose.Types;
 
 const addEditProductionPlanningEntry = async (req, res) => {
   try {
@@ -89,80 +92,256 @@ const addEditProductionPlanningEntry = async (req, res) => {
   }
 };
 
+// const getAllProductionPlanningEntry = async (req, res) => {
+//   try {
+//     let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+//     let apiData = req.body.data;
+//     let data = getRequestData(apiData, "PostApi");
+//     let queryObject = {
+//       isDeleted: false,
+//     };
+
+//     let filterBy = { createdAt: -1 };;
+
+//     if (data.filterBy && data.filterBy.trim() !== "" && data.filterBy !== "Select") {
+//       filterBy = { [data.filterBy]: 1 };
+//     }
+
+//     if (Array.isArray(data.productionStageId) && data.productionStageId.length > 0) {
+//       let psModel = await ProductionStagesModel(dbYear)
+//       const stages = await psModel.find({
+//         productionStageId: { $in: data.productionStageId },
+//         isDeleted: false,
+//       });
+//       const requiredStatusIDs = stages.map(stage => new mongoose.Types.ObjectId(stage._id));
+
+//       if (stages && stages.length > 0) {
+//         queryObject.productionStageStatusId = { $in: requiredStatusIDs };
+//       } else {
+//         queryObject.productionStageStatusId = { $in: [] };
+//       }
+//     } else {
+//       queryObject.productionStageStatusId = { $in: [] };
+//     }
+
+//     let ppeModel = await productionPlanningEntryModel(dbYear)
+//     let response = await ppeModel
+//       .find(queryObject)
+//       .sort(filterBy)
+//       .populate({
+//         path: "partyId",
+//         select: "partyName _id",
+//       })
+//       .populate({
+//         path: "productId",
+//         select: "productName color weight sizeName _id",
+//       })
+//       .populate({
+//         path: "productionStageStatusId",
+//         select: "productionStageName productionStageId _id",
+//       });
+
+//     if (data.partyName && data.partyName.trim() !== "") {
+//       response = response.filter((item) =>
+//         item.partyId?.partyName
+//           ?.toLowerCase()
+//           .startsWith(data.partyName.toLowerCase())
+//       );
+//     }
+
+//     if (data.productName && data.productName.trim() !== "") {
+//       response = response.filter((item) =>
+//         item.productId?.productName
+//           ?.toLowerCase()
+//           .startsWith(data.productName.toLowerCase())
+//       );
+//     }
+
+//     if (data.orderNumber && data.orderNumber.trim() !== "") {
+//       response = response.filter((item) =>
+//         item.productionNo
+//           ?.toLowerCase()
+//           .startsWith(data.orderNumber.toLowerCase())
+//       );
+//     }
+
+//     let encryptData = encryptionAPI(response, 1);
+
+//     res.status(200).json({
+//       data: {
+//         statusCode: 200,
+//         Message: "Production Planning Details fetched successfully",
+//         responseData: encryptData,
+//         isEnType: true,
+//       },
+//     });
+//   } catch (error) {
+//     console.log("Error in Production controller", error);
+//     errorHandler(error, req, res, "Error in Production controller")
+//   }
+// };
+
 const getAllProductionPlanningEntry = async (req, res) => {
   try {
-    let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
-    let apiData = req.body.data;
-    let data = getRequestData(apiData, "PostApi");
-    let queryObject = {
-      isDeleted: false,
-    };
+    const dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+    const apiData = req.body.data;
+    const data = getRequestData(apiData, "PostApi");
 
-    let filterBy = { createdAt: -1 };;
+    const ppeModel = await productionPlanningEntryModel(dbYear);
+    const psModel = await ProductionStagesModel(dbYear);
 
+    let sortStage = { createdAt: -1 };
     if (data.filterBy && data.filterBy.trim() !== "" && data.filterBy !== "Select") {
-      filterBy = { [data.filterBy]: 1 };
+      sortStage = { [data.filterBy]: 1 };
     }
+
+    let stageIds = [];
 
     if (Array.isArray(data.productionStageId) && data.productionStageId.length > 0) {
-      let psModel = await ProductionStagesModel(dbYear)
-      const stages = await psModel.find({
-        productionStageId: { $in: data.productionStageId },
-        isDeleted: false,
-      });
-      const requiredStatusIDs = stages.map(stage => new mongoose.Types.ObjectId(stage._id));
-
-      if (stages && stages.length > 0) {
-        queryObject.productionStageStatusId = { $in: requiredStatusIDs };
-      } else {
-        queryObject.productionStageStatusId = { $in: [] };
-      }
-    } else {
-      queryObject.productionStageStatusId = { $in: [] };
-    }
-
-    let ppeModel = await productionPlanningEntryModel(dbYear)
-    let response = await ppeModel
-      .find(queryObject)
-      .sort(filterBy)
-      .populate({
-        path: "partyId",
-        select: "partyName _id",
-      })
-      .populate({
-        path: "productId",
-        select: "productName color weight sizeName _id",
-      })
-      .populate({
-        path: "productionStageStatusId",
-        select: "productionStageName productionStageId _id",
-      });
-
-    if (data.partyName && data.partyName.trim() !== "") {
-      response = response.filter((item) =>
-        item.partyId?.partyName
-          ?.toLowerCase()
-          .startsWith(data.partyName.toLowerCase())
+      const stages = await psModel.find(
+        {
+          productionStageId: { $in: data.productionStageId },
+          isDeleted: false,
+        },
+        { _id: 1 }
       );
+
+      stageIds = stages.map(s => new mongoose.Types.ObjectId(s._id));
     }
 
-    if (data.productName && data.productName.trim() !== "") {
-      response = response.filter((item) =>
-        item.productId?.productName
-          ?.toLowerCase()
-          .startsWith(data.productName.toLowerCase())
-      );
-    }
+    const matchStage = {
+      isDeleted: false,
+      productionStageStatusId: { $in: stageIds },
+    };
 
-    if (data.orderNumber && data.orderNumber.trim() !== "") {
-      response = response.filter((item) =>
-        item.productionNo
-          ?.toLowerCase()
-          .startsWith(data.orderNumber.toLowerCase())
-      );
-    }
+    const pipeline = [
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: "parties",
+          localField: "partyId",
+          foreignField: "_id",
+          as: "partyId",
+        },
+      },
+      { $unwind: { path: "$partyId", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "productmasters",
+          localField: "productId",
+          foreignField: "_id",
+          as: "productId",
+        },
+      },
+      { $unwind: { path: "$productId", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "sampleentryfgs",
+          let: { prodId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$productionId", "$$prodId"] },
+                    { $eq: ["$isDeleted", false] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: "sampleEntryFg"
+        }
+      },
+      {
+        $lookup: {
+          from: "testreportfgs",
+          let: { prodId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$productionId", "$$prodId"] },
+                    { $eq: ["$isDeleted", false] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: "testReportFg"
+        }
+      },
+      {
+        $lookup: {
+          from: "productionstages",
+          localField: "productionStageStatusId",
+          foreignField: "_id",
+          as: "productionStageStatusId",
+        },
+      },
+      { $unwind: { path: "$productionStageStatusId", preserveNullAndEmptyArrays: true, }, },
+      ...(data.partyName
+        ? [{
+          $match: {
+            "partyId.partyName": {
+              $regex: `^${data.partyName}`,
+              $options: "i",
+            },
+          },
+        }]
+        : []),
 
-    let encryptData = encryptionAPI(response, 1);
+      { $sort: sortStage },
+      {
+        $addFields: {
+          qcStatus: {
+            $switch: {
+              branches: [
+                {
+                  case: {
+                    $and: [
+                      { $eq: [{ $size: { $ifNull: ["$sampleEntryFg", []] } }, 0] },
+                      { $eq: [{ $size: { $ifNull: ["$testReportFg", []] } }, 0] }
+                    ]
+                  },
+                  then: "Not started"
+                },
+                {
+                  case: {
+                    $and: [
+                      { $gt: [{ $size: { $ifNull: ["$sampleEntryFg", []] } }, 0] },
+                      { $eq: [{ $size: { $ifNull: ["$testReportFg", []] } }, 0] }
+                    ]
+                  },
+                  then: "In progress"
+                },
+                {
+                  case: {
+                    $and: [
+                      { $gt: [{ $size: { $ifNull: ["$sampleEntryFg", []] } }, 0] },
+                      { $gt: [{ $size: { $ifNull: ["$testReportFg", []] } }, 0] }
+                    ]
+                  },
+                  then: "Done"
+                }
+              ],
+              default: null
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          isDeleted: 0,
+          __v: 0
+        }
+      },
+    ];
+
+    const response = await ppeModel.aggregate(pipeline);
+
+    const encryptData = encryptionAPI(response, 1);
 
     res.status(200).json({
       data: {
@@ -174,9 +353,10 @@ const getAllProductionPlanningEntry = async (req, res) => {
     });
   } catch (error) {
     console.log("Error in Production controller", error);
-    errorHandler(error, req, res, "Error in Production controller")
+    errorHandler(error, req, res, "Error in Production controller");
   }
 };
+
 
 const getProductionPlanningEntryById = async (req, res) => {
   try {
@@ -186,21 +366,191 @@ const getProductionPlanningEntryById = async (req, res) => {
     let response = [];
     if (reqId) {
       let ppeModel = await productionPlanningEntryModel(dbYear)
-      response = await ppeModel
-        .findOne({
-          _id: reqId,
-          isDeleted: false,
-        })
-        .populate({
-          path: "productId",
-          select: "productName color sizeName _id expiryMonth productNote",
-        })
-        .populate({
-          path: "productionStageStatusId",
-          select: "productionStageName productionStageId _id",
-        });
+      // let oldresponse = await ppeModel
+      //   .findOne({
+      //     _id: reqId,
+      //     isDeleted: false,
+      //   })
+      //   .populate({
+      //     path: "productId",
+      //     select: "productName color sizeName _id expiryMonth productNote",
+      //   })
+      //   .populate({
+      //     path: "productionStageStatusId",
+      //     select: "productionStageName productionStageId _id",
+      //   });
+
+      response = await ppeModel.aggregate([
+        {
+          $match: {
+            _id: new ObjectId(reqId),
+            isDeleted: false
+          }
+        },
+        {
+          $lookup: {
+            from: "productmasters",
+            localField: "productId",
+            foreignField: "_id",
+            as: "productId"
+          }
+        },
+        {
+          $unwind: {
+            path: "$productId",
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $lookup: {
+            from: "sampleentryfgs",
+            let: { prodId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$productionId", "$$prodId"] },
+                      { $eq: ["$isDeleted", false] }
+                    ]
+                  }
+                }
+              }
+            ],
+            as: "sampleEntryFg"
+          }
+        },
+        {
+          $lookup: {
+            from: "testreportfgs",
+            let: { prodId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$productionId", "$$prodId"] },
+                      { $eq: ["$isDeleted", false] }
+                    ]
+                  }
+                }
+              }
+            ],
+            as: "testReportFg"
+          }
+        },
+        {
+          $lookup: {
+            from: "productionstages",
+            localField: "productionStageStatusId",
+            foreignField: "_id",
+            as: "productionStageStatusId"
+          }
+        },
+        {
+          $unwind: {
+            path: "$productionStageStatusId",
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $addFields: {
+            qcStatus: {
+              $switch: {
+                branches: [
+                  {
+                    case: {
+                      $and: [
+                        { $eq: [{ $size: { $ifNull: ["$sampleEntryFg", []] } }, 0] },
+                        { $eq: [{ $size: { $ifNull: ["$testReportFg", []] } }, 0] }
+                      ]
+                    },
+                    then: "Not started"
+                  },
+                  {
+                    case: {
+                      $and: [
+                        { $gt: [{ $size: { $ifNull: ["$sampleEntryFg", []] } }, 0] },
+                        { $eq: [{ $size: { $ifNull: ["$testReportFg", []] } }, 0] }
+                      ]
+                    },
+                    then: "In progress"
+                  },
+                  {
+                    case: {
+                      $and: [
+                        { $gt: [{ $size: { $ifNull: ["$sampleEntryFg", []] } }, 0] },
+                        { $gt: [{ $size: { $ifNull: ["$testReportFg", []] } }, 0] }
+                      ]
+                    },
+                    then: "Done"
+                  }
+                ],
+                default: null
+              }
+            }
+          }
+        },
+        {
+          $project: {
+            partyId: 1,
+            productionNo: 1,
+            productionPlanningDate: 1,
+            batchNo: 1,
+            batchSize: 1,
+            planningDate: 1,
+            despDate: 1,
+            itemId: 1,
+            despQty: 1,
+            mrp: 1,
+            packing: 1,
+            salesRate: 1,
+            itemId2: 1,
+            despQty2: 1,
+            mrp2: 1,
+            salesRate2: 1,
+            packing2: 1,
+            size: 1,
+            colour: 1,
+            mfgDate: 1,
+            expDate: 1,
+            stdBatchSize: 1,
+            productionPlanningRequestDate: 1,
+            packingRequisitionReqDate: 1,
+            productionRequisitionReqDate: 1,
+            packingItemId: 1,
+            packQty: 1,
+            productNote: 1,
+            isRMFormulaCreated: 1,
+            isPMFormulaCreated: 1,
+            isDeleted: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            qcStatus: 1,
+            productId: {
+              _id: 1,
+              productName: 1,
+              expiryMonth: 1,
+              color: 1,
+              sizeName: 1,
+              productNote: 1,
+              labTestRequire: 1,
+            },
+            productionStageStatusId: {
+              _id: 1,
+              productionStageId: 1,
+              productionStageName: 1
+            }
+          }
+        },
+      ]);
+
+      response = response[0] || null;
     }
+
+    console.log("Production Planning Entry Response:", response);
     let encryptData = encryptionAPI(response, 1);
+
 
     res.status(200).json({
       data: {
@@ -257,16 +607,146 @@ const deleteProductionPlanningEntryById = async (req, res) => {
   }
 };
 
+// const getRMFormulaForProductionById = async (req, res) => {
+//   try {
+//     let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+//     const { id } = req.query;
+//     let reqId = getRequestData(id)
+
+//     let queryObject = {
+//       isDeleted: false,
+//       rawMaterialId: { $ne: null },
+//     };
+
+//     let rmFModel = await rmFormulaModel(dbYear)
+//     let formulaResponse = await rmFModel
+//       .find({ productId: reqId, isDeleted: false })
+//       .select('qty netQty rmName uom stageName batchSize rmId')
+//       .populate({
+//         path: 'stageId',
+//         select: 'seqNo',
+//       });
+
+//     formulaResponse.sort((a, b) => (a.stageId?.seqNo || 0) - (b.stageId?.seqNo || 0));
+
+//     let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
+//     const grnEntryForStock = await gemDetailsModel
+//       .find(queryObject)
+//       .populate({
+//         path: 'rawMaterialId',
+//         select: 'rmName rmUOM minQty rmCategory _id',
+//       });
+
+//     const stockData = grnEntryForStock.reduce((acc, entry) => {
+//       const rmName = entry.rawMaterialId.rmName;
+//       const rmUOM = entry.rawMaterialId.rmUOM;
+//       const quantity = entry.qty || 0;
+
+//       if (!acc[rmName]) {
+//         acc[rmName] = {
+//           rmName,
+//           totalQuantity: 0,
+//           rmUOM,
+//         };
+//       }
+
+//       acc[rmName].totalQuantity += quantity;
+//       return acc;
+//     }, {});
+
+//     let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
+//     let giRMItemModel = await gstinvoiceRMItemModel(dbYear);
+//     let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear);
+//     let rmModel = await rawMaterialSchema(dbYear)
+
+//     const enrichedFormulaResponse = await Promise.all(
+//       formulaResponse.map(async (item) => {
+//         const stock = stockData[item.rmName] || { totalQuantity: 0, rmUOM: null };
+
+//         // GST Invoice Qty Remove
+//         let gstInvoiceUsedQty = await giRMItemModel.find({ itemId: item.rmId, isDeleted: false }).select('qty');
+//         let totalGSTInvoiceUsed = gstInvoiceUsedQty.reduce((sum, gItem) => sum + (gItem.qty || 0), 0);
+
+//         // Production Qty Remove
+//         let productionUsedQty = await prRMFormulaModel.find({ isDeleted: false, rmName: item.rmName }).select('netQty');
+//         let totalUsedQty = productionUsedQty.reduce((sum, pItem) => sum + (pItem.netQty || 0), 0);
+
+//         // Additional Qty Remove
+//         let additionalEntry = await addEntryModel.find({ rawMaterialId: item.rmId, isDeleted: false }).select('qty');
+//         let additionalEntryUsed = additionalEntry.reduce((sum, aItem) => sum + (aItem.qty || 0), 0);
+
+//         let finalQty = stock.totalQuantity - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed;
+
+//         let rawMaterialUOM = await rmModel.findOne({ _id: item.rmId, isDeleted: false }).select('rmUOM');
+//         let itemUOM = stock.rmUOM ? stock.rmUOM : rawMaterialUOM.rmUOM
+
+//         const convertedNetQty = convertNetQty(item.netQty, item.uom, itemUOM);
+//         return {
+//           ...item.toObject(),
+//           rmUOM: itemUOM,
+//           netQty: convertedNetQty,
+//           totalStock: finalQty,
+//         };
+//       })
+//     );
+
+
+//     function convertNetQty(netQty, uom, rmUOM) {
+//       if (uom === rmUOM) {
+//         return netQty;
+//       }
+
+//       if (uom === 'MCG') {
+//         if (rmUOM === 'KGS') { return netQty / 1000000000; }
+//         if (rmUOM === 'GM') { return netQty / 1000000; }
+//         if (rmUOM === 'MG') { return netQty / 1000; }
+//       }
+
+//       if (uom === 'GM') {
+//         if (rmUOM === 'KGS') { return netQty / 1000; }
+//         if (rmUOM === 'MG') { return netQty * 1000; }
+//       }
+
+//       if (uom === 'MG') {
+//         if (rmUOM === 'KGS') { return netQty / 1000000; }
+//         if (rmUOM === 'GM') { return netQty / 1000; }
+//       }
+
+//       if (uom === 'KGS') {
+//         if (rmUOM === 'MG') { return netQty * 1000000; }
+//         if (rmUOM === 'GM') { return netQty * 1000; }
+//       }
+
+//       if (uom === 'LTR') { return netQty * 1000 }
+
+//       if (uom === 'ML') { return netQty / 1000 }
+
+//       return netQty;
+//     }
+
+//     let encryptData = encryptionAPI(enrichedFormulaResponse, 1);
+
+//     res.status(200).json({
+//       data: {
+//         statusCode: 200,
+//         Message: "Stock Wise Raw material formula fetched successfully",
+//         responseData: encryptData,
+//         isEnType: true,
+//       },
+//     });
+
+//   } catch (error) {
+//     console.log("Error in Production controller", error);
+//     errorHandler(error, req, res, "Error in Production controller")
+//   }
+// };
+
+
 const getRMFormulaForProductionById = async (req, res) => {
   try {
     let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
     let reqId = getRequestData(id)
-
-    let queryObject = {
-      isDeleted: false,
-      rawMaterialId: { $ne: null },
-    };
 
     let rmFModel = await rmFormulaModel(dbYear)
     let formulaResponse = await rmFModel
@@ -279,63 +759,36 @@ const getRMFormulaForProductionById = async (req, res) => {
 
     formulaResponse.sort((a, b) => (a.stageId?.seqNo || 0) - (b.stageId?.seqNo || 0));
 
-    let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
-    const grnEntryForStock = await gemDetailsModel
-      .find(queryObject)
-      .populate({
-        path: 'rawMaterialId',
-        select: 'rmName rmUOM minQty rmCategory _id',
-      });
-
-    const stockData = grnEntryForStock.reduce((acc, entry) => {
-      const rmName = entry.rawMaterialId.rmName;
-      const rmUOM = entry.rawMaterialId.rmUOM;
-      const quantity = entry.qty || 0;
-
-      if (!acc[rmName]) {
-        acc[rmName] = {
-          rmName,
-          totalQuantity: 0,
-          rmUOM,
-        };
-      }
-
-      acc[rmName].totalQuantity += quantity;
-      return acc;
-    }, {});
-
-    let prRMFormulaModel = await ProductionRequisitionRMFormulaModel(dbYear);
-    let giRMItemModel = await gstinvoiceRMItemModel(dbYear);
-    let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear);
     let rmModel = await rawMaterialSchema(dbYear)
 
     const enrichedFormulaResponse = await Promise.all(
       formulaResponse.map(async (item) => {
-        const stock = stockData[item.rmName] || { totalQuantity: 0, rmUOM: null };
 
-        // GST Invoice Qty Remove
-        let gstInvoiceUsedQty = await giRMItemModel.find({ itemId: item.rmId, isDeleted: false }).select('qty');
-        let totalGSTInvoiceUsed = gstInvoiceUsedQty.reduce((sum, gItem) => sum + (gItem.qty || 0), 0);
+        const records = await fetchAllRecords(
+          dbYear,
+          { _id: item.rmId, rmName: item.rmName },
+          "Raw Material"
+        );
 
-        // Production Qty Remove
-        let productionUsedQty = await prRMFormulaModel.find({ isDeleted: false, rmName: item.rmName }).select('netQty');
-        let totalUsedQty = productionUsedQty.reduce((sum, pItem) => sum + (pItem.netQty || 0), 0);
+        const stockSummary = calculateStock(records);
 
-        // Additional Qty Remove
-        let additionalEntry = await addEntryModel.find({ rawMaterialId: item.rmId, isDeleted: false }).select('qty');
-        let additionalEntryUsed = additionalEntry.reduce((sum, aItem) => sum + (aItem.qty || 0), 0);
+        let rawMaterialUOM = await rmModel
+          .findOne({ _id: item.rmId, isDeleted: false })
+          .select("rmUOM");
 
-        let finalQty = stock.totalQuantity - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed;
+        let itemUOM = rawMaterialUOM?.rmUOM;
 
-        let rawMaterialUOM = await rmModel.findOne({ _id: item.rmId, isDeleted: false }).select('rmUOM');
-        let itemUOM = stock.rmUOM ? stock.rmUOM : rawMaterialUOM.rmUOM
+        const convertedNetQty = convertNetQty(
+          item.netQty,
+          item.uom,
+          itemUOM
+        );
 
-        const convertedNetQty = convertNetQty(item.netQty, item.uom, itemUOM);
         return {
           ...item.toObject(),
           rmUOM: itemUOM,
           netQty: convertedNetQty,
-          totalStock: finalQty,
+          totalStock: Number(stockSummary.totalStock),
         };
       })
     );
@@ -544,108 +997,200 @@ const removeProductionPlanningEntryFromProductionRequisition = async (req, res) 
 };
 
 
+// const getPMFormulaByPackingItemId = async (req, res) => {
+//   try {
+//     let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+//     const { id } = req.query;
+//     let reqId = getRequestData(id)
+
+//     let queryObject = {
+//       isDeleted: false,
+//       packageMaterialId: { $ne: null },
+//     };
+
+//     let pmfModel = await pmFormulaModel(dbYear)
+//     const formulaResponse = await pmfModel
+//       .find({ itemId: reqId, isDeleted: false })
+//       .select('qty netQty pmName uom stageName batchSize packageMaterialId');
+
+//     let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
+//     const grnEntryForStock = await gemDetailsModel
+//       .find(queryObject)
+//       .populate({
+//         path: 'packageMaterialId',
+//         select: 'pmName pmUOM pmMinQty pmCategory _id',
+//       });
+
+//     const stockData = grnEntryForStock.reduce((acc, entry) => {
+//       const pmName = entry.packageMaterialId.pmName;
+//       const pmUOM = entry.packageMaterialId.pmUOM;
+//       const quantity = entry.qty || 0;
+
+//       if (!acc[pmName]) {
+//         acc[pmName] = {
+//           pmName,
+//           totalQuantity: 0,
+//           pmUOM,
+//         };
+//       }
+
+//       acc[pmName].totalQuantity += quantity;
+//       return acc;
+//     }, {});
+
+//     let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear)
+//     let giPMItemModel = await gstInvoicePMItemModel(dbYear)
+//     let prPMFormulaModel = await PackingRequisitionPMFormulaModel(dbYear);
+
+//     const enrichedFormulaResponse = await Promise.all(
+//       formulaResponse.map(async (item) => {
+//         const stock = stockData[item.pmName] || { totalQuantity: 0, pmUOM: null };
+
+//         // GST Invoice Qty Remove
+//         let gstInvoiceUsedQty = await giPMItemModel.find({ itemId: item.packageMaterialId, isDeleted: false }).select('qty');
+//         let totalGSTInvoiceUsed = gstInvoiceUsedQty.reduce((sum, gItem) => sum + (gItem.qty || 0), 0);
+
+//         // Production Qty Remove
+//         let productionUsedQty = await prPMFormulaModel.find({ isDeleted: false, pmName: item.pmName }).select('netQty');
+//         let totalUsedQty = productionUsedQty.reduce((sum, pItem) => sum + (pItem.netQty || 0), 0);
+
+//         // Additional Qty Remove
+//         let additionalEntry = [];
+//         if (!item.packageMaterialId) {
+//           additionalEntry = [];
+//         } else {
+//           additionalEntry = await addEntryModel.find({ packageMaterialId: item.packageMaterialId, isDeleted: false }).select('qty');
+//         }
+//         let additionalEntryUsed = additionalEntry.reduce((sum, aItem) => sum + (aItem.qty || 0), 0);
+
+//         let finalQty = stock.totalQuantity - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed;
+
+//         return {
+//           ...item.toObject(),
+//           pmUOM: stock.pmUOM,
+//           totalStock: finalQty,
+//         };
+//       }));
+
+
+
+//     let encryptData = encryptionAPI(enrichedFormulaResponse, 1);
+
+//     res.status(200).json({
+//       data: {
+//         statusCode: 200,
+//         Message: "Stock Wise Raw material formula fetched successfully",
+//         responseData: encryptData,
+//         isEnType: true,
+//       },
+//     });
+
+//   } catch (error) {
+//     console.log("Error in Production controller", error);
+//     errorHandler(error, req, res, "Error in Production controller")
+//   }
+// };
+
 const getPMFormulaByPackingItemId = async (req, res) => {
   try {
     let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
     const { id } = req.query;
-    let reqId = getRequestData(id)
+    let reqId = getRequestData(id);
 
-    let queryObject = {
-      isDeleted: false,
-      packageMaterialId: { $ne: null },
-    };
+    let pmFormulaModelYear = await pmFormulaModel(dbYear);
 
-    let pmfModel = await pmFormulaModel(dbYear)
-    const formulaResponse = await pmfModel
+    let formulaResponse = await pmFormulaModelYear
       .find({ itemId: reqId, isDeleted: false })
-      .select('qty netQty pmName uom stageName batchSize packageMaterialId');
-
-    let gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
-    const grnEntryForStock = await gemDetailsModel
-      .find(queryObject)
+      .select("qty netQty pmName uom stageName batchSize packageMaterialId")
       .populate({
-        path: 'packageMaterialId',
-        select: 'pmName pmUOM pmMinQty pmCategory _id',
+        path: "stageId",
+        select: "seqNo",
       });
 
-    const stockData = grnEntryForStock.reduce((acc, entry) => {
-      const pmName = entry.packageMaterialId.pmName;
-      const pmUOM = entry.packageMaterialId.pmUOM;
-      const quantity = entry.qty || 0;
+    // Stage wise sorting
+    formulaResponse.sort(
+      (a, b) => (a.stageId?.seqNo || 0) - (b.stageId?.seqNo || 0)
+    );
 
-      if (!acc[pmName]) {
-        acc[pmName] = {
-          pmName,
-          totalQuantity: 0,
-          pmUOM,
-        };
-      }
-
-      acc[pmName].totalQuantity += quantity;
-      return acc;
-    }, {});
-
-    // const enrichedFormulaResponse = formulaResponse.map((item) => {
-    //   const stock = stockData[item.pmName] || { totalQuantity: 0, pmUOM: null };
-    //   return {
-    //     ...item.toObject(),
-    //     pmUOM: stock.pmUOM,
-    //     totalStock: stock.totalQuantity,
-    //   };
-    // });
-
-    let addEntryModel = await additionalEntryMaterialDetailsModel(dbYear)
-    let giPMItemModel = await gstInvoicePMItemModel(dbYear)
-    let prPMFormulaModel = await PackingRequisitionPMFormulaModel(dbYear);
+    let pmMasterModel = await packingMaterialSchema(dbYear);
 
     const enrichedFormulaResponse = await Promise.all(
       formulaResponse.map(async (item) => {
-        const stock = stockData[item.pmName] || { totalQuantity: 0, pmUOM: null };
+        const records = await fetchAllRecords(
+          dbYear,
+          { _id: item.packageMaterialId, pmName: item.pmName },
+          "Packing Material"
+        );
+        const stockSummary = calculateStock(records);
 
-        // GST Invoice Qty Remove
-        let gstInvoiceUsedQty = await giPMItemModel.find({ itemId: item.packageMaterialId, isDeleted: false }).select('qty');
-        let totalGSTInvoiceUsed = gstInvoiceUsedQty.reduce((sum, gItem) => sum + (gItem.qty || 0), 0);
+        let packingMaterial = await pmMasterModel
+          .findOne({ _id: item.packageMaterialId, isDeleted: false })
+          .select("pmUOM");
 
-        // Production Qty Remove
-        let productionUsedQty = await prPMFormulaModel.find({ isDeleted: false, pmName: item.pmName }).select('netQty');
-        let totalUsedQty = productionUsedQty.reduce((sum, pItem) => sum + (pItem.netQty || 0), 0);
+        let itemUOM = packingMaterial?.pmUOM;
 
-        // Additional Qty Remove
-        let additionalEntry = [];
-        if (!item.packageMaterialId) {
-          additionalEntry = [];
-        } else {
-          additionalEntry = await addEntryModel.find({ packageMaterialId: item.packageMaterialId, isDeleted: false }).select('qty');
-        }
-        let additionalEntryUsed = additionalEntry.reduce((sum, aItem) => sum + (aItem.qty || 0), 0);
-
-        let finalQty = stock.totalQuantity - totalUsedQty - totalGSTInvoiceUsed - additionalEntryUsed;
+        const convertedNetQty = convertNetQty(
+          item.netQty,
+          item.uom,
+          itemUOM
+        );
 
         return {
           ...item.toObject(),
-          pmUOM: stock.pmUOM,
-          totalStock: finalQty,
+          pmUOM: itemUOM,
+          netQty: convertedNetQty,
+          totalStock: Number(stockSummary.totalStock),
         };
-      }));
+      })
+    );
 
+    // UOM Conversion (same logic pattern as RM)
+    function convertNetQty(netQty, uom, pmUOM) {
+      if (!pmUOM || uom === pmUOM) return netQty;
 
+      if (uom === "MCG") {
+        if (pmUOM === "KGS") return netQty / 1000000000;
+        if (pmUOM === "GM") return netQty / 1000000;
+        if (pmUOM === "MG") return netQty / 1000;
+      }
+
+      if (uom === "GM") {
+        if (pmUOM === "KGS") return netQty / 1000;
+        if (pmUOM === "MG") return netQty * 1000;
+      }
+
+      if (uom === "MG") {
+        if (pmUOM === "KGS") return netQty / 1000000;
+        if (pmUOM === "GM") return netQty / 1000;
+      }
+
+      if (uom === "KGS") {
+        if (pmUOM === "MG") return netQty * 1000000;
+        if (pmUOM === "GM") return netQty * 1000;
+      }
+
+      if (uom === "LTR") return netQty * 1000;
+      if (uom === "ML") return netQty / 1000;
+
+      return netQty;
+    }
 
     let encryptData = encryptionAPI(enrichedFormulaResponse, 1);
 
     res.status(200).json({
       data: {
         statusCode: 200,
-        Message: "Stock Wise Raw material formula fetched successfully",
+        Message: "Stock Wise Packing material formula fetched successfully",
         responseData: encryptData,
         isEnType: true,
       },
     });
-
   } catch (error) {
-    console.log("Error in Production controller", error);
-    errorHandler(error, req, res, "Error in Production controller")
+    console.log("Error in Packing Material Production controller", error);
+    errorHandler(error, req, res, "Error in Packing Material Production controller");
   }
 };
+
 
 const packingRequisitionPMFormulaListing = async (req, res) => {
   try {

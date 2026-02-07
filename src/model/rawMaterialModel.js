@@ -23,6 +23,7 @@ const rawMaterialModel = mongoose.Schema({
     assayCount: { type: Number, default: 0.0 },
     moistureCount: { type: Number, default: 0.0 },
     rmCategoryId: { type: Number, default: 0.0 },
+    labTestRequire: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 

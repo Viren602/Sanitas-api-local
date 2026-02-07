@@ -20,6 +20,7 @@ const packingMaterial = mongoose.Schema({
     pmMaxQty: { type: Number, default: 0.0 },
     pmSampleQty: { type: Number, default: 0.0 },
     weightUnit: { type: Number, default: '' },
+    labTestRequire: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 

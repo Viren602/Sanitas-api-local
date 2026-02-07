@@ -142,7 +142,8 @@ const userAuthentication = async (req, res) => {
                     roleId: user.roleId,
                     companyId: user.companyId,
                     email: user.email,
-                    isTradingAccount: user.isTradingAccount
+                    isTradingAccount: user.isTradingAccount,
+                    isPharmaSoftware: user.isPharmaSoftware
                 }
 
                 const currentDevice = req?.headers['user-agent'];

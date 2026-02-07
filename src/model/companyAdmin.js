@@ -10,8 +10,8 @@ const MasterDB = config.MASTER_DB;
 const admins = mongoose.Schema({
     UserName: { type: String, default: '' },
     Password: { type: String, default: '' },
-    Level: { type: String, default: '' },
-    Location: { type: String, default: '' },
+    // Level: { type: String, default: '' },
+    // Location: { type: String, default: '' },
     Status: { type: String, default: '' },
     hashPassword: { type: String, default: '' },
     email: { type: String, default: '' },
@@ -19,6 +19,7 @@ const admins = mongoose.Schema({
     // roles: { type: Array, default: [] },
     roles: [{ type: mongoose.Schema.Types.ObjectId, ref: 'adminroles' }],
     isTradingAccount: { type: Boolean, default: false },
+    isPharmaSoftware: { type: Boolean, default: false },
     companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
