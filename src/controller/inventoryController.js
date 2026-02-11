@@ -1507,9 +1507,7 @@ const getAllStatementForPurchaseItemByItemId = async (req, res) => {
         const firstGRNRecord = records.find(
             (record) => !record.isIssuedRecord && !record.isGSTInvoiceRecord
         );
-        const materialName = reqData.materialType === "Raw Material"
-            ? firstGRNRecord?.rawMaterialId?.rmName || ""
-            : firstGRNRecord?.packageMaterialId?.pmName || "";
+        const materialName = reqData.item.rmName || reqData.item.pmName || "";
 
         stockSummary.materialName = materialName;
         stockSummary.records = records;

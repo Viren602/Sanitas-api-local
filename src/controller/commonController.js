@@ -466,7 +466,7 @@ const getAllProductDropdown = async (req, res) => {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let queryObject = { isDeleted: false }
         let pdModel = await productDetailsModel(dbYear)
-        let data = await pdModel.find(queryObject).select("productName").sort("productName");
+        let data = await pdModel.find(queryObject).select("productName productSpecification").sort("productName");
 
         let encryptData = encryptionAPI(data, 1)
 

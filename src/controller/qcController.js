@@ -1392,7 +1392,8 @@ const getAllPeningRawMaterialSampleEntry = async (req, res) => {
                     },
                     batchNo: 1,
                     partyName: "$party.partyName",
-                    materialName: "$material.rmName"
+                    materialName: "$material.rmName",
+                    grnNo: 1
                 }
             }
         ]);
@@ -1421,7 +1422,6 @@ const addEditRawMaterialTestReport = async (req, res) => {
         let data = getRequestData(apiData, 'PostApi')
 
         const { tableData, ...mainTestData } = data;
-
         if (mainTestData.testReportRMId && mainTestData.testReportRMId.trim() !== '') {
 
             let testRMModel = await testReportRMModel(dbYear);
@@ -1453,7 +1453,6 @@ const addEditRawMaterialTestReport = async (req, res) => {
                 if (tableData.length > 0) {
                     const testDetailsWithRef = tableData.map(detail => ({
                         ...detail,
-                        monogramId: detail._id,
                         testReportRMId: mainTestData.testReportRMId
                     }));
                     await testRMDataModel.insertMany(testDetailsWithRef);
@@ -1487,7 +1486,6 @@ const addEditRawMaterialTestReport = async (req, res) => {
             if (tableData && Array.isArray(tableData) && tableData.length > 0) {
                 const testDetailsWithRef = tableData.map(detail => ({
                     ...detail,
-                    monogramId: detail._id,
                     testReportRMId: savedTestReport._id
                 }));
                 savedTestDetails = await testRMDataModel.insertMany(testDetailsWithRef);
@@ -1869,7 +1867,8 @@ const getAllPeningPackingMaterialSampleEntry = async (req, res) => {
                     },
                     batchNo: 1,
                     partyName: "$party.partyName",
-                    materialName: "$material.pmName"
+                    materialName: "$material.pmName",
+                    grnNo: 1
                 }
             }
         ]);
@@ -1930,7 +1929,6 @@ const addEditPackingMaterialTestReport = async (req, res) => {
                 if (tableData.length > 0) {
                     const testDetailsWithRef = tableData.map(detail => ({
                         ...detail,
-                        monogramId: detail._id,
                         testReportPMId: mainTestData.testReportPMId
                     }));
                     await testPMDataModel.insertMany(testDetailsWithRef);
@@ -1964,7 +1962,6 @@ const addEditPackingMaterialTestReport = async (req, res) => {
             if (tableData && Array.isArray(tableData) && tableData.length > 0) {
                 const testDetailsWithRef = tableData.map(detail => ({
                     ...detail,
-                    monogramId: detail._id,
                     testReportPMId: savedTestReport._id
                 }));
                 savedTestDetails = await testPMDataModel.insertMany(testDetailsWithRef);
@@ -2407,7 +2404,6 @@ const addEditFinishGoodsTestReport = async (req, res) => {
                 if (tableData.length > 0) {
                     const testDetailsWithRef = tableData.map(detail => ({
                         ...detail,
-                        monogramId: detail._id,
                         testReportFGId: mainTestData.testReportFGId
                     }));
                     await testFGDataModel.insertMany(testDetailsWithRef);
@@ -2441,7 +2437,6 @@ const addEditFinishGoodsTestReport = async (req, res) => {
             if (tableData && Array.isArray(tableData) && tableData.length > 0) {
                 const testDetailsWithRef = tableData.map(detail => ({
                     ...detail,
-                    monogramId: detail._id,
                     testReportFGId: savedTestReport._id
                 }));
                 savedTestDetails = await testFGDataModel.insertMany(testDetailsWithRef);

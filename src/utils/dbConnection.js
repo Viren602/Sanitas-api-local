@@ -5,6 +5,7 @@ const connections = {};
 
 const connectToDatabase = async (dbName) => {
     if (!connections[dbName]) {
+        console.log(`🔌 Establishing new database connection for: ${dbName}`);
         const dbURI = config.YEAR_DBCONNECTION.replace("{0}", dbName);
 
         try {
@@ -24,7 +25,7 @@ const connectToDatabase = async (dbName) => {
             throw err; // Ensure caller knows about the failure
         }
     }
-    
+
     return connections[dbName];
 };
 
