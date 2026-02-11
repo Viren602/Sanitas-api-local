@@ -329,15 +329,16 @@ export const fetchAllRecords = async (dbYear, item, materialType, options = {}) 
                     {
                         $project: {
                             _id: 0,
-                            qty: "$purchaseQty",
-                            grnNo: "$grnId.grnNo",
-                            grnDate: "$grnId.grnDate",
+                            issueQty: "$sampleQty",
+                            grnNo: "$refNo",
+                            grnDate: "$refDate",
                             partyName: "$party.partyName",
-                            invoiceNo: "$grnId.invoiceNo",
+                            invoiceNo: { $literal: "QC_SAMPLE" },
                             batchNo: "$batchNo",
                             isMonogramRecord: { $literal: true },
                             isInwardRecord: { $literal: true },
-                            updatedAt: 1
+                            updatedAt: 1,
+                            isQCEntryRecord: { $literal: true },
                         }
                     }
                 ]);
@@ -366,6 +367,89 @@ export const fetchAllRecords = async (dbYear, item, materialType, options = {}) 
                 isGRNRecord: true,
                 isInwardRecord: true
             }));
+            // grnRecords = await gemDetailsModel.aggregate([
+            //     {
+            //         $match: grnQueryObject
+            //     },
+
+            //     // ---------- RAW MATERIAL ----------
+            //     // {
+            //     //     $lookup: {
+            //     //         from: "RawMaterialMasters",
+            //     //         localField: "rawMaterialId",
+            //     //         foreignField: "_id",
+            //     //         as: "rawMaterialId"
+            //     //     }
+            //     // },
+            //     // {
+            //     //     $unwind: {
+            //     //         path: "$rawMaterialId",
+            //     //         preserveNullAndEmptyArrays: true
+            //     //     }
+            //     // },
+
+            //     // // ---------- PACKING MATERIAL ----------
+            //     // {
+            //     //     $lookup: {
+            //     //         from: "PackingMaterialMaster",
+            //     //         localField: "packageMaterialId",
+            //     //         foreignField: "_id",
+            //     //         as: "packageMaterialId"
+            //     //     }
+            //     // },
+            //     // {
+            //     //     $unwind: {
+            //     //         path: "$packageMaterialId",
+            //     //         preserveNullAndEmptyArrays: true
+            //     //     }
+            //     // },
+
+            //     // // ---------- GRN PARTY DETAIL ----------
+            //     // {
+            //     //     $lookup: {
+            //     //         from: "GRNEntryPartyDetail",
+            //     //         localField: "grnEntryPartyDetailId",
+            //     //         foreignField: "_id",
+            //     //         as: "grnEntryPartyDetailId"
+            //     //     }
+            //     // },
+            //     // {
+            //     //     $unwind: {
+            //     //         path: "$grnEntryPartyDetailId",
+            //     //         preserveNullAndEmptyArrays: true
+            //     //     }
+            //     // },
+
+            //     // // ---------- ACCOUNT MASTER (partyName) ----------
+            //     // {
+            //     //     $lookup: {
+            //     //         from: "AccountMasters",
+            //     //         localField: "grnEntryPartyDetailId.partyId",
+            //     //         foreignField: "_id",
+            //     //         as: "party"
+            //     //     }
+            //     // },
+            //     // {
+            //     //     $unwind: {
+            //     //         path: "$party",
+            //     //         preserveNullAndEmptyArrays: true
+            //     //     }
+            //     // },
+
+            //     // // ---------- ADD FLAGS ----------
+            //     // {
+            //     //     $addFields: {
+            //     //         "grnEntryPartyDetailId.partyId": {
+            //     //             _id: "$party._id",
+            //     //             partyName: "$party.partyName"
+            //     //         },
+            //     //         isGRNRecord: true,
+            //     //         isInwardRecord: true
+            //     //     }
+            //     // }
+            // ]);
+
+            console.log(grnRecords)
         }
 
     }
