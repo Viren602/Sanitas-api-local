@@ -44,15 +44,7 @@ export const fetchAllRecords = async (dbYear, item, materialType, options = {}) 
             grnQueryObject.packageMaterialId = item._id;
         }
 
-        // const MonoModel = await monoGramModel(dbYear);
-        // const monoFilter =
-        //     materialType === "Raw Material"
-        //         ? { rawMaterialId: item._id, isDeleted: false }
-        //         : { packingMaterialId: item._id, isDeleted: false };
-
-        // const monogramExists = await MonoModel.exists(monoFilter);
         if (isLabTestRequire === true) {
-            // if (monogramExists) {
             const SamplePMModel = await sampleEntryPMModel(dbYear);
             const SampleModel = await sampleEntryRMModel(dbYear);
 
@@ -61,7 +53,7 @@ export const fetchAllRecords = async (dbYear, item, materialType, options = {}) 
             if (materialType === "Raw Material") {
                 sampleFilter.rmId = new ObjectId(item._id);
 
-                grnRecords = await SampleModel.aggregate([
+                const grnInwardRecords = await SampleModel.aggregate([
                     {
                         $match: sampleFilter
                     },
@@ -117,35 +109,98 @@ export const fetchAllRecords = async (dbYear, item, materialType, options = {}) 
                     },
                     { $unwind: { path: "$rm", preserveNullAndEmptyArrays: true } },
                     {
-                        $addFields: {
-                            rawMaterialId: "$rm",
-                            qty: "$purchaseQty",
-                            isMonogramRecord: true,
-                            isInwardRecord: true,
-                            "grnId.partyId": {
-                                partyName: "$party.partyName"
-                            }
-                        }
-                    },
-                    {
                         $project: {
                             _id: 0,
-                            qty: 1,
-                            grnId: 1,
-                            "rawMaterialId.rmName": "$rm.rmName",
+                            qty: "$purchaseQty",
                             grnNo: "$grnId.grnNo",
                             grnDate: "$grnId.grnDate",
                             invoiceNo: "$grnId.invoiceNo",
-                            materialName: "$rm.rmName",
+                            partyName: "$party.partyName",
                             batchNo: "$batchNo",
                             isMonogramRecord: { $literal: true },
+                            isInwardRecord: { $literal: true },
                             updatedAt: 1
                         }
                     }
                 ]);
+
+                const qcSampleRecords = await SampleModel.aggregate([
+                    {
+                        $match: sampleFilter
+                    },
+                    {
+                        $lookup: {
+                            from: "testreportrms",
+                            let: { sampleEntryRMId: "$_id" },
+                            pipeline: [
+                                {
+                                    $match: {
+                                        $expr: {
+                                            $and: [
+                                                { $eq: ["$sampleEntryRMId", "$$sampleEntryRMId"] },
+                                                { $eq: ["$isDeleted", false] }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ],
+                            as: "testReport"
+                        }
+                    },
+                    {
+                        $match: {
+                            "testReport.0": { $exists: true }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "grnentrypartydetails",
+                            localField: "grnId",
+                            foreignField: "_id",
+                            as: "grnId"
+                        }
+                    },
+                    { $unwind: { path: "$grnId", preserveNullAndEmptyArrays: true } },
+                    {
+                        $lookup: {
+                            from: "accountmasters",
+                            localField: "grnId.partyId",
+                            foreignField: "_id",
+                            as: "party"
+                        }
+                    },
+                    { $unwind: { path: "$party", preserveNullAndEmptyArrays: true } },
+                    {
+                        $lookup: {
+                            from: "rawmaterialmasters",
+                            localField: "rmId",
+                            foreignField: "_id",
+                            as: "rm"
+                        }
+                    },
+                    { $unwind: { path: "$rm", preserveNullAndEmptyArrays: true } },
+                    {
+                        $project: {
+                            _id: 0,
+                            issueQty: "$sampleQty",
+                            grnNo: "$refNo",
+                            grnDate: "$refDate",
+                            invoiceNo: { $literal: "QC_SAMPLE" },
+                            isIssuedRecord: { $literal: true },
+                            partyName: "$party.partyName",
+                            batchNo: "$batchNo",
+                            isMonogramRecord: { $literal: true },
+                            isInwardRecord: { $literal: true },
+                            updatedAt: 1,
+                            isQCEntryRecord: { $literal: true },
+                        }
+                    }
+                ]);
+
+                grnRecords = [...grnInwardRecords, ...qcSampleRecords];
             } else if (materialType === "Packing Material") {
                 sampleFilter.pmId = new ObjectId(item._id);
-                grnRecords = await SamplePMModel.aggregate([
+                const grnInwardRecords = await SamplePMModel.aggregate([
                     {
                         $match: sampleFilter
                     },
@@ -201,33 +256,94 @@ export const fetchAllRecords = async (dbYear, item, materialType, options = {}) 
                     },
                     { $unwind: { path: "$pm", preserveNullAndEmptyArrays: true } },
                     {
-                        $addFields: {
-                            packingMaterialId: "$pm",
-                            qty: "$purchaseQty",
-                            isMonogramRecord: true,
-                            isInwardRecord: true,
-                            "grnId.partyId": {
-                                partyName: "$party.partyName"
-                            }
-                        }
-                    },
-                    {
                         $project: {
                             _id: 0,
-                            qty: 1,
-                            "packageMaterialId.pmName": "$pm.pmName",
+                            qty: "$purchaseQty",
                             grnNo: "$grnId.grnNo",
                             grnDate: "$grnId.grnDate",
+                            partyName: "$party.partyName",
                             invoiceNo: "$grnId.invoiceNo",
-                            materialName: "$pm.pmName",
                             batchNo: "$batchNo",
                             isMonogramRecord: { $literal: true },
+                            isInwardRecord: { $literal: true },
                             updatedAt: 1
                         }
                     }
                 ]);
+
+                const qcSampleRecords = await SamplePMModel.aggregate([
+                    {
+                        $match: sampleFilter
+                    },
+                    {
+                        $lookup: {
+                            from: "testreportpms",
+                            let: { sampleEntryPMId: "$_id" },
+                            pipeline: [
+                                {
+                                    $match: {
+                                        $expr: {
+                                            $and: [
+                                                { $eq: ["$sampleEntryPMId", "$$sampleEntryPMId"] },
+                                                { $eq: ["$isDeleted", false] }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ],
+                            as: "testReport"
+                        }
+                    },
+                    {
+                        $match: {
+                            "testReport.0": { $exists: true }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "grnentrypartydetails",
+                            localField: "grnId",
+                            foreignField: "_id",
+                            as: "grnId"
+                        }
+                    },
+                    { $unwind: { path: "$grnId", preserveNullAndEmptyArrays: true } },
+                    {
+                        $lookup: {
+                            from: "accountmasters",
+                            localField: "grnId.partyId",
+                            foreignField: "_id",
+                            as: "party"
+                        }
+                    },
+                    { $unwind: { path: "$party", preserveNullAndEmptyArrays: true } },
+                    {
+                        $lookup: {
+                            from: "packingmaterialmasters",
+                            localField: "pmId",
+                            foreignField: "_id",
+                            as: "pm"
+                        }
+                    },
+                    { $unwind: { path: "$pm", preserveNullAndEmptyArrays: true } },
+                    {
+                        $project: {
+                            _id: 0,
+                            qty: "$purchaseQty",
+                            grnNo: "$grnId.grnNo",
+                            grnDate: "$grnId.grnDate",
+                            partyName: "$party.partyName",
+                            invoiceNo: "$grnId.invoiceNo",
+                            batchNo: "$batchNo",
+                            isMonogramRecord: { $literal: true },
+                            isInwardRecord: { $literal: true },
+                            updatedAt: 1
+                        }
+                    }
+                ]);
+                grnRecords = [...grnInwardRecords, ...qcSampleRecords];
             }
-            // }
+
         } else {
             const gemDetailsModel = await grnEntryMaterialDetailsModel(dbYear);
 
