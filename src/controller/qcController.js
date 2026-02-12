@@ -206,6 +206,14 @@ const getGRNItemsByGRNNo = async (req, res) => {
                             "$packingMaterial.pmName"
                         ]
                     },
+                    uom: {
+                        $cond: [
+                            { $eq: ["$grnEntryType", "Raw"] },
+                            "$rawMaterial.rmUOM",
+                            "$packingMaterial.pmUOM"
+                        ]
+                    },
+
                 }
             },
             {
@@ -463,7 +471,8 @@ const getAllRawMaterialSampleEntry = async (req, res) => {
                     },
                     batchNo: 1,
                     partyName: "$party.partyName",
-                    materialName: "$material.rmName"
+                    materialName: "$material.rmName",
+                    grnNo: 1,
                 }
             }
         ]);
@@ -530,7 +539,8 @@ const getRawMaterialSampleEntryDetailsById = async (req, res) => {
             {
                 $addFields: {
                     partyName: "$partyData.partyName",
-                    materialName: "$materialdata.rmName"
+                    materialName: "$materialdata.rmName",
+                    uom: "$materialdata.rmUOM"
                 }
             },
             {
@@ -543,7 +553,11 @@ const getRawMaterialSampleEntryDetailsById = async (req, res) => {
                 $limit: 1
             }
         ]);
+        let data = await testReportRMModel(dbYear);
+        let flag = await data.findOne({ sampleEntryRMId: new ObjectId(sampleEntryRMId), isDeleted: false }).select({ _id: 1 })
+
         let response = responseItem[0] || null;
+        response.isTestReportEntry = flag ? true : false;
 
         let responseData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -768,7 +782,8 @@ const getAllPackingMaterialSampleEntry = async (req, res) => {
                     },
                     batchNo: 1,
                     partyName: "$party.partyName",
-                    materialName: "$material.pmName"
+                    materialName: "$material.pmName",
+                    grnNo: 1,
                 }
             }
         ]);
@@ -835,7 +850,8 @@ const getPackingMaterialSampleEntryDetailsById = async (req, res) => {
             {
                 $addFields: {
                     partyName: "$partyData.partyName",
-                    materialName: "$materialdata.pmName"
+                    materialName: "$materialdata.pmName",
+                    uom: "$materialdata.pmUOM"
                 }
             },
             {
@@ -848,7 +864,11 @@ const getPackingMaterialSampleEntryDetailsById = async (req, res) => {
                 $limit: 1
             }
         ]);
+        let data = await testReportPMModel(dbYear);
+        let flag = await data.findOne({ sampleEntryPMId: new ObjectId(sampleEntryPMId), isDeleted: false }).select({ _id: 1 })
+
         let response = responseItem[0] || null;
+        response.isTestReportEntry = flag ? true : false;
 
         let responseData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -1193,7 +1213,8 @@ const getAllFinishGoodsSampleEntry = async (req, res) => {
                     },
                     batchNo: 1,
                     partyName: "$party.partyName",
-                    productName: "$product.productName"
+                    productName: "$product.productName",
+                    prodNo: 1
                 }
             }
         ]);
@@ -1273,7 +1294,12 @@ const getFinishGoodsSampleEntryDetailsById = async (req, res) => {
                 $limit: 1
             }
         ]);
+        let data = await testReportFGModel(dbYear);
+        let flag = await data.findOne({ sampleEntryFGId: new ObjectId(sampleEntryFGId), isDeleted: false }).select({ _id: 1 })
+
         let response = responseItem[0] || null;
+        response.isTestReportEntry = flag ? true : false;
+
 
         let responseData = encryptionAPI(response, 1)
         res.status(200).json({
@@ -1327,7 +1353,6 @@ const getAllPeningRawMaterialSampleEntry = async (req, res) => {
 
         let queryObject = {
             isDeleted: false,
-            isTestReportEntry: false
         }
         let sampleRMModel = await sampleEntryRMModel(dbYear);
         let testReportModel = await testReportRMModel(dbYear);
@@ -1802,7 +1827,6 @@ const getAllPeningPackingMaterialSampleEntry = async (req, res) => {
 
         let queryObject = {
             isDeleted: false,
-            isTestReportEntry: false
         }
         let samplePMModel = await sampleEntryPMModel(dbYear);
         let testReportModel = await testReportPMModel(dbYear);
@@ -2278,7 +2302,6 @@ const getAllPeningFinishGoodsSampleEntry = async (req, res) => {
 
         let queryObject = {
             isDeleted: false,
-            isTestReportEntry: false
         }
         let sampleFGModel = await sampleEntryFGModel(dbYear);
         let testReportModel = await testReportFGModel(dbYear);
