@@ -88,11 +88,9 @@ const addEditPackingMaterial = async (req, res) => {
 const getAllPackingMaterials = async (req, res) => {
     try {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
-        const { id, page = 1, limit = 50 } = req.query;
+        const { id } = req.query;
 
         const itemName = getRequestData(id)
-        const pageNo = getRequestData(page)
-        const pageLimit = getRequestData(limit)
         let queryObject = { isDeleted: false }
 
         if (itemName && itemName.trim() !== "") {
@@ -101,8 +99,6 @@ const getAllPackingMaterials = async (req, res) => {
             delete queryObject.pmName;
         }
 
-        const skip = (pageNo - 1) * pageLimit;
-
         let mpModel = await packingMaterialSchema(dbYear)
         const totalCount = await mpModel.countDocuments(queryObject);
 
@@ -110,13 +106,10 @@ const getAllPackingMaterials = async (req, res) => {
         let data = await mpModel1
             .find(queryObject)
             .sort("pmName")
-            .skip(skip)
-            .limit(parseInt(pageLimit));
 
         let response = {
             totalCount: totalCount,
             responseData: data,
-            currentPage: parseInt(pageNo)
         };
 
         let encryptData = encryptionAPI(response, 1)
@@ -1524,11 +1517,9 @@ const addeditProductDetails = async (req, res) => {
 const getAllProductDetails = async (req, res) => {
     try {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
-        const { id, page = 1, limit = 50 } = req.query;
+        const { id } = req.query;
 
         const itemName = getRequestData(id)
-        const pageNo = getRequestData(page)
-        const pageLimit = getRequestData(limit)
         let queryObject = { isDeleted: false }
 
         if (itemName && itemName.trim() !== "") {
@@ -1536,8 +1527,6 @@ const getAllProductDetails = async (req, res) => {
         } else {
             delete queryObject.productName;
         }
-        const skip = (pageNo - 1) * pageLimit;
-
         let pdModel = await productDetailsModel(dbYear)
         const totalCount = await pdModel.countDocuments(queryObject);
 
@@ -1546,13 +1535,10 @@ const getAllProductDetails = async (req, res) => {
         let data = await pdModel1
             .find(queryObject)
             .sort("productName")
-            .skip(skip)
-            .limit(parseInt(pageLimit));
 
         let response = {
             totalCount: totalCount,
             responseData: data,
-            currentPage: parseInt(pageNo)
         }
 
         let encryptData = encryptionAPI(response, 1)

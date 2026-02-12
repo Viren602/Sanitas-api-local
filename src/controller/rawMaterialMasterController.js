@@ -66,11 +66,9 @@ const addEditRawMaterial = async (req, res) => {
 const getAllRawMaterials = async (req, res) => {
     try {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
-        const { id, page = 1, limit = 100 } = req.query;
+        const { id } = req.query;
 
         const itemName = getRequestData(id)
-        const pageNo = getRequestData(page)
-        const pageLimit = getRequestData(limit)
         let queryObject = { isDeleted: false }
 
         if (itemName && itemName.trim() !== "") {
@@ -78,8 +76,6 @@ const getAllRawMaterials = async (req, res) => {
         } else {
             delete queryObject.rmName;
         }
-        const skip = (pageNo - 1) * pageLimit;
-
         let rmModel = await rawMaterialSchema(dbYear)
         const totalCount = await rmModel.countDocuments(queryObject);
 
@@ -87,13 +83,10 @@ const getAllRawMaterials = async (req, res) => {
         let data = await rmModel1
             .find(queryObject)
             .sort("rmName")
-            .skip(skip)
-            .limit(parseInt(pageLimit));
 
         let response = {
             totalCount: totalCount,
             responseData: data,
-            currentPage: parseInt(pageNo)
         }
 
         let encryptData = encryptionAPI(response, 1)
