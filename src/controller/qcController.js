@@ -18,34 +18,34 @@ const { ObjectId } = mongoose.Types;
 const getGRNItemsByGRNNo = async (req, res) => {
     try {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
-        const { id, id2 } = req.query;
-        let grnNo = getRequestData(id)
-        let grnType = getRequestData(id2)
+        const { id } = req.query;
+        // let grnNo = getRequestData(id)
+        let grnType = getRequestData(id)
 
         let gepdModel = await grnEntryPartyDetailsModel(dbYear);
 
-        let grnExists = await gepdModel.findOne({
-            isDeleted: false,
-            grnNo: grnNo,
-            grnEntryType: grnType
-        }).select({ _id: 1 });
+        // let grnExists = await gepdModel.findOne({
+        //     isDeleted: false,
+        //     // grnNo: grnNo,
+        //     grnEntryType: grnType
+        // }).select({ _id: 1 });
 
-        if (!grnExists) {
-            return res.status(200).json({
-                data: {
-                    statusCode: 404,
-                    Message: "GRN No not exist",
-                    responseData: null,
-                    isEnType: true
-                },
-            });
-        }
+        // if (!grnExists) {
+        //     return res.status(200).json({
+        //         data: {
+        //             statusCode: 404,
+        //             Message: "GRN No not exist",
+        //             responseData: null,
+        //             isEnType: true
+        //         },
+        //     });
+        // }
 
         let response = await gepdModel.aggregate([
             {
                 $match: {
                     isDeleted: false,
-                    grnNo: grnNo,
+                    // grnNo: grnNo,
                     grnEntryType: grnType
                 }
             },
@@ -114,64 +114,64 @@ const getGRNItemsByGRNNo = async (req, res) => {
                 }
             },
             // Removing records which haven't monogram
-            {
-                $lookup: {
-                    from: "monograms",
-                    let: {
-                        type: "$grnEntryType",
-                        rawId: "$rawMaterial._id",
-                        packId: "$packingMaterial._id"
-                    },
-                    pipeline: [
-                        {
-                            $match: {
-                                isDeleted: false,
-                                $expr: {
-                                    $or: [
-                                        {
-                                            $and: [
-                                                { $eq: ["$$type", "Raw"] },
-                                                { $eq: ["$rawMaterialId", "$$rawId"] }
-                                            ]
-                                        },
-                                        {
-                                            $and: [
-                                                { $eq: ["$$type", "Packing"] },
-                                                { $eq: ["$packingMaterialId", "$$packId"] }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            }
-                        },
-                        { $limit: 1 }
-                    ],
-                    as: "monoGram"
-                }
-            },
-            {
-                $match: {
-                    $expr: {
-                        $not: {
-                            $and: [
-                                { $eq: [{ $size: "$monoGram" }, 0] },
-                                {
-                                    $eq: [
-                                        {
-                                            $cond: [
-                                                { $eq: ["$grnEntryType", "Raw"] },
-                                                "$rawMaterial.labTestRequire",
-                                                "$packingMaterial.labTestRequire"
-                                            ]
-                                        },
-                                        false
-                                    ]
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
+            // {
+            //     $lookup: {
+            //         from: "monograms",
+            //         let: {
+            //             type: "$grnEntryType",
+            //             rawId: "$rawMaterial._id",
+            //             packId: "$packingMaterial._id"
+            //         },
+            //         pipeline: [
+            //             {
+            //                 $match: {
+            //                     isDeleted: false,
+            //                     $expr: {
+            //                         $or: [
+            //                             {
+            //                                 $and: [
+            //                                     { $eq: ["$$type", "Raw"] },
+            //                                     { $eq: ["$rawMaterialId", "$$rawId"] }
+            //                                 ]
+            //                             },
+            //                             {
+            //                                 $and: [
+            //                                     { $eq: ["$$type", "Packing"] },
+            //                                     { $eq: ["$packingMaterialId", "$$packId"] }
+            //                                 ]
+            //                             }
+            //                         ]
+            //                     }
+            //                 }
+            //             },
+            //             { $limit: 1 }
+            //         ],
+            //         as: "monoGram"
+            //     }
+            // },
+            // {
+            //     $match: {
+            //         $expr: {
+            //             $not: {
+            //                 $and: [
+            //                     { $eq: [{ $size: "$monoGram" }, 0] },
+            //                     {
+            //                         $eq: [
+            //                             {
+            //                                 $cond: [
+            //                                     { $eq: ["$grnEntryType", "Raw"] },
+            //                                     "$rawMaterial.labTestRequire",
+            //                                     "$packingMaterial.labTestRequire"
+            //                                 ]
+            //                             },
+            //                             false
+            //                         ]
+            //                     }
+            //                 ]
+            //             }
+            //         }
+            //     }
+            // },
             {
                 $project: {
                     grnEntryPartyDetailId: 1,
