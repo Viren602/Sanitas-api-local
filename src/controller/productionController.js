@@ -515,6 +515,8 @@ const getProductionPlanningEntryById = async (req, res) => {
             mfgDate: 1,
             expDate: 1,
             stdBatchSize: 1,
+            sampleQty: { $arrayElemAt: ["$sampleEntryFg.sampleQty", 0] },
+            sampleEntryFg: 1,
             productionPlanningRequestDate: 1,
             packingRequisitionReqDate: 1,
             productionRequisitionReqDate: 1,

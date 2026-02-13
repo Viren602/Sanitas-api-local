@@ -1718,6 +1718,7 @@ const getRawMaterialTestEntryDetailsById = async (req, res) => {
                     purchaseQty: "$sampleEntry.purchaseQty",
                     materialName: "$materialdata.rmName",
                     partyName: "$partyData.partyName",
+                    sampleQty: "$sampleEntry.sampleQty"
                 }
             },
         ]);
@@ -2193,6 +2194,7 @@ const getPackingMaterialTestEntryDetailsById = async (req, res) => {
                     purchaseQty: "$sampleEntry.purchaseQty",
                     materialName: "$materialdata.pmName",
                     partyName: "$partyData.partyName",
+                    sampleQty: "$sampleEntry.sampleQty",
                 }
             },
         ]);
@@ -2667,6 +2669,7 @@ const getFinishGoodsTestEntryDetailsById = async (req, res) => {
                     batchSize: "$sampleEntry.batchSize",
                     materialName: "$productData.productName",
                     partyName: "$partyData.partyName",
+                    sampleQty: "$sampleEntry.sampleQty"
                 }
             },
         ]);

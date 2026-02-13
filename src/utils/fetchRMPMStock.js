@@ -375,7 +375,6 @@ export const fetchAllRecords = async (dbYear, item, materialType, options = {}) 
                 {
                     $match: grnQueryObject
                 },
-
                 {
                     $lookup: {
                         from: "rawmaterialmasters",
