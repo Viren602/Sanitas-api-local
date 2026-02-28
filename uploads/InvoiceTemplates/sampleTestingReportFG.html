@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>QC Test Request Slip</title>
+
+    <style>
+        /* A4 Portrait Setup */
+        @page {
+            size: A4 portrait;
+            margin: 15mm;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            margin: 0;
+            background: #fff;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 10mm;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+        }
+
+        .company {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .address {
+            font-size: 12px;
+        }
+
+        .title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+
+        .top-info {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .top-info td {
+            border: 1px solid #000;
+            padding: 6px;
+            vertical-align: top;
+        }
+
+        .details {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .details th,
+        .details td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: left;
+        }
+
+        .details th {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .remark {
+            border: 1px solid #000;
+            height: 70px;
+            margin-top: 10px;
+            padding: 5px;
+        }
+
+        .remark p {
+            margin: 0
+        }
+
+        .footer {
+            margin-top: 25px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+        }
+
+        @media print {
+            body {
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="page">
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="company">#companyName</div>
+            <div class="address">
+                #companyAddress
+            </div>
+        </div>
+
+        <div class="title">Q.C. TEST REQUEST SLIP</div>
+
+        <!-- TOP INFO -->
+        <table class="top-info">
+            <tr>
+                <td width="50%">
+                    <strong>To:</strong><br>
+                    #labName
+                </td>
+                <td width="50%">
+                    <strong>Test Req Slip No:</strong> #testReqSlipNo<br>
+                    <strong>Date:</strong> #date<br>
+                    <strong>Location:</strong> #location<br>
+                    <strong>Make:</strong> #make<br>
+                    <strong>sample Type:</strong> #sampleType
+                </td>
+            </tr>
+        </table>
+
+        <!-- DETAILS TABLE -->
+        <table class="details">
+            <!-- <thead>
+        <tr>
+          <th>Sr</th>
+          <th>Material Name,<br> Supplier,<br> mfg. By</th>
+          <th>Chl. No.,<br>Chl. Dt.</th>
+          <th>G.R.No,<br>G.R.Dt.</th>
+          <th>Batch No</th>
+          <th>Received Qty,<br>Pack</th>
+          <th>Mfg Dt.,<br>Exp Dt.</th>
+          <th>Sample Qty</th>
+        </tr>
+      </thead> -->
+
+            <thead>
+                <tr>
+                    <th>Sr No</th>
+                    <th>Product Name</th>
+                    <th>mfg. By</th>
+                    <th>Production No</th>
+                    <th>Production. Dt.</th>
+                    <th>Batch No</th>
+                    <th>Batch Size</th>
+                    <th>Size</th>
+                    <th>Mfg Dt.</th>
+                    <th>Exp Dt.</th>
+                    <th>Sample Qty</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- <tr>
+          <td align="center">#srNo</td>
+          <td>#materialName,<br> #supplier,<br> #mfgBy</td>
+          <td>#chlNo,<br>#chlDt.</td>
+          <td>#grnNo,<br>#grnDt</td>
+          <td>#batchNo</td>
+          <td>#receivedQty,<br>#pack</td>
+          <td>#mfgDt,<br>#expDt</td>
+          <td>#sampleQty</td>
+        </tr> -->
+                #tableData
+            </tbody>
+        </table>
+
+        <!-- REMARK -->
+        <div class="remark">
+            <strong>Remark:</strong>
+            <p>#remarks</p>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <div>Printed On: #printedDate</div>
+            <div>MATTSREQ</div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

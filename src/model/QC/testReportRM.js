@@ -6,6 +6,7 @@ import sampleEntryRMModel from "./sampleEntryRM.js";
 const testReportRMSchema = mongoose.Schema({
     reportNo: { type: String, default: '' },
     reportDate: { type: Date, default: null },
+    analysisDate: { type: Date, default: null },
     analyst: { type: String, default: '' },
     labIncharge: { type: String, default: '' },
     sampleEntryRMId: { type: mongoose.Schema.Types.ObjectId, ref: "SampleEntryRM", default: null },

@@ -6,6 +6,7 @@ const testReportPMSchema = mongoose.Schema({
     reportNo: { type: String, default: '' },
     reportDate: { type: Date, default: null },
     analyst: { type: String, default: '' },
+    analysisDate: { type: Date, default: null },
     labIncharge: { type: String, default: '' },
     sampleEntryPMId: { type: mongoose.Schema.Types.ObjectId, ref: "SampleEntryPM", default: null },
     isDeleted: { type: Boolean, default: false },

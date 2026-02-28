@@ -25,6 +25,7 @@ const sampleEntryRMSchema = mongoose.Schema({
     mfgBy: { type: String, default: '' },
     isOutSideAnalysis: { type: Boolean, default: false },
     labName: { type: String, default: '' },
+    remark: { type: String, default: '' },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 

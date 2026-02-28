@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Certificate of Analysis</title>
+
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 12mm;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: #000;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: auto;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .company-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            font-weight: bold;
+            margin-top: 6px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 6px;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f3f3f3;
+        }
+
+        .no-border td {
+            border: none;
+            padding: 3px 4px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- Header -->
+        <div class="center">
+            <div class="company-title">#companyName</div>
+            <div>#companyAddress</div>
+            <div>Phone: #mobileNo | Email: #email</div>
+
+            <div class="subtitle">QUALITY CONTROL DEPARTMENT</div>
+            <div><b>CERTIFICATE OF ANALYSIS – #sampleType</b></div>
+        </div>
+
+        <!-- Horizontal Details 65 / 35 -->
+        <table>
+            <tr>
+                <!-- LEFT 65% -->
+                <td style="width:65%; padding:0;">
+                    <table class="no-border">
+                        <tr>
+                            <td><b>Material Name</b></td>
+                            <td>: #materialName</td>
+                        </tr>
+                        <tr>
+                            <td><b>Code No.</b></td>
+                            <td>: #specificationNo</td>
+                        </tr>
+                        <tr>
+                            <td><b>Supplier By</b></td>
+                            <td>: #supplierBy</td>
+                        </tr>
+                        <tr>
+                            <td><b>Manufacture By</b></td>
+                            <td>: #mfgBy</td>
+                        </tr>
+                        <tr>
+                            <td><b>Batch No.</b></td>
+                            <td>: #batchNo</td>
+                        </tr>
+                        <tr>
+                            <td><b>Mfg. Date</b></td>
+                            <td>: #mfgDate</td>
+                        </tr>
+                        <tr>
+                            <td><b>Exp. Date</b></td>
+                            <td>: #expDate</td>
+                        </tr>
+                        <tr>
+                            <td><b>Packing</b></td>
+                            <td>: #packing</td>
+                        </tr>
+                        <tr>
+                            <td><b>Received Qty</b></td>
+                            <td>: #receivedQty #receivedUOM</td>
+                        </tr>
+                        <tr>
+                            <td><b>Sample Qty</b></td>
+                            <td>: #sampleQty #receivedUOM</td>
+                        </tr>
+                    </table>
+                </td>
+
+                <!-- RIGHT 35% -->
+                <td style="width:35%; padding:0;">
+                    <table class="no-border">
+                        <tr>
+                            <td><b>Report No</b></td>
+                            <td>: #reportNo</td>
+                        </tr>
+                        <tr>
+                            <td><b>Release Date</b></td>
+                            <td>: #releaseDate</td>
+                        </tr>
+                        <tr>
+                            <td><b>Released Qty</b></td>
+                            <td>: #releasedQty #receivedUOM</td>
+                        </tr>
+                        <tr>
+                            <td><b>G.R.N No.</b></td>
+                            <td>: #grnNo</td>
+                        </tr>
+                        <tr>
+                            <td><b>G.R.N Date.</b></td>
+                            <td>: #grnDate</td>
+                        </tr>
+                        <tr>
+                            <td><b>Analysis Date</b></td>
+                            <td>: #analysisDate</td>
+                        </tr>
+                        <tr>
+                            <td><b>Analysist</b></td>
+                            <td>: #analyst</td>
+                        </tr>
+                        <tr>
+                            <td><b>Lab. Incharge</b></td>
+                            <td>: #labIncharge</td>
+                        </tr>
+                        <tr>
+                            <td><b>Retest Date</b></td>
+                            <td>: #retestDate</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Test Table -->
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:5%">Sr</th>
+                    <th style="width:30%">Test</th>
+                    <th style="width:30%">Result</th>
+                    <th style="width:35%">Specification</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- <tr>
+                    <td>Description</td>
+                    <td>White Crystalline Powder</td>
+                    <td>White to Yellowish Crystalline Powder</td>
+                </tr>
+                <tr>
+                    <td>Solubility</td>
+                    <td>Complies</td>
+                    <td>Freely soluble in Methanol, sparingly soluble in water</td>
+                </tr>
+                <tr>
+                    <td>Identification</td>
+                    <td>Complies</td>
+                    <td>To comply as per IP</td>
+                </tr>
+                <tr>
+                    <td>pH</td>
+                    <td>7.6</td>
+                    <td>6.5 – 8.5</td>
+                </tr>
+                <tr>
+                    <td>Heavy Metals</td>
+                    <td>Complies</td>
+                    <td>Not more than 20 ppm</td>
+                </tr>
+                <tr>
+                    <td>Loss on Drying</td>
+                    <td>0.25%</td>
+                    <td>NMT 0.5%</td>
+                </tr>
+                <tr>
+                    <td>Assay</td>
+                    <td>99.59%</td>
+                    <td>98.5% – 101.0%</td>
+                </tr> -->
+                #tableData
+            </tbody>
+        </table>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div>Checked By</div>
+            <div>Approved By</div>
+        </div>
+
+    </div>
+</body>
+
+</html>

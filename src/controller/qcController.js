@@ -1,4 +1,7 @@
 import { encryptionAPI, getRequestData } from "../middleware/encryption.js";
+import companyGroupModel from "../model/companyGroup.js";
+import gstInvoiceFinishGoodsModel from "../model/Despatch/gstInvoiceFinishGoods.js";
+import grnEntryMaterialDetailsModel from "../model/InventoryModels/grnEntryMaterialDetailsModel.js";
 import grnEntryPartyDetailsModel from "../model/InventoryModels/grnEntryPartyDetailsModel.js";
 import productionPlanningEntryModel from "../model/ProductionModels/productionPlanningEntryModel.js";
 import ProductionStagesModel from "../model/ProductionModels/productionStagesModel.js";
@@ -14,6 +17,15 @@ import testReportRMDataMappingModel from "../model/QC/testReportRMDataMapping.js
 import errorHandler from "../server/errorHandle.js";
 import mongoose from "mongoose";
 const { ObjectId } = mongoose.Types;
+import fs from 'fs'
+import { fileURLToPath } from "url";
+import path from "path";
+import puppeteer from "puppeteer";
+import dayjs from "dayjs";
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const getGRNItemsByGRNNo = async (req, res) => {
     try {
@@ -191,6 +203,9 @@ const getGRNItemsByGRNNo = async (req, res) => {
                     materialQty: "$grnMaterial.qty",
                     materialMfgDate: 1,
                     materialExpDate: 1,
+                    materialMfgBy: "$grnMaterial.mfgBy",
+                    mfgDate: "$grnMaterial.mfgDate",
+                    expDate: "$grnMaterial.expDate",
                     materialMfgBy: "$grnMaterial.mfgBy",
                     materialId: {
                         $cond: [
@@ -604,6 +619,112 @@ const deleteRawMaterialSampleEntryById = async (req, res) => {
     }
 };
 
+const generateSampleEntryRmReport = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+        console.log(dbYear)
+        let reqId = getRequestData(id)
+
+        let cgModel = await companyGroupModel(dbYear)
+        let companyDetails = await cgModel.findOne({});
+
+        let sampleModel = await sampleEntryRMModel(dbYear)
+        let sampleData = await sampleModel.findOne({ _id: reqId })
+            .populate({
+                path: "rmId",
+                select: "rmName"
+            }).populate({
+                path: "grnId",
+                select: "partyId grnNo invoiceNo invoiceDate grnDate",
+                populate: {
+                    path: "partyId",
+                    select: "partyName",
+                }
+            })
+        let grnModel = await grnEntryMaterialDetailsModel(dbYear)
+        let grnData = await grnModel.findOne({ grnEntryPartyDetailId: sampleData.grnId._id, rawMaterialId: sampleData.rmId })
+
+        let adminAddress = companyDetails.addressLine1 + ' '
+            + companyDetails.addressLine2 + ' '
+            + companyDetails.addressLine3 + ' '
+            + companyDetails.pinCode + '(' + companyDetails.state + ')'
+
+        let htmlTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "sampleTestingReport.html"), "utf8");
+
+        // Injecting CSS for empty pages
+        htmlTemplate = htmlTemplate + `
+                                    <style>
+                                        @page {
+                                            size: A4;
+                                            margin: 0;
+                                        }
+                                        .empty-page {
+                                            page-break-before: always;
+                                            height: 100vh;
+                                            }
+                                            </style>
+                                            `;
+
+        const generatePage = () => {
+            return htmlTemplate
+                .replace('#companyName', companyDetails.CompanyName ?? "-")
+                .replace('#companyAddress', adminAddress ?? "-")
+                .replace('#labName', sampleData.labName ?? "-")
+                .replace('#testReqSlipNo', sampleData.refNo ?? "-")
+                .replace('#date', sampleData.refDate ? dayjs(sampleData.refDate).format("DD-MMM-YYYY") : "-")
+                .replace('#location', companyDetails.location ?? "-")
+                .replace('#make', companyDetails.CompanyGroup ?? "-")
+                .replace('#sampleType', "Raw Material")
+                .replace('#remarks', sampleData.remark ?? "-")
+                .replace('#printedDate', dayjs().format("DD-MMM-YYYY hh:mm A"))
+                .replace('#tableData', `
+                    <tr>
+                        <td align="center">1</td>
+                        <td>${sampleData.rmId.rmName ?? "-"}</td>
+                        <td>${sampleData.grnId.partyId.partyName ?? "-"}</td>
+                        <td>${grnData.mfgBy ?? "-"}</td>
+                        <td>${sampleData.grnId.invoiceNo ?? "-"}</td>
+                        <td>${sampleData.grnId.invoiceDate ? dayjs(sampleData.grnId.invoiceDate).format("DD-MMM-YYYY") : "-"}</td>
+                        <td>${sampleData.grnId.grnNo ?? "-"}</td>
+                        <td>${sampleData.grnId.grnDate ? dayjs(sampleData.grnId.grnDate).format("DD-MMM-YYYY") : "-"}</td>
+                        <td>${grnData.batchNo ?? "-"}</td>
+                        <td>${grnData.qty ?? "-"}</td>
+                        <td>${grnData.packing ?? "-"}</td>
+                        <td>${grnData.mfgDate ? dayjs(grnData.mfgDate).format("DD-MMM-YYYY") : "-"}</td>
+                        <td>${grnData.expDate ? dayjs(grnData.expDate).format("DD-MMM-YYYY") : "-"}</td>
+                        <td>${sampleData.sampleQty ?? "-"}</td>
+                    </tr>`)
+        }
+
+
+        htmlTemplate = `
+                    <div class="empty-page">${generatePage()}</div>
+                    <div class="page-break"></div>
+                `;
+
+        const browser = await puppeteer.launch({
+            headless: "new",
+            args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        });
+        const page = await browser.newPage();
+
+        await page.setContent(htmlTemplate, { waitUntil: "load" });
+
+        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+
+        await browser.close();
+
+        res.setHeader("Content-Disposition", 'inline; filename="document.pdf"');
+        res.setHeader("Content-Type", "application/pdf");
+
+        res.end(pdfBuffer);
+    } catch (error) {
+        console.log("Error in Qc controller", error);
+        errorHandler(error, req, res, "Error in Qc controller")
+    }
+};
+
 // Packing Material Sample Entry
 
 const getPackingMaterialSampleEntryCount = async (req, res) => {
@@ -912,6 +1033,111 @@ const deletePackingMaterialSampleEntryById = async (req, res) => {
     } catch (error) {
         console.log("Error in deletePackingMaterialSampleEntryById Api", error);
         errorHandler(error, req, res, "Error in deletePackingMaterialSampleEntryById Api")
+    }
+};
+const generateSampleEntryPmReport = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+        console.log(dbYear)
+        let reqId = getRequestData(id)
+
+        let cgModel = await companyGroupModel(dbYear)
+        let companyDetails = await cgModel.findOne({});
+
+        let sampleModel = await sampleEntryPMModel(dbYear)
+        let sampleData = await sampleModel.findOne({ _id: reqId })
+            .populate({
+                path: "pmId",
+                select: "pmName"
+            }).populate({
+                path: "grnId",
+                select: "partyId grnNo invoiceNo invoiceDate grnDate",
+                populate: {
+                    path: "partyId",
+                    select: "partyName",
+                }
+            })
+        let grnModel = await grnEntryMaterialDetailsModel(dbYear)
+        let grnData = await grnModel.findOne({ grnEntryPartyDetailId: sampleData.grnId._id, packageMaterialId: sampleData.pmId })
+
+        let adminAddress = companyDetails.addressLine1 + ' '
+            + companyDetails.addressLine2 + ' '
+            + companyDetails.addressLine3 + ' '
+            + companyDetails.pinCode + '(' + companyDetails.state + ')'
+
+        let htmlTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "sampleTestingReport.html"), "utf8");
+
+        // Injecting CSS for empty pages
+        htmlTemplate = htmlTemplate + `
+                                    <style>
+                                        @page {
+                                            size: A4;
+                                            margin: 0;
+                                        }
+                                        .empty-page {
+                                            page-break-before: always;
+                                            height: 100vh;
+                                            }
+                                            </style>
+                                            `;
+
+        const generatePage = () => {
+            return htmlTemplate
+                .replace('#companyName', companyDetails.CompanyName ?? "-")
+                .replace('#companyAddress', adminAddress ?? "-")
+                .replace('#labName', sampleData.labName ?? "-")
+                .replace('#testReqSlipNo', sampleData.refNo ?? "-")
+                .replace('#date', sampleData.refDate ? dayjs(sampleData.refDate).format("DD-MMM-YYYY") : "-")
+                .replace('#location', companyDetails.location ?? "-")
+                .replace('#make', companyDetails.CompanyGroup ?? "-")
+                .replace('#sampleType', "Packing Material")
+                .replace('#remarks', sampleData.remark ?? "-")
+                .replace('#printedDate', dayjs().format("DD-MMM-YYYY hh:mm A"))
+                .replace('#tableData', `
+                    <tr>
+                        <td align="center">1</td>
+                        <td>${sampleData.pmId.pmName ?? "-"}</td>
+                        <td>${sampleData.grnId.partyId.partyName ?? "-"}</td>
+                        <td>${grnData.mfgBy ?? "-"}</td>
+                        <td>${sampleData.grnId.invoiceNo ?? "-"}</td>
+                        <td>${sampleData.grnId.invoiceDate ? dayjs(sampleData.grnId.invoiceDate).format("DD-MMM-YYYY") : "-"}</td>
+                        <td>${sampleData.grnId.grnNo ?? "-"}</td>
+                        <td>${sampleData.grnId.grnDate ? dayjs(sampleData.grnId.grnDate).format("DD-MMM-YYYY") : "-"}</td>
+                        <td>${grnData.batchNo ?? "-"}</td>
+                        <td>${grnData.qty ?? "-"}</td>
+                        <td>${grnData.packing ?? "-"}</td>
+                        <td>${grnData.mfgDate ? dayjs(grnData.mfgDate).format("DD-MMM-YYYY") : "-"}</td>
+                        <td>${grnData.expDate ? dayjs(grnData.expDate).format("DD-MMM-YYYY") : "-"}</td>
+                        <td>${sampleData.sampleQty ?? "-"}</td>
+                    </tr>`)
+        }
+
+
+        htmlTemplate = `
+                    <div class="empty-page">${generatePage()}</div>
+                    <div class="page-break"></div>
+                `;
+
+        const browser = await puppeteer.launch({
+            headless: "new",
+            args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        });
+        const page = await browser.newPage();
+
+        await page.setContent(htmlTemplate, { waitUntil: "load" });
+
+        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+
+        await browser.close();
+
+        res.setHeader("Content-Disposition", 'inline; filename="document.pdf"');
+        res.setHeader("Content-Type", "application/pdf");
+
+        res.end(pdfBuffer);
+    } catch (error) {
+        console.log("Error in Qc controller", error);
+        errorHandler(error, req, res, "Error in Qc controller")
     }
 };
 
@@ -1346,6 +1572,105 @@ const deleteFinishGoodsSampleEntryById = async (req, res) => {
     }
 };
 
+const generateSampleEntryFGReport = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+        console.log(dbYear)
+        let reqId = getRequestData(id)
+
+        let cgModel = await companyGroupModel(dbYear)
+        let companyDetails = await cgModel.findOne({});
+
+        let sampleModel = await sampleEntryFGModel(dbYear)
+        let sampleData = await sampleModel.findOne({ _id: reqId })
+            .populate({
+                path: "productId",
+                select: "productName"
+            }).populate({
+                path: "productionId",
+                select: "partyId batchNo productionRequisitionReqDate batchSize size",
+            })
+        // let grnModel = await grnEntryMaterialDetailsModel(dbYear)
+        // let grnData = await grnModel.findOne({ grnEntryPartyDetailId: sampleData.grnId._id, packageMaterialId: sampleData.pmId })
+
+        let adminAddress = companyDetails.addressLine1 + ' '
+            + companyDetails.addressLine2 + ' '
+            + companyDetails.addressLine3 + ' '
+            + companyDetails.pinCode + '(' + companyDetails.state + ')'
+
+        let htmlTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "sampleTestingReportFG.html"), "utf8");
+
+        // Injecting CSS for empty pages
+        htmlTemplate = htmlTemplate + `
+                                    <style>
+                                        @page {
+                                            size: A4;
+                                            margin: 0;
+                                        }
+                                        .empty-page {
+                                            page-break-before: always;
+                                            height: 100vh;
+                                            }
+                                            </style>
+                                            `;
+
+        const generatePage = () => {
+            return htmlTemplate
+                .replace('#companyName', companyDetails.CompanyName ?? "-")
+                .replace('#companyAddress', adminAddress ?? "-")
+                .replace('#labName', sampleData.labName ?? "-")
+                .replace('#testReqSlipNo', sampleData.refNo ?? "-")
+                .replace('#date', sampleData.refDate ? dayjs(sampleData.refDate).format("DD-MMM-YYYY") : "-")
+                .replace('#location', companyDetails.location ?? "-")
+                .replace('#make', companyDetails.CompanyGroup ?? "-")
+                .replace('#sampleType', "Finish Goods")
+                .replace('#remarks', sampleData.remark ?? "-")
+                .replace('#printedDate', dayjs().format("DD-MMM-YYYY hh:mm A"))
+                .replace('#tableData', `
+                    <tr>
+                        <td align="center">1</td>
+                        <td>${sampleData.productId.productName ?? "-"}</td>
+                        <td>${companyDetails.CompanyName ?? "-"}</td>
+                        <td>${sampleData.prodNo ?? "-"}</td>
+                        <td>${sampleData.productionId.productionRequisitionReqDate ? dayjs(sampleData.productionId.productionRequisitionReqDate).format("DD-MMM-YYYY") : "-"}</td>
+                        <td>${sampleData.batchNo ?? "-"}</td>
+                         <td>${sampleData.batchSize ?? "-"}</td>
+                         <td>${sampleData.productionId.size ?? "-"}</td>
+                        <td>${sampleData.productionId.mfgDate ? dayjs(sampleData.productionId.mfgDate).format("DD-MMM-YYYY") : "-"}</td>
+                        <td>${sampleData.productionId.expDate ? dayjs(sampleData.productionId.expDate).format("DD-MMM-YYYY") : "-"}</td>
+                        <td>${sampleData.sampleQty ?? "-"}</td>
+                    </tr>`)
+        }
+
+
+        htmlTemplate = `
+                    <div class="empty-page">${generatePage()}</div>
+                    <div class="page-break"></div>
+                `;
+
+        const browser = await puppeteer.launch({
+            headless: "new",
+            args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        });
+        const page = await browser.newPage();
+
+        await page.setContent(htmlTemplate, { waitUntil: "load" });
+
+        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+
+        await browser.close();
+
+        res.setHeader("Content-Disposition", 'inline; filename="document.pdf"');
+        res.setHeader("Content-Type", "application/pdf");
+
+        res.end(pdfBuffer);
+    } catch (error) {
+        console.log("Error in Qc controller", error);
+        errorHandler(error, req, res, "Error in Qc controller")
+    }
+};
+
 // Raw Material Test Report Entry
 const getAllPeningRawMaterialSampleEntry = async (req, res) => {
     try {
@@ -1718,7 +2043,20 @@ const getRawMaterialTestEntryDetailsById = async (req, res) => {
                     purchaseQty: "$sampleEntry.purchaseQty",
                     materialName: "$materialdata.rmName",
                     partyName: "$partyData.partyName",
-                    sampleQty: "$sampleEntry.sampleQty"
+                    sampleQty: "$sampleEntry.sampleQty",
+                    analysisDate: {
+                        $cond: [
+                            { $ifNull: ["$analysisDate", false] },
+                            {
+                                $dateToString: {
+                                    format: "%Y-%m-%d",
+                                    date: "$analysisDate",
+                                    timezone: "Asia/Kolkata"
+                                }
+                            },
+                            null
+                        ]
+                    }
                 }
             },
         ]);
@@ -1818,6 +2156,135 @@ const deleteRawMaterialTestEntryById = async (req, res) => {
     } catch (error) {
         console.log("Error in deleteRawMaterialTestEntryById Api", error);
         errorHandler(error, req, res, "Error in deleteRawMaterialTestEntryById Api")
+    }
+};
+
+const generateTestingEntryRmReport = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+        console.log(dbYear)
+        let reqId = getRequestData(id)
+
+        let cgModel = await companyGroupModel(dbYear)
+        let companyDetails = await cgModel.findOne({});
+
+        let sampleModel = await testReportRMModel(dbYear)
+        let sampleData = await sampleModel.findOne({ _id: reqId })
+            .populate({
+                path: "sampleEntryRMId",
+                populate: [
+                    {
+                        path: "rmId",
+                        select: "rmName specificationNo rmUOM reTestPeriod"
+                    },
+                    {
+                        path: "grnId",
+                        select: "grnNo grnDate invoiceNo invoiceDate partyId"
+                    },
+                    {
+                        path: "supplierId",
+                        select: "partyName"
+                    }
+                ]
+            })
+
+        let grnModel = await grnEntryMaterialDetailsModel(dbYear)
+        let grnData = await grnModel.findOne({ grnEntryPartyDetailId: sampleData.sampleEntryRMId.grnId._id, rawMaterialId: sampleData.sampleEntryRMId.rmId._id }).select("packing")
+
+        let testModel = await testReportRMDataMappingModel(dbYear)
+        let testReportData = await testModel.find({ testReportRMId: sampleData._id, isDeleted: false })
+
+        let adminAddress = companyDetails.addressLine1 + ' '
+            + companyDetails.addressLine2 + ' '
+
+            + companyDetails.addressLine3 + ' '
+            + companyDetails.pinCode + '(' + companyDetails.state + ')'
+
+        let htmlTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "testingReport.html"), "utf8");
+
+        // Injecting CSS for empty pages
+        htmlTemplate = htmlTemplate + `
+                                    <style>
+                                        @page {
+                                            size: A4;
+                                            margin: 0;
+                                        }
+                                        .empty-page {
+                                            page-break-before: always;
+                                            height: 100vh;
+                                            }
+                                            </style>
+                                            `;
+
+        const generatePage = () => {
+            return htmlTemplate
+                .replace('#companyName', companyDetails?.CompanyName ?? "-")
+                .replace('#companyAddress', adminAddress ?? "-")
+                .replace('#mobileNo', companyDetails?.mobile ?? "-")
+                .replace('#email', companyDetails?.email ?? "-")
+                .replace('#sampleType', "Raw Material")
+                .replace('#materialName', sampleData?.sampleEntryRMId?.rmId?.rmName ?? "-")
+                .replace('#specificationNo', sampleData?.sampleEntryRMId?.rmId?.specificationNo ?? "-")
+                .replace('#supplierBy', sampleData?.sampleEntryRMId?.supplierId?.partyName ?? "-")
+                .replace('#mfgBy', sampleData?.sampleEntryRMId?.mfgBy ?? "-")
+                .replace('#receivedQty', sampleData?.sampleEntryRMId?.purchaseQty ?? "-")
+                .replaceAll('#receivedUOM', sampleData?.sampleEntryRMId?.rmId?.rmUOM ?? "-")
+                .replace('#batchNo', sampleData?.sampleEntryRMId?.batchNo ?? "-")
+                .replace('#mfgDate', sampleData?.sampleEntryRMId?.mfgDate ? dayjs(sampleData.sampleEntryRMId.mfgDate).format("DD-MMM-YYYY") : "-")
+                .replace('#expDate', sampleData?.sampleEntryRMId?.expDate ? dayjs(sampleData.sampleEntryRMId.expDate).format("DD-MMM-YYYY") : "-")
+                .replace('#packing', grnData?.packing ?? "-")
+                .replace('#sampleQty', sampleData?.sampleEntryRMId?.sampleQty ?? "-")
+                .replace('#reportNo', sampleData?.reportNo ?? "-")
+                .replace('#releaseDate', sampleData?.reportDate ? dayjs(sampleData.reportDate).format("DD-MMM-YYYY") : "-")
+                .replace('#releasedQty', (sampleData?.sampleEntryRMId?.purchaseQty ?? 0) - (sampleData?.sampleEntryRMId?.sampleQty ?? 0) ?? "-")
+                .replace('#grnNo', sampleData?.sampleEntryRMId?.grnId?.grnNo ?? "-")
+                .replace('#grnDate', sampleData?.sampleEntryRMId?.grnId?.grnDate ? dayjs(sampleData.sampleEntryRMId.grnId.grnDate).format("DD-MMM-YYYY") : "-")
+                .replace('#analysisDate', sampleData?.analysisDate ? dayjs(sampleData.analysisDate).format("DD-MMM-YYYY") : "-")
+                .replace(
+                    '#retestDate',
+                    (sampleData.sampleEntryRMId?.rmId?.reTestPeriod && (sampleData.reportDate || sampleData.analysisDate))
+                        ? dayjs(sampleData.reportDate || sampleData.analysisDate)
+                            .add(sampleData.sampleEntryRMId.rmId.reTestPeriod, "month")
+                            .format("DD-MMM-YYYY")
+                        : "-"
+                )
+                .replace('#analyst', sampleData?.analyst ?? "-")
+                .replace('#labIncharge', sampleData?.labIncharge ?? "-")
+                .replace('#printedDate', dayjs().format("DD-MMM-YYYY hh:mm A"))
+                .replace('#tableData', testReportData ? testReportData.map((test, index) => `
+                    <tr>
+                        <td align="center">${index + 1}</td>
+                        <td>${test?.testName ?? "-"}</td>
+                        <td>${test?.result ?? "-"}</td>
+                        <td>${test?.limit ?? "-"}</td>
+                    </tr>` ).join('') : '')
+        }
+
+        htmlTemplate = `
+                    <div class="empty-page">${generatePage()}</div>
+                    <div class="page-break"></div>
+                `;
+
+        const browser = await puppeteer.launch({
+            headless: "new",
+            args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        });
+        const page = await browser.newPage();
+
+        await page.setContent(htmlTemplate, { waitUntil: "load" });
+
+        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+
+        await browser.close();
+
+        res.setHeader("Content-Disposition", 'inline; filename="document.pdf"');
+        res.setHeader("Content-Type", "application/pdf");
+
+        res.end(pdfBuffer);
+    } catch (error) {
+        console.log("Error in Qc controller", error);
+        errorHandler(error, req, res, "Error in Qc controller")
     }
 };
 
@@ -2195,6 +2662,19 @@ const getPackingMaterialTestEntryDetailsById = async (req, res) => {
                     materialName: "$materialdata.pmName",
                     partyName: "$partyData.partyName",
                     sampleQty: "$sampleEntry.sampleQty",
+                    analysisDate: {
+                        $cond: [
+                            { $ifNull: ["$analysisDate", false] },
+                            {
+                                $dateToString: {
+                                    format: "%Y-%m-%d",
+                                    date: "$analysisDate",
+                                    timezone: "Asia/Kolkata"
+                                }
+                            },
+                            null
+                        ]
+                    }
                 }
             },
         ]);
@@ -2294,6 +2774,134 @@ const deletePackingMaterialTestEntryById = async (req, res) => {
     } catch (error) {
         console.log("Error in deletePackingMaterialTestEntryById Api", error);
         errorHandler(error, req, res, "Error in deletePackingMaterialTestEntryById Api")
+    }
+};
+
+const generateTestingEntryPmReport = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+        console.log(dbYear)
+        let reqId = getRequestData(id)
+
+        let cgModel = await companyGroupModel(dbYear)
+        let companyDetails = await cgModel.findOne({});
+
+        let sampleModel = await testReportPMModel(dbYear)
+        let sampleData = await sampleModel.findOne({ _id: reqId })
+            .populate({
+                path: "sampleEntryPMId",
+                populate: [
+                    {
+                        path: "pmId",
+                        select: "pmName specificationNo pmUOM reTestPeriod"
+                    },
+                    {
+                        path: "grnId",
+                        select: "grnNo grnDate invoiceNo invoiceDate partyId"
+                    },
+                    {
+                        path: "supplierId",
+                        select: "partyName"
+                    }
+                ]
+            })
+
+        let grnModel = await grnEntryMaterialDetailsModel(dbYear)
+        let grnData = await grnModel.findOne({ grnEntryPartyDetailId: sampleData.sampleEntryPMId.grnId._id, packingMaterialId: sampleData.sampleEntryPMId.pmId._id }).select("packing")
+
+        let testModel = await testReportPMDataMappingModel(dbYear)
+        let testReportData = await testModel.find({ testReportPMId: sampleData._id, isDeleted: false })
+
+        let adminAddress = companyDetails.addressLine1 + ' '
+            + companyDetails.addressLine2 + ' '
+            + companyDetails.addressLine3 + ' '
+            + companyDetails.pinCode + '(' + companyDetails.state + ')'
+
+        let htmlTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "testingReport.html"), "utf8");
+
+        // Injecting CSS for empty pages
+        htmlTemplate = htmlTemplate + `
+                                    <style>
+                                        @page {
+                                            size: A4;
+                                            margin: 0;
+                                        }
+                                        .empty-page {
+                                            page-break-before: always;
+                                            height: 100vh;
+                                            }
+                                            </style>
+                                            `;
+
+        const generatePage = () => {
+            return htmlTemplate
+                .replace('#companyName', companyDetails?.CompanyName ?? "-")
+                .replace('#companyAddress', adminAddress ?? "-")
+                .replace('#mobileNo', companyDetails?.mobile ?? "-")
+                .replace('#email', companyDetails?.email ?? "-")
+                .replace('#sampleType', "Packing Material")
+                .replace('#materialName', sampleData?.sampleEntryPMId?.pmId?.pmName ?? "-")
+                .replace('#specificationNo', sampleData?.sampleEntryPMId?.pmId?.specificationNo ?? "-")
+                .replace('#supplierBy', sampleData?.sampleEntryPMId?.supplierId?.partyName ?? "-")
+                .replace('#mfgBy', sampleData?.sampleEntryPMId?.mfgBy ?? "-")
+                .replace('#receivedQty', sampleData?.sampleEntryPMId?.purchaseQty ?? "-")
+                .replaceAll('#receivedUOM', sampleData?.sampleEntryPMId?.pmId?.pmUOM ?? "-")
+                .replace('#batchNo', sampleData?.sampleEntryPMId?.batchNo ?? "-")
+                .replace('#mfgDate', sampleData?.sampleEntryPMId?.mfgDate ? dayjs(sampleData.sampleEntryPMId.mfgDate).format("DD-MMM-YYYY") : "-")
+                .replace('#expDate', sampleData?.sampleEntryPMId?.expDate ? dayjs(sampleData.sampleEntryPMId.expDate).format("DD-MMM-YYYY") : "-")
+                .replace('#packing', grnData?.packing ?? "-")
+                .replace('#sampleQty', sampleData?.sampleEntryPMId?.sampleQty ?? "-")
+                .replace('#reportNo', sampleData?.reportNo ?? "-")
+                .replace('#releaseDate', sampleData?.reportDate ? dayjs(sampleData.reportDate).format("DD-MMM-YYYY") : "-")
+                .replace('#releasedQty', (sampleData?.sampleEntryPMId?.purchaseQty ?? 0) - (sampleData?.sampleEntryPMId?.sampleQty ?? 0) ?? "-")
+                .replace('#grnNo', sampleData?.sampleEntryPMId?.grnId?.grnNo ?? "-")
+                .replace('#grnDate', sampleData?.sampleEntryPMId?.grnId?.grnDate ? dayjs(sampleData.sampleEntryPMId.grnId.grnDate).format("DD-MMM-YYYY") : "-")
+                .replace('#analysisDate', sampleData?.analysisDate ? dayjs(sampleData.analysisDate).format("DD-MMM-YYYY") : "-")
+                .replace(
+                    '#retestDate',
+                    (sampleData.sampleEntryPMId?.pmId?.reTestPeriod && (sampleData.reportDate || sampleData.analysisDate))
+                        ? dayjs(sampleData.reportDate || sampleData.analysisDate)
+                            .add(sampleData.sampleEntryPMId.pmId.reTestPeriod, "month")
+                            .format("DD-MMM-YYYY")
+                        : "-"
+                )
+                .replace('#analyst', sampleData?.analyst ?? "-")
+                .replace('#labIncharge', sampleData?.labIncharge ?? "-")
+                .replace('#printedDate', dayjs().format("DD-MMM-YYYY hh:mm A"))
+                .replace('#tableData', testReportData ? testReportData.map((test, index) => `
+                    <tr>
+                        <td align="center">${index + 1}</td>
+                        <td>${test?.testName ?? "-"}</td>
+                        <td>${test?.result ?? "-"}</td>
+                        <td>${test?.limit ?? "-"}</td>
+                    </tr>` ).join('') : '')
+        }
+
+        htmlTemplate = `
+                    <div class="empty-page">${generatePage()}</div>
+                    <div class="page-break"></div>
+                `;
+
+        const browser = await puppeteer.launch({
+            headless: "new",
+            args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        });
+        const page = await browser.newPage();
+
+        await page.setContent(htmlTemplate, { waitUntil: "load" });
+
+        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+
+        await browser.close();
+
+        res.setHeader("Content-Disposition", 'inline; filename="document.pdf"');
+        res.setHeader("Content-Type", "application/pdf");
+
+        res.end(pdfBuffer);
+    } catch (error) {
+        console.log("Error in Qc controller", error);
+        errorHandler(error, req, res, "Error in Qc controller")
     }
 };
 
@@ -2669,7 +3277,20 @@ const getFinishGoodsTestEntryDetailsById = async (req, res) => {
                     batchSize: "$sampleEntry.batchSize",
                     materialName: "$productData.productName",
                     partyName: "$partyData.partyName",
-                    sampleQty: "$sampleEntry.sampleQty"
+                    sampleQty: "$sampleEntry.sampleQty",
+                    analysisDate: {
+                        $cond: [
+                            { $ifNull: ["$analysisDate", false] },
+                            {
+                                $dateToString: {
+                                    format: "%Y-%m-%d",
+                                    date: "$analysisDate",
+                                    timezone: "Asia/Kolkata"
+                                }
+                            },
+                            null
+                        ]
+                    }
                 }
             },
         ]);
@@ -2771,7 +3392,123 @@ const deleteFinishGoodsTestEntryById = async (req, res) => {
         errorHandler(error, req, res, "Error in deleteFinishGoodsTestEntryById Api")
     }
 };
+const generateTestingEntryFGReport = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+        console.log(dbYear)
+        let reqId = getRequestData(id)
 
+        let cgModel = await companyGroupModel(dbYear)
+        let companyDetails = await cgModel.findOne({});
+
+        let sampleModel = await testReportFGModel(dbYear)
+        let sampleData = await sampleModel.findOne({ _id: reqId })
+            .populate({
+                path: "sampleEntryFGId",
+                populate: [
+                    {
+                        path: "productId",
+                        select: "productName masterCardNo"
+                    },
+                    {
+                        path: "supplierId",
+                        select: "partyName"
+                    }
+                ]
+            })
+            .populate({
+                path: "productionId",
+                select: "size productionRequisitionReqDate productionNo"
+            })
+
+        // let grnModel = await grnEntryMaterialDetailsModel(dbYear)
+        // let grnData = await grnModel.findOne({ grnEntryPartyDetailId: sampleData.sampleEntryPMId.grnId._id, packingMaterialId: sampleData.sampleEntryPMId.pmId._id }).select("packing")
+
+        let testModel = await testReportFGDataMappingModel(dbYear)
+        let testReportData = await testModel.find({ testReportFGId: sampleData._id, isDeleted: false })
+
+        let adminAddress = companyDetails.addressLine1 + ' '
+            + companyDetails.addressLine2 + ' '
+            + companyDetails.addressLine3 + ' '
+            + companyDetails.pinCode + '(' + companyDetails.state + ')'
+
+        let htmlTemplate = fs.readFileSync(path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "testingReportFG.html"), "utf8");
+
+        // Injecting CSS for empty pages
+        htmlTemplate = htmlTemplate + `
+                                    <style>
+                                        @page {
+                                            size: A4;
+                                            margin: 0;
+                                        }
+                                        .empty-page {
+                                            page-break-before: always;
+                                            height: 100vh;
+                                            }
+                                            </style>
+                                            `;
+
+        const generatePage = () => {
+            return htmlTemplate
+                .replace('#companyName', companyDetails?.CompanyName ?? "-")
+                .replace('#companyAddress', adminAddress ?? "-")
+                .replace('#mobileNo', companyDetails?.mobile ?? "-")
+                .replace('#email', companyDetails?.email ?? "-")
+                .replace('#sampleType', "Finished Goods")
+                .replace('#productName', sampleData?.sampleEntryFGId?.productId?.productName ?? "-")
+                .replace('#MasterCardNo', sampleData?.sampleEntryFGId?.productId?.masterCardNo ?? "-")
+                .replace('#mfgBy', sampleData?.sampleEntryFGId?.supplierId?.partyName ?? "-")
+                .replace('#batchNo', sampleData?.sampleEntryFGId?.batchNo ?? "-")
+                .replace('#batchSize', sampleData?.sampleEntryFGId?.batchSize ?? "-")
+                .replace('#size', sampleData?.productionId?.size ?? "-")
+                .replace('#mfgDate', sampleData?.sampleEntryFGId?.mfgDate ? dayjs(sampleData.sampleEntryFGId.mfgDate).format("DD-MMM-YYYY") : "-")
+                .replace('#expDate', sampleData?.sampleEntryFGId?.expDate ? dayjs(sampleData.sampleEntryFGId.expDate).format("DD-MMM-YYYY") : "-")
+                .replace('#sampleQty', sampleData?.sampleEntryFGId?.sampleQty ?? "-")
+                .replace('#reportNo', sampleData?.reportNo ?? "-")
+                .replace('#releaseDate', sampleData?.reportDate ? dayjs(sampleData.reportDate).format("DD-MMM-YYYY") : "-")
+                .replace('#releasedQty', (sampleData?.sampleEntryFGId?.batchSize ?? 0) - (sampleData?.sampleEntryFGId?.sampleQty ?? 0) ?? "-")
+                .replace('#productionNo', sampleData?.productionId?.productionNo ?? "-")
+                .replace('#productionDate', sampleData?.productionId?.productionRequisitionReqDate ? dayjs(sampleData.productionId.productionRequisitionReqDate).format("DD-MMM-YYYY") : "-")
+                .replace('#analysisDate', sampleData?.analysisDate ? dayjs(sampleData.analysisDate).format("DD-MMM-YYYY") : "-")
+                .replace('#analyst', sampleData?.analyst ?? "-")
+                .replace('#labIncharge', sampleData?.labIncharge ?? "-")
+                .replace('#printedDate', dayjs().format("DD-MMM-YYYY hh:mm A"))
+                .replace('#tableData', testReportData ? testReportData.map((test, index) => `
+                    <tr>
+                        <td align="center">${index + 1}</td>
+                        <td>${test?.testName ?? "-"}</td>
+                        <td>${test?.result ?? "-"}</td>
+                        <td>${test?.limit ?? "-"}</td>
+                    </tr>` ).join('') : '')
+        }
+
+        htmlTemplate = `
+                    <div class="empty-page">${generatePage()}</div>
+                    <div class="page-break"></div>
+                `;
+
+        const browser = await puppeteer.launch({
+            headless: "new",
+            args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        });
+        const page = await browser.newPage();
+
+        await page.setContent(htmlTemplate, { waitUntil: "load" });
+
+        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+
+        await browser.close();
+
+        res.setHeader("Content-Disposition", 'inline; filename="document.pdf"');
+        res.setHeader("Content-Type", "application/pdf");
+
+        res.end(pdfBuffer);
+    } catch (error) {
+        console.log("Error in Qc controller", error);
+        errorHandler(error, req, res, "Error in Qc controller")
+    }
+};
 export {
     getGRNItemsByGRNNo,
 
@@ -2780,12 +3517,14 @@ export {
     getAllRawMaterialSampleEntry,
     getRawMaterialSampleEntryDetailsById,
     deleteRawMaterialSampleEntryById,
+    generateSampleEntryRmReport,
 
     getPackingMaterialSampleEntryCount,
     addEditPackingMaterialSampleEntry,
     getAllPackingMaterialSampleEntry,
     getPackingMaterialSampleEntryDetailsById,
     deletePackingMaterialSampleEntryById,
+    generateSampleEntryPmReport,
 
     getFinishGoodsSampleEntryCount,
     getProductionItemsByProductionNo,
@@ -2793,22 +3532,26 @@ export {
     getAllFinishGoodsSampleEntry,
     getFinishGoodsSampleEntryDetailsById,
     deleteFinishGoodsSampleEntryById,
+    generateSampleEntryFGReport,
 
     getAllPeningRawMaterialSampleEntry,
     addEditRawMaterialTestReport,
     getAllRawMaterialTestReportEntry,
     getRawMaterialTestEntryDetailsById,
     deleteRawMaterialTestEntryById,
+    generateTestingEntryRmReport,
 
     getAllPeningPackingMaterialSampleEntry,
     addEditPackingMaterialTestReport,
     getAllPackingMaterialTestReportEntry,
     getPackingMaterialTestEntryDetailsById,
     deletePackingMaterialTestEntryById,
+    generateTestingEntryPmReport,
 
     getAllPeningFinishGoodsSampleEntry,
     addEditFinishGoodsTestReport,
     getAllFinishGoodsTestReportEntry,
     getFinishGoodsTestEntryDetailsById,
-    deleteFinishGoodsTestEntryById
+    deleteFinishGoodsTestEntryById,
+    generateTestingEntryFGReport
 }
