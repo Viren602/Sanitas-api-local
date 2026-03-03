@@ -2,68 +2,113 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <title>Certificate of Analysis</title>
 
     <style>
+        /* ----------- A4 SAFE SETUP ----------- */
         @page {
-            size: A4 portrait;
-            margin: 12mm;
+            size: A4;
+            margin: 10mm;
+            /* Safe printer margin */
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
+            margin: 0;
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 12px;
+            font-size: 11px;
             color: #000;
         }
 
         .page {
-            width: 210mm;
-            min-height: 297mm;
-            margin: auto;
+            width: 100%;
+            padding: 25px;
         }
+
+        /* ----------- HEADER ----------- */
 
         .center {
             text-align: center;
+            margin-bottom: 10px;
         }
 
         .company-title {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
-            margin-bottom: 4px;
         }
 
         .subtitle {
             font-weight: bold;
             margin-top: 6px;
+            font-size: 12px;
         }
+
+        .main-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        /* ----------- TABLE GENERAL ----------- */
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 8px;
+            table-layout: fixed;
         }
 
         th,
         td {
             border: 1px solid #000;
-            padding: 6px;
+            padding: 5px;
             vertical-align: top;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         th {
             background: #f3f3f3;
+            font-weight: bold;
+            text-align: center;
         }
+
+        /* ----------- DETAILS SECTION ----------- */
 
         .no-border td {
             border: none;
-            padding: 3px 4px;
+            padding: 2px 4px;
+            font-size: 11px;
         }
+
+        /* Prevent breaking inside rows */
+        tr {
+            page-break-inside: avoid;
+        }
+
+        /* ----------- TEST TABLE ----------- */
+
+        .test-table {
+            font-size: 10.5px;
+        }
+
+        /* ----------- FOOTER ----------- */
 
         .footer {
             margin-top: 40px;
             display: flex;
             justify-content: space-between;
+            font-size: 11px;
+        }
+
+        /* Print Clean */
+        @media print {
+            body {
+                margin: 0;
+            }
         }
     </style>
 </head>
@@ -71,21 +116,20 @@
 <body>
     <div class="page">
 
-        <!-- Header -->
+        <!-- HEADER -->
         <div class="center">
             <div class="company-title">#companyName</div>
             <div>#companyAddress</div>
             <div>Phone: #mobileNo | Email: #email</div>
 
             <div class="subtitle">QUALITY CONTROL DEPARTMENT</div>
-            <div><b>CERTIFICATE OF ANALYSIS – #sampleType</b></div>
+            <div class="main-title">CERTIFICATE OF ANALYSIS – #sampleType</div>
         </div>
 
-        <!-- Horizontal Details 65 / 35 -->
+        <!-- DETAILS SECTION -->
         <table>
             <tr>
-                <!-- LEFT 65% -->
-                <td style="width:65%; padding:0;">
+                <td style="width:65%; padding:0; border-bottom: none;">
                     <table class="no-border">
                         <tr>
                             <td><b>Material Name</b></td>
@@ -130,8 +174,7 @@
                     </table>
                 </td>
 
-                <!-- RIGHT 35% -->
-                <td style="width:35%; padding:0;">
+                <td style="width:35%; padding:0; border-bottom: none;">
                     <table class="no-border">
                         <tr>
                             <td><b>Report No</b></td>
@@ -150,7 +193,7 @@
                             <td>: #grnNo</td>
                         </tr>
                         <tr>
-                            <td><b>G.R.N Date.</b></td>
+                            <td><b>G.R.N Date</b></td>
                             <td>: #grnDate</td>
                         </tr>
                         <tr>
@@ -158,11 +201,11 @@
                             <td>: #analysisDate</td>
                         </tr>
                         <tr>
-                            <td><b>Analysist</b></td>
+                            <td><b>Analyst</b></td>
                             <td>: #analyst</td>
                         </tr>
                         <tr>
-                            <td><b>Lab. Incharge</b></td>
+                            <td><b>Lab Incharge</b></td>
                             <td>: #labIncharge</td>
                         </tr>
                         <tr>
@@ -174,60 +217,37 @@
             </tr>
         </table>
 
-        <!-- Test Table -->
-        <table>
+        <!-- TEST TABLE -->
+        <table class="test-table">
             <thead>
                 <tr>
                     <th style="width:5%">Sr</th>
-                    <th style="width:30%">Test</th>
-                    <th style="width:30%">Result</th>
+                    <th style="width:40%; text-align: start;">Test</th>
+                    <th style="width:20%">Result</th>
                     <th style="width:35%">Specification</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- <tr>
-                    <td>Description</td>
-                    <td>White Crystalline Powder</td>
-                    <td>White to Yellowish Crystalline Powder</td>
-                </tr>
-                <tr>
-                    <td>Solubility</td>
-                    <td>Complies</td>
-                    <td>Freely soluble in Methanol, sparingly soluble in water</td>
-                </tr>
-                <tr>
-                    <td>Identification</td>
-                    <td>Complies</td>
-                    <td>To comply as per IP</td>
-                </tr>
-                <tr>
-                    <td>pH</td>
-                    <td>7.6</td>
-                    <td>6.5 – 8.5</td>
-                </tr>
-                <tr>
-                    <td>Heavy Metals</td>
-                    <td>Complies</td>
-                    <td>Not more than 20 ppm</td>
-                </tr>
-                <tr>
-                    <td>Loss on Drying</td>
-                    <td>0.25%</td>
-                    <td>NMT 0.5%</td>
-                </tr>
-                <tr>
-                    <td>Assay</td>
-                    <td>99.59%</td>
-                    <td>98.5% – 101.0%</td>
-                </tr> -->
                 #tableData
+                <!-- <tr>
+                    <td style="text-align: center;">1</td>
+                    <td>Water Test</td>
+                    <td style="text-align: center;">1.5</td>
+                    <td style="text-align: center;">100</td>
+                </tr> -->
             </tbody>
         </table>
 
-        <!-- Footer -->
+        <!-- SIGNATURE FOOTER -->
         <div class="footer">
-            <div>Checked By</div>
-            <div>Approved By</div>
+            <div>
+                _________________________<br>
+                Checked By
+            </div>
+            <div>
+                _________________________<br>
+                Approved By
+            </div>
         </div>
 
     </div>

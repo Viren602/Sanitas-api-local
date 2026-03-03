@@ -680,7 +680,7 @@ const generateSampleEntryRmReport = async (req, res) => {
                 .replace('#printedDate', dayjs().format("DD-MMM-YYYY hh:mm A"))
                 .replace('#tableData', `
                     <tr>
-                        <td align="center">1</td>
+                        <td>1</td>
                         <td>${sampleData.rmId.rmName ?? "-"}</td>
                         <td>${sampleData.grnId.partyId.partyName ?? "-"}</td>
                         <td>${grnData.mfgBy ?? "-"}</td>
@@ -693,7 +693,7 @@ const generateSampleEntryRmReport = async (req, res) => {
                         <td>${grnData.packing ?? "-"}</td>
                         <td>${grnData.mfgDate ? dayjs(grnData.mfgDate).format("DD-MMM-YYYY") : "-"}</td>
                         <td>${grnData.expDate ? dayjs(grnData.expDate).format("DD-MMM-YYYY") : "-"}</td>
-                        <td>${sampleData.sampleQty ?? "-"}</td>
+                        <td style="text-align: center;">${sampleData.sampleQty ?? "-"}</td>
                     </tr>`)
         }
 
@@ -1096,7 +1096,7 @@ const generateSampleEntryPmReport = async (req, res) => {
                 .replace('#printedDate', dayjs().format("DD-MMM-YYYY hh:mm A"))
                 .replace('#tableData', `
                     <tr>
-                        <td align="center">1</td>
+                        <td>1</td>
                         <td>${sampleData.pmId.pmName ?? "-"}</td>
                         <td>${sampleData.grnId.partyId.partyName ?? "-"}</td>
                         <td>${grnData.mfgBy ?? "-"}</td>
@@ -1109,7 +1109,7 @@ const generateSampleEntryPmReport = async (req, res) => {
                         <td>${grnData.packing ?? "-"}</td>
                         <td>${grnData.mfgDate ? dayjs(grnData.mfgDate).format("DD-MMM-YYYY") : "-"}</td>
                         <td>${grnData.expDate ? dayjs(grnData.expDate).format("DD-MMM-YYYY") : "-"}</td>
-                        <td>${sampleData.sampleQty ?? "-"}</td>
+                        <td style="text-align: center;">${sampleData.sampleQty ?? "-"}</td>
                     </tr>`)
         }
 
@@ -1629,7 +1629,7 @@ const generateSampleEntryFGReport = async (req, res) => {
                 .replace('#printedDate', dayjs().format("DD-MMM-YYYY hh:mm A"))
                 .replace('#tableData', `
                     <tr>
-                        <td align="center">1</td>
+                        <td>1</td>
                         <td>${sampleData.productId.productName ?? "-"}</td>
                         <td>${companyDetails.CompanyName ?? "-"}</td>
                         <td>${sampleData.prodNo ?? "-"}</td>
@@ -1639,7 +1639,7 @@ const generateSampleEntryFGReport = async (req, res) => {
                          <td>${sampleData.productionId.size ?? "-"}</td>
                         <td>${sampleData.productionId.mfgDate ? dayjs(sampleData.productionId.mfgDate).format("DD-MMM-YYYY") : "-"}</td>
                         <td>${sampleData.productionId.expDate ? dayjs(sampleData.productionId.expDate).format("DD-MMM-YYYY") : "-"}</td>
-                        <td>${sampleData.sampleQty ?? "-"}</td>
+                        <td style="text-align: center;">${sampleData.sampleQty ?? "-"}</td>
                     </tr>`)
         }
 
@@ -2256,8 +2256,8 @@ const generateTestingEntryRmReport = async (req, res) => {
                     <tr>
                         <td align="center">${index + 1}</td>
                         <td>${test?.testName ?? "-"}</td>
-                        <td>${test?.result ?? "-"}</td>
-                        <td>${test?.limit ?? "-"}</td>
+                        <td style="text-align: center;">${test?.result ?? "-"}</td>
+                        <td style="text-align: center;">${test?.limit ?? "-"}</td>
                     </tr>` ).join('') : '')
         }
 
