@@ -4,56 +4,213 @@
 <head>
     <meta charset="UTF-8">
     <title>Certificate of Analysis</title>
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* ----------- A4 SAFE SETUP ----------- */
         @page {
             size: A4;
-            margin: 10mm;
-            /* Safe printer margin */
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
             margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 11px;
-            color: #000;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --ink: #1a1a1a;
+            --g700: #444444;
+            --g500: #777777;
+            --g400: #aaaaaa;
+            --g200: #d8d8d8;
+            --g100: #ececec;
+            --g50: #f6f6f6;
+            --white: #ffffff;
+            --th: #d4d4d4;
+        }
+
+        html,
+        body {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto;
+            background: #bbb;
+            font-family: 'Inter', Arial, sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         .page {
-            width: 100%;
-            padding: 25px;
+            width: 210mm;
+            height: 297mm;
+            background: var(--white);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-size: 10px;
+            color: var(--ink);
         }
 
-        /* ----------- HEADER ----------- */
-
-        .center {
-            text-align: center;
-            margin-bottom: 10px;
+        /* ═══════════════════════════
+       HEADER — two column
+    ═══════════════════════════ */
+        .hd {
+            flex-shrink: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-bottom: 2px solid var(--g200);
+            background: var(--white);
         }
 
-        .company-title {
-            font-size: 18px;
-            font-weight: bold;
+        /* LEFT — company */
+        .hd-left {
+            padding: 18px 20px 16px 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 3px;
         }
 
-        .subtitle {
-            font-weight: bold;
-            margin-top: 6px;
-            font-size: 12px;
+        .hd-company {
+            font-size: 19px;
+            font-weight: 800;
+            color: var(--ink);
+            letter-spacing: -0.7px;
+            line-height: 1;
         }
 
-        .main-title {
-            font-size: 14px;
-            font-weight: bold;
-            margin-top: 4px;
+        .hd-address {
+            font-size: 8.5px;
+            color: var(--g500);
+            line-height: 1.7;
+            margin-top: 5px;
         }
 
-        /* ----------- TABLE GENERAL ----------- */
+        /* RIGHT — doc title */
+        .hd-right {
+            padding: 18px 24px 16px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .hd-dept {
+            font-size: 7px;
+            font-weight: 700;
+            letter-spacing: 2.8px;
+            text-transform: uppercase;
+            color: var(--g400);
+        }
+
+        .hd-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--ink);
+            letter-spacing: -0.4px;
+            line-height: 1;
+            text-align: right;
+        }
+
+        .hd-sample {
+            font-size: 8px;
+            font-weight: 600;
+            color: var(--g500);
+            text-transform: uppercase;
+        }
+
+        /* ═══════════════════════════
+       CONTENT
+    ═══════════════════════════ */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 14px 24px 0;
+            min-height: 0;
+        }
+
+        /* section heading */
+        .sec {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 10px 0 6px;
+        }
+
+        .sec-text {
+            font-size: 7px;
+            font-weight: 700;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: var(--g400);
+            white-space: nowrap;
+        }
+
+        .sec::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--g200);
+        }
+
+        /* ── INFO GRID ── */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border: 1px solid var(--g200);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .icol {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .irow {
+            display: flex;
+            align-items: center;
+            min-height: 21px;
+            padding: 3.5px 12px;
+        }
+
+        .irow:last-child {
+            border-bottom: none;
+        }
+
+        .irow:nth-child(odd) {
+            background: var(--g50);
+        }
+
+        .ilabel {
+            font-size: 8.5px;
+            font-weight: 600;
+            color: var(--g500);
+            width: 95px;
+            flex-shrink: 0;
+        }
+
+        .isep {
+            color: var(--g200);
+            margin: 0 8px 0 0;
+        }
+
+        .ival {
+            font-size: 9.5px;
+            color: var(--ink);
+        }
+
+        /* ── TEST TABLE ── */
+        .tbl-wrap {
+            border: 1px solid var(--g200);
+            border-radius: 4px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
 
         table {
             width: 100%;
@@ -61,53 +218,114 @@
             table-layout: fixed;
         }
 
-        th,
-        td {
-            border: 1px solid #000;
-            padding: 5px;
-            vertical-align: top;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
+        thead tr {
+            background: var(--th);
         }
 
-        th {
-            background: #f3f3f3;
-            font-weight: bold;
+        thead th {
+            padding: 7px 12px;
+            font-size: 7.5px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--g700);
+            border-right: 1px solid #bbb;
+            text-align: left;
+        }
+
+        thead th.cc {
             text-align: center;
         }
 
-        /* ----------- DETAILS SECTION ----------- */
-
-        .no-border td {
-            border: none;
-            padding: 2px 4px;
-            font-size: 11px;
+        thead th:last-child {
+            border-right: none;
         }
 
-        /* Prevent breaking inside rows */
-        tr {
-            page-break-inside: avoid;
+        tbody tr {
+            border-bottom: 1px solid var(--g100);
         }
 
-        /* ----------- TEST TABLE ----------- */
-
-        .test-table {
-            font-size: 10.5px;
+        tbody tr:last-child {
+            border-bottom: none;
         }
 
-        /* ----------- FOOTER ----------- */
+        tbody td {
+            padding: 6px 12px;
+            font-size: 9.5px;
+            color: var(--ink);
+            border-right: 1px solid var(--g100);
+            vertical-align: middle;
+        }
 
-        .footer {
-            margin-top: 40px;
+        tbody td:last-child {
+            border-right: none;
+        }
+
+        .tsr {
+            text-align: center;
+            color: var(--g400);
+            font-size: 8.5px;
+            font-weight: 600;
+        }
+
+        .tres {
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .tsp {
+            color: var(--g700);
+            font-size: 9px;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        /* ═══════════════════════════
+       FOOTER — just two sig lines
+    ═══════════════════════════ */
+        .ft {
+            flex-shrink: 0;
+            padding: 18px 24px 22px;
+            border-top: 1px solid var(--g200);
             display: flex;
             justify-content: space-between;
-            font-size: 11px;
+            align-items: flex-end;
         }
 
-        /* Print Clean */
+        .sig {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        .sig-space {
+            height: 40px;
+            width: 170px;
+        }
+
+        .sig-line {
+            width: 170px;
+            border-top: 1.5px solid var(--ink);
+            margin-bottom: 6px;
+        }
+
+        .sig-label {
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--g500);
+            text-align: center;
+        }
+
         @media print {
+
+            html,
             body {
-                margin: 0;
+                background: white;
             }
         }
     </style>
@@ -117,136 +335,103 @@
     <div class="page">
 
         <!-- HEADER -->
-        <div class="center">
-            <div class="company-title">#companyName</div>
-            <div>#companyAddress</div>
-            <div>Phone: #mobileNo | Email: #email</div>
-
-            <div class="subtitle">QUALITY CONTROL DEPARTMENT</div>
-            <div class="main-title">CERTIFICATE OF ANALYSIS – #sampleType</div>
+        <div class="hd">
+            <div class="hd-left">
+                <div class="hd-company">#companyName</div>
+                <div class="hd-address">
+                    #companyAddress<br>
+                    Tel: #mobileNo &nbsp;·&nbsp; #email
+                </div>
+            </div>
+            <div class="hd-right">
+                <div class="hd-dept">Quality Control Department</div>
+                <div class="hd-title">Certificate of Analysis</div>
+                <div class="hd-sample">#sampleType</div>
+            </div>
         </div>
 
-        <!-- DETAILS SECTION -->
-        <table>
-            <tr>
-                <td style="width:65%; padding:0; border-bottom: none;">
-                    <table class="no-border">
-                        <tr>
-                            <td><b>Material Name</b></td>
-                            <td>: #materialName</td>
-                        </tr>
-                        <tr>
-                            <td><b>Code No.</b></td>
-                            <td>: #specificationNo</td>
-                        </tr>
-                        <tr>
-                            <td><b>Supplier By</b></td>
-                            <td>: #supplierBy</td>
-                        </tr>
-                        <tr>
-                            <td><b>Manufacture By</b></td>
-                            <td>: #mfgBy</td>
-                        </tr>
-                        <tr>
-                            <td><b>Batch No.</b></td>
-                            <td>: #batchNo</td>
-                        </tr>
-                        <tr>
-                            <td><b>Mfg. Date</b></td>
-                            <td>: #mfgDate</td>
-                        </tr>
-                        <tr>
-                            <td><b>Exp. Date</b></td>
-                            <td>: #expDate</td>
-                        </tr>
-                        <tr>
-                            <td><b>Packing</b></td>
-                            <td>: #packing</td>
-                        </tr>
-                        <tr>
-                            <td><b>Received Qty</b></td>
-                            <td>: #receivedQty #receivedUOM</td>
-                        </tr>
-                        <tr>
-                            <td><b>Sample Qty</b></td>
-                            <td>: #sampleQty #receivedUOM</td>
-                        </tr>
-                    </table>
-                </td>
+        <!-- CONTENT -->
+        <div class="content">
 
-                <td style="width:35%; padding:0; border-bottom: none;">
-                    <table class="no-border">
-                        <tr>
-                            <td><b>Report No</b></td>
-                            <td>: #reportNo</td>
-                        </tr>
-                        <tr>
-                            <td><b>Release Date</b></td>
-                            <td>: #releaseDate</td>
-                        </tr>
-                        <tr>
-                            <td><b>Released Qty</b></td>
-                            <td>: #releasedQty #receivedUOM</td>
-                        </tr>
-                        <tr>
-                            <td><b>G.R.N No.</b></td>
-                            <td>: #grnNo</td>
-                        </tr>
-                        <tr>
-                            <td><b>G.R.N Date</b></td>
-                            <td>: #grnDate</td>
-                        </tr>
-                        <tr>
-                            <td><b>Analysis Date</b></td>
-                            <td>: #analysisDate</td>
-                        </tr>
-                        <tr>
-                            <td><b>Analyst</b></td>
-                            <td>: #analyst</td>
-                        </tr>
-                        <tr>
-                            <td><b>Lab Incharge</b></td>
-                            <td>: #labIncharge</td>
-                        </tr>
-                        <tr>
-                            <td><b>Retest Date</b></td>
-                            <td>: #retestDate</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
+            <div class="sec"><span class="sec-text">Sample Information</span></div>
 
-        <!-- TEST TABLE -->
-        <table class="test-table">
-            <thead>
-                <tr>
-                    <th style="width:5%">Sr</th>
-                    <th style="width:40%; text-align: start;">Test</th>
-                    <th style="width:20%">Result</th>
-                    <th style="width:35%">Specification</th>
-                </tr>
-            </thead>
-            <tbody>
-                #tableData
-                <!-- <tr>
-                    <td style="text-align: center;">1</td>
-                    <td>Water Test</td>
-                    <td style="text-align: center;">1.5</td>
-                    <td style="text-align: center;">100</td>
-                </tr> -->
-            </tbody>
-        </table>
-
-        <!-- SIGNATURE FOOTER -->
-        <div class="footer">
-            <div>
-                _________________________<br>
-                Checked By
+            <div class="info-grid">
+                <div class="icol left">
+                    <div class="irow"><span class="ilabel">Material Name</span><span class="isep">:</span><span
+                            class="ival">#materialName</span></div>
+                    <div class="irow"><span class="ilabel">Code No.</span><span class="isep">:</span><span
+                            class="ival">#specificationNo</span></div>
+                    <div class="irow"><span class="ilabel">Supplier By</span><span class="isep">:</span><span
+                            class="ival">#supplierBy</span></div>
+                    <div class="irow"><span class="ilabel">Manufacture By</span><span class="isep">:</span><span
+                            class="ival">#mfgBy</span></div>
+                    <div class="irow"><span class="ilabel">Batch No.</span><span class="isep">:</span><span
+                            class="ival">#batchNo</span></div>
+                    <div class="irow"><span class="ilabel">Mfg. Date</span><span class="isep">:</span><span
+                            class="ival">#mfgDate</span></div>
+                    <div class="irow"><span class="ilabel">Exp. Date</span><span class="isep">:</span><span
+                            class="ival">#expDate</span></div>
+                    <div class="irow"><span class="ilabel">Packing</span><span class="isep">:</span><span
+                            class="ival">#packing</span></div>
+                    <div class="irow"><span class="ilabel">Received Qty</span><span class="isep">:</span><span
+                            class="ival">#receivedQty #receivedUOM</span></div>
+                    <div class="irow"><span class="ilabel">Sample Qty</span><span class="isep">:</span><span
+                            class="ival">#sampleQty #receivedUOM</span></div>
+                </div>
+                <div class="icol right">
+                    <div class="irow"><span class="ilabel">Report No.</span><span class="isep">:</span><span
+                            class="ival">#reportNo</span></div>
+                    <div class="irow"><span class="ilabel">Release Date</span><span class="isep">:</span><span
+                            class="ival">#releaseDate</span></div>
+                    <div class="irow"><span class="ilabel">Released Qty</span><span class="isep">:</span><span
+                            class="ival">#releasedQty #receivedUOM</span></div>
+                    <div class="irow"><span class="ilabel">G.R.N No.</span><span class="isep">:</span><span
+                            class="ival">#grnNo</span></div>
+                    <div class="irow"><span class="ilabel">G.R.N Date</span><span class="isep">:</span><span
+                            class="ival">#grnDate</span></div>
+                    <div class="irow"><span class="ilabel">Analysis Date</span><span class="isep">:</span><span
+                            class="ival">#analysisDate</span></div>
+                    <div class="irow"><span class="ilabel">Analyst</span><span class="isep">:</span><span
+                            class="ival">#analyst</span></div>
+                    <div class="irow"><span class="ilabel">Lab Incharge</span><span class="isep">:</span><span
+                            class="ival">#labIncharge</span></div>
+                    <div class="irow"><span class="ilabel">Retest Date</span><span class="isep">:</span><span
+                            class="ival">#retestDate</span></div>
+                </div>
             </div>
-            <div>
-                _________________________<br>
-                Approved By
+
+            <div class="sec" style="margin-top:12px;"><span class="sec-text">Test Results</span></div>
+
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="cc" style="width:5%">Sr.</th>
+                            <th style="width:45%">Test Parameter</th>
+                            <th class="cc" style="width:25%">Result</th>
+                            <th class="cc" style="width:25%">Limit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        #tableData
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="spacer"></div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="ft">
+            <div class="sig">
+                <div class="sig-space"></div>
+                <div class="sig-line"></div>
+                <div class="sig-label">Checked By</div>
+            </div>
+            <div class="sig">
+                <div class="sig-space"></div>
+                <div class="sig-line"></div>
+                <div class="sig-label">Approved By</div>
             </div>
         </div>
 
