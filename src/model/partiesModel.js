@@ -18,6 +18,7 @@ const partySchema = mongoose.Schema({
     email: { type: String, default: '' },
     city: { type: String, default: '' },
     state: { type: String, default: '' },
+    stateCode: { type: String, default: "" },
     pinCode: { type: Number, default: 0 },
     distance: { type: Number, default: 0 },
     gstnNo: { type: String, default: '' },
@@ -77,6 +78,6 @@ const partyModel = async (dbYear) => {
     const db = await connectToDatabase(dbYear);
     return db.models.AccountMasters || db.model("AccountMasters", partySchema);
 }
- 
+
 // const partyModel = mongoose.model("AccountMasters", partySchema)
 export default partyModel;

@@ -1,53 +1,45 @@
+const showHSNCodes = (itemListing) => {
 
-const showHSNCodes = (itemListing, hsnCodeList, state) => {
-    const hsnCodeSummary = itemListing.reduce((acc, item) => {
-        if (!acc[item.hsnCodeId]) {
-            acc[item.hsnCodeId] = { hsnCodeId: item.hsnCodeId, taxableAmount: 0 };
+    const hsnSummary = itemListing.reduce((acc, item) => {
+
+        const hsnId = String(item.hsnCodeId);
+
+        if (!acc[hsnId]) {
+            acc[hsnId] = {
+                hsnCodeName: item.hsnCodeName,
+                taxableAmount: 0,
+                SGST: item.sgst || 0,
+                CGST: item.cgst || 0,
+                IGST: item.igst || 0,
+                sgstAmount: 0,
+                cgstAmount: 0,
+                igstAmount: 0
+            };
         }
-        acc[item.hsnCodeId].taxableAmount += item.taxableAmount;
+
+        const taxable = Number(item.taxableAmount || 0);
+
+        const sgstAmt = taxable * ((item.sgst || 0) / 100);
+        const cgstAmt = taxable * ((item.cgst || 0) / 100);
+        const igstAmt = taxable * ((item.igst || 0) / 100);
+
+        acc[hsnId].taxableAmount += taxable;
+        acc[hsnId].sgstAmount += sgstAmt;
+        acc[hsnId].cgstAmount += cgstAmt;
+        acc[hsnId].igstAmount += igstAmt;
+
         return acc;
+
     }, {});
 
-    const summarizedList = Object.values(hsnCodeSummary);
-    
-    const hsnCodeListForTable = summarizedList.map(summary => {
-        let hsnDetails = hsnCodeList.find(hsn => String(hsn._id) === String(summary.hsnCodeId)) || {};
-
-        // Convert Mongoose document to a plain object
-        if (hsnDetails.toObject) {
-            hsnDetails = hsnDetails.toObject();
-        }
-
-        hsnDetails.IGST = state !== 'GUJARAT' ? hsnDetails.IGST : 0
-        hsnDetails.CGST = state === 'GUJARAT' ? hsnDetails.CGST : 0;
-        hsnDetails.SGST = state === 'GUJARAT' ? hsnDetails.SGST : 0;
-
-        const sgstAmount = (Number(summary.taxableAmount) * ((hsnDetails.SGST || 0) / 100)).toFixed(2);
-        const cgstAmount = (Number(summary.taxableAmount) * ((hsnDetails.CGST || 0) / 100)).toFixed(2);
-        const igstAmount = (Number(summary.taxableAmount) * ((hsnDetails.IGST || 0) / 100)).toFixed(2);
-        const utgstAmount = (Number(summary.taxableAmount) * ((hsnDetails.UTGST || 0) / 100)).toFixed(2);
-
-        const totalAmount = (
-            // Number(summary.taxableAmount) +
-            Number(sgstAmount) +
-            Number(cgstAmount) +
-            Number(igstAmount)
-            // Number(utgstAmount)
-        ).toFixed(2);
-
-        return {
-            ...hsnDetails,
-            ...summary,
-            sgstAmount: Number(sgstAmount),
-            cgstAmount: Number(cgstAmount),
-            igstAmount: Number(igstAmount),
-            utgstAmount: Number(utgstAmount),
-            totalAmount: Number(totalAmount)
-        };
-    });
-
-    // Return the array
-    return hsnCodeListForTable;
-}
+    return Object.values(hsnSummary).map(row => ({
+        ...row,
+        taxableAmount: Number(row.taxableAmount.toFixed(2)),
+        sgstAmount: Number(row.sgstAmount.toFixed(2)),
+        cgstAmount: Number(row.cgstAmount.toFixed(2)),
+        igstAmount: Number(row.igstAmount.toFixed(2)),
+        totalAmount: Number((row.sgstAmount + row.cgstAmount + row.igstAmount).toFixed(2))
+    }));
+};
 
 export { showHSNCodes };

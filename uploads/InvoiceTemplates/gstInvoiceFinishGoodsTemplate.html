@@ -17,6 +17,11 @@
         .invoice-table tbody tr:not(:last-child) {
             height: 20px;
         }
+
+        .qr-box img {
+            border: 1px solid #ccc;
+            padding: 4px;
+        }
     </style>
 </head>
 
@@ -41,11 +46,13 @@
                     </div>
                     <div class="invoice-details flex border border-t-0 text-[12px]">
                         <div class="left w-[35%] border-r-[1px] px-[5px]">
-                            <p class="font-semibold">Reciptient's name:</p>
+                            <p class="font-semibold">Recipient's details:</p>
                             <p class="text-[12px] font-bold">#CompanyName</p>
                             <p class="font-medium">#RecipientAddress</p>
                             <p class="font-medium">State : #RecipientState</p>
                             <p><span class="font-medium">Mobile :</span> #MobielNo</p>
+                            <p><span class="font-semibold">Recp's GSTN No :</span> #RecpGSTNNo</p>
+                            <p><span class="font-semibold">Recp's D.L. No :</span> #RecpDLNo</p>
                         </div>
                         <div class="middle w-[35%] border-r-[1px] px-[5px]">
                             <p class="font-semibold">Consignee/Shipped to:</p>
@@ -66,22 +73,21 @@
                         </div>
                     </div>
                     <div class="invoice-details flex border border-t-0">
-                        <div class="left flex w-[50%] border-r-[1px] px-[5px] text-[12px]">
+                        <div class="left w-[35%] px-[5px] text-[12px]">
                             <p class="w-[50%]"><span class="font-semibold">Invoice no :</span> #InvoiceNo</p>
+                        </div>
+                        <div class="center w-[35%] px-[5px] text-[12px]">
                             <p class="w-[50%]"><span class="font-semibold">Date:</span> #InvoiceDate</p>
                         </div>
-                        <div class="right px-[5px] text-[12px]">
+                        <div class="right w-[30%] px-[5px] text-[12px]">
                             <p><span class="font-semibold">Due date :</span> #DueDate</p>
                         </div>
                     </div>
-                    <div class="invoice-details flex border border-t-0">
-                        <div class="left flex w-[50%] border-r-[1px] px-[5px] text-[12px]">
-                            <p><span class="font-semibold">Recp's GSTN No :</span> #RecpGSTNNo</p>
-                        </div>
-                        <div class="right px-[5px] text-[12px]">
-                            <p><span class="font-semibold">Recp's D.L. No :</span> #RecpDLNo</p>
-                        </div>
-                    </div>
+
+                    <!-- E-INVOICE SECTION -->
+                    #EInvoiceSection
+                    <!-- E-WAY BILL SECTION -->
+                    #EWayBillSection
                 </div>
             </div>
             <div class="invoice-middle" style="height: calc(100% - 550px);">
@@ -90,97 +96,48 @@
                     <table class="invoice-table w-full h-full table-auto border-collapse">
                         <thead class="border border-x-[0px] border-t-[0px] border-gray-400 text-[12px] !font-normal">
                             <tr class="bg-gray-300">
-                                <th class="w-[25%] border border-x-[0px] border-t-[0px] px-[4px] text-start">Item name
+                                <th class="w-[22%] border border-x-[0px] border-t-[0px] px-[4px] text-start">Item name
                                 </th>
-                                <th class="w-[7%] border border-t-[0px] px-[4px] text-start">Packing</th>
-                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">HSN</th>
-                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">Batch no</th>
-                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">Mfg.</th>
-                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">Exp.</th>
+                                <th class="w-[6%] border border-t-[0px] px-[4px] text-start">Packing</th>
+                                <th class="w-[6%] border border-t-[0px] px-[4px] text-start">HSN</th>
+                                <th class="w-[7%] border border-t-[0px] px-[4px] text-start">Batch no</th>
+                                <th class="w-[7%] border border-t-[0px] px-[4px] text-start">Mfg.</th>
+                                <th class="w-[7%] border border-t-[0px] px-[4px] text-start">Exp.</th>
                                 <th class="w-[6%] border border-t-[0px] px-[4px] text-start">MRP</th>
                                 <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Qty.</th>
                                 <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Free</th>
                                 <th class="w-[6%] border border-t-[0px] px-[4px] text-start">Rate</th>
-                                <th class="w-[7%] border border-t-[0px] px-[4px] text-start">Sales amount</th>
+                                <th class="w-[8%] border border-t-[0px] px-[4px] text-start">Sales amount</th>
+                                <th class="w-[7%] border border-t-[0px] px-[4px] text-start">Disc.</th>
                                 <!-- <th class="w-[5%] border border-t-[0px] px-[4px] text-start">Dis amount</th> -->
-                                <th class="w-[7%] border border-r-[0px] border-t-[0px] px-[4px] text-right">Amount</th>
+                                <th class="w-[8%] border border-r-[0px] border-t-[0px] px-[4px] text-right">Amount</th>
                             </tr>
                         </thead>
                         <tbody class="align-top h-auto text-[11px]">
                             #ItemListingRows
-                            <!-- <tr>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    Hairfix Tablet</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">30
-                                    Tabl</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    21069099</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    ST24113</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    03-2026</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    03-2026</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    650.00</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    1420.0</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">0.0
-                                </td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">46.00
-                                </td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    65320.00</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-right">
-                                    65320.00</td>
-                            </tr>
-                            <tr>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    Hairfix Tablet</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">30
-                                    Tabl</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    21069099</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    ST24113</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    03-2026</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    03-2026</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    650.00</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    1420.0</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">0.0
-                                </td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">46.00
-                                </td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">
-                                    65320.00</td>
-                                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-right">
-                                    65320.00</td>
-                            </tr> -->
                         </tbody>
                     </table>
                     <table class="invoice-table-total w-full">
                         <tbody class="border border-x-[0px] border-b-0 text-[12px]">
                             <tr>
                                 <td
-                                    class="w-[27%] border border-t-[0px] py-[2px] border-r-0 border-l-[0px] px-[4px] text-start font-medium">
+                                    class="w-[22%] border border-t-[0px] py-[2px] border-r-0 border-l-[0px] px-[4px] text-start font-medium">
                                     Total</td>
+                                <td class="w-[6%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
+                                <td class="w-[6%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
                                 <td class="w-[7%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
-                                <td class="w-[8%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
-                                <td class="w-[8%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
                                 <td class="w-[7%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
                                 <td class="w-[7%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
                                 <td class="w-[6%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
                                 <td class="w-[5%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
                                 <td class="w-[5%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
                                 <td class="w-[6%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start"></td>
-                                <td class="w-[7%] border border-t-[0px] py-[2px] px-[4px] text-start">#TotalSalesAmount
+                                <td class="w-[8%] border border-t-[0px] py-[2px] px-[4px] text-start">#TotalSalesAmount
                                 </td>
+                                <td class="w-[7%] border border-t-[0px] py-[2px] border-x-0 px-[4px] text-start">
+                                    #DisCountAmount</td>
                                 <!-- <td class="w-[5%] border border-t-[0px] py-[2px] px-[4px] text-start">#TotalDisAmount</td> -->
-                                <td class="w-[7%] border border-t-[0px] py-[2px] border-r-[0px] px-[4px] text-right">
+                                <td class="w-[8%] border border-t-[0px] py-[2px] border-r-[0px] px-[4px] text-right">
                                     #TotalTaxableAmount
                                 </td>
                             </tr>
@@ -215,17 +172,6 @@
                             </thead>
                             <tbody class="align-top text-[12px]">
                                 #HSNCodeTableRows
-                                <!-- <tr>
-                                    <td class="px-[5px]">GST 9%</td>
-                                    <td class="px-[5px]">5878.80</td>
-                                    <td class="px-[5px]">5878.80</td>
-                                    <td class="px-[5px]">5878.80</td>
-                                    <td class="px-[5px]">5878.80</td>
-                                    <td class="px-[5px]">5878.80</td>
-                                    <td class="px-[5px]">5878.80</td>
-                                    <td class="px-[5px]">5878.80</td>
-                                    <td class="px-[5px]">5878.80</td>
-                                </tr> -->
                             </tbody>
                         </table>
                         <table class="gst-total w-full table-auto border-collapse">
@@ -328,7 +274,7 @@
                         <p class="text-[12px] font-semibold">FOR #AdminCompanyName</p>
                         <div class="signature grid h-fit w-full grid-cols-2">
                             <p class="text-[10px]">Checked by</p>
-                            <p class="text-right text-[10px]">Auhtorised signature</p>
+                            <p class="text-right text-[10px]">Authorised signature</p>
                         </div>
                     </div>
                 </div>

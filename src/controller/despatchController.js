@@ -35,12 +35,21 @@ import otherDeliveryChallanModel from "../model/Despatch/otherDeliveryChallanMod
 import itemOtherDeliveryChalanModel from "../model/Despatch/itemOtherDeliveryChallanModel.js";
 import { calculateStock, fetchAllRecords } from "../utils/fetchRMPMStock.js";
 import { fetchBatchWiseProductStock } from "../utils/fetchFinishGoodsStock.js";
+import { buildEInvoiceJson } from "../utils/eInvoiceJsonBuilder.js";
+import { generateIRN } from "../utils/einvoiceService.js";
 const { ObjectId } = mongoose.Types;
-
+import QRCode from "qrcode";
+import { generateEWayBill } from "../utils/eWayServices.js";
+import { getValidTaxProToken } from "../utils/taxproTokenManger.js";
+import { getTaxProEwayAuthToken } from "../utils/taxproEWayAuthServices.js";
+import { buildEWayBillJson } from "../utils/eWayBillJsonBuilder.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
+import customParseFormat from "dayjs/plugin/customParseFormat.js";
+import { cancelIRN } from "../utils/cancelIRN.js";
+import { cancelEWayBill } from "../utils/cancelEwaybill.js";
 // GST Invoice Finish Goods
+dayjs.extend(customParseFormat);
 
 const getProductionStockByProductId = async (req, res) => {
     try {
@@ -493,6 +502,474 @@ const deleteInvoiceById = async (req, res) => {
     }
 };
 
+const generateEInvoiceById = async (req, res) => {
+    try {
+
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+
+        let invoiceId = getRequestData(id)
+
+        let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
+
+        let invoiceDetails = await gifgModel.findOne({
+            _id: invoiceId,
+            isDeleted: false
+        }).populate({
+            path: "partyId"
+        })
+            .populate({
+                path: "stateId"
+            });
+
+        if (!invoiceDetails) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 404,
+                    Message: "Invoice not found",
+                    responseData: null,
+                    isEnType: false
+                }
+            });
+        }
+
+        if (invoiceDetails?.irn) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 400,
+                    Message: "E-Invoice already generated",
+                    responseData: null,
+                    isEnType: false
+                }
+            });
+        }
+
+        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
+
+        let itemListing = await gifinishGoodsITemModel.find({
+            gstInvoiceFinishGoodsId: invoiceId,
+            isDeleted: false
+        })
+
+        let companyModel = await companyGroupModel(dbYear)
+
+        let companyDetails = await companyModel.findOne()
+        const gstnNo = companyDetails.gstnNo;
+
+        const eInvoiceJson = buildEInvoiceJson(invoiceDetails, itemListing, companyDetails)
+
+        console.log("E Invoice JSON", eInvoiceJson)
+
+        const authToken = await getValidTaxProToken(gstnNo,
+            "einvoice",
+            getTaxProEwayAuthToken);
+
+        console.log("TaxPro Auth Response:", authToken);
+
+        const irnResponse = await generateIRN(authToken, eInvoiceJson, gstnNo);
+
+        console.log("IRN Response:", irnResponse);
+        if (irnResponse?.Status == 1) {
+
+            let irnData = irnResponse?.Data;
+
+            // If Data is string → convert to object
+            if (typeof irnData === "string") {
+                irnData = JSON.parse(irnData);
+            }
+
+            await gifgModel.updateOne(
+                { _id: invoiceId },
+                {
+                    $set: {
+                        irn: irnData?.Irn,
+                        ackNo: irnData?.AckNo,
+                        ackDate: irnData?.AckDt,
+                        qrCode: irnData?.SignedQRCode,
+                        signedInvoice: irnData?.SignedInvoice,
+                        einvoiceStatus: "Generated"
+                    }
+                }
+            );
+
+            res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "E invoice generated successfully",
+                    responseData: null,
+                    isEnType: true
+                },
+            });
+        } else {
+            return res.status(200).json({
+                data: {
+                    statusCode: 400,
+                    Message: irnResponse?.ErrorDetails?.[0]?.ErrorMessage || "Failed to generate E-Invoice",
+                    responseData: null,
+                    isEnType: true
+                }
+            });
+        }
+
+    }
+    catch (error) {
+        console.log("Error in generateEInvoiceById", error);
+        errorHandler(error, req, res, "Error in generateEInvoiceById")
+    }
+}
+
+const generateEwayBill = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        const invoiceId = new mongoose.Types.ObjectId(data.id);
+        if (!invoiceId) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 400,
+                    Message: "Invoice ID is required to generate E-Way Bill",
+                    responseData: null,
+                    isEnType: true
+                }
+            });
+        }
+
+        let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
+
+        let invoice = await gifgModel
+            .findOne(
+                invoiceId,
+            )
+            .populate("partyId")
+            .populate("transportId");
+
+        invoice.transportId = data.transportId
+        invoice.transportName = data.transportName
+        invoice.transportMode = data.transportMode
+        invoice.distance = data.distance
+        invoice.vehicleNo = data.vehicleNo
+        invoice.vehicleType = data.vehicleType
+
+
+        if (!invoice) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 400,
+                    Message: "Invoice Details Not found",
+                    responseData: null,
+                    isEnType: true
+                }
+            });
+        }
+
+        if (!invoice.vehicleNo) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 400,
+                    Message: "Vehicle number is required for E-Way Bill",
+                    responseData: null,
+                    isEnType: true
+                }
+            });
+        }
+
+        if (!invoice.distance) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 400,
+                    Message: "Distance is required for E-Way Bill",
+                    responseData: null,
+                    isEnType: true
+                }
+            });
+        }
+
+        if (!invoice.irn) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 400,
+                    Message: "E-Invoice not generated. Generate IRN first.",
+                    responseData: null,
+                    isEnType: true
+                }
+            });
+        }
+
+        if (invoice.ewbNo) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 400,
+                    Message: "E-Way Bill already generated.",
+                    responseData: null,
+                    isEnType: true
+                }
+            });
+        }
+        let gifinishGoodsITemModel = await gstInvoiceFinishGoodsItemsModel(dbYear)
+
+        let itemListing = await gifinishGoodsITemModel.find({
+            gstInvoiceFinishGoodsId: invoiceId,
+            isDeleted: false
+        })
+
+        let companyModel = await companyGroupModel(dbYear)
+        let companyDetails = await companyModel.findOne()
+        const gstnNo = companyDetails.gstnNo;
+
+        const ewbJson = buildEWayBillJson(invoice, itemListing, companyDetails);
+
+        console.log("EWB JSON:", ewbJson);
+
+        const authToken = await getValidTaxProToken(
+            gstnNo,
+            "ewaybill",
+            getTaxProEwayAuthToken
+        );
+
+        console.log("Auth token", authToken);
+
+
+        if (!authToken) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 400,
+                    Message: "Failed to generate Auth Token",
+                    responseData: null,
+                    isEnType: true
+                }
+            });
+        }
+
+
+
+        const ewbResponse = await generateEWayBill(authToken, ewbJson, gstnNo);
+        console.log("EWB Response:", ewbResponse);
+
+        if (ewbResponse?.ewayBillNo) {
+
+            const ewbDate = dayjs(
+                ewbResponse.ewayBillDate,
+                "DD/MM/YYYY hh:mm:ss A"
+            ).toDate();
+
+            const ewbValidTill = dayjs(
+                ewbResponse.validUpto,
+                "DD/MM/YYYY hh:mm:ss A"
+            ).toDate();
+
+            await gifgModel.updateOne(
+                { _id: invoice._id },
+                {
+                    $set: {
+                        ewbNo: ewbResponse.ewayBillNo,
+                        ewbDate: ewbDate,
+                        ewbValidTill: ewbValidTill,
+                        ewbStatus: "Generated",
+                        transportId: data.transportId,
+                        transportName: data.transportName,
+                        transportMode: data.transportMode,
+                        distance: data.distance,
+                        vehicleNo: data.vehicleNo,
+                        vehicleType: data.vehicleType
+                    }
+                }
+            );
+            let encryptData = encryptionAPI(ewbResponse, 1);
+            return res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "E-Way Bill generated successfully",
+                    responseData: encryptData,
+                    isEnType: true
+                }
+            });
+
+        }
+        else {
+            return res.status(200).json({
+                data: {
+                    statusCode: 400,
+                    Message: "E-Way Bill generation failed",
+                    responseData: null,
+                    isEnType: true
+                }
+            });
+
+        }
+    }
+    catch (error) {
+        console.log("Error in generateEwayBill", error);
+
+        try {
+            const parsedError = JSON.parse(error.message);
+
+            if (parsedError?.error?.message) {
+
+                let encryptData = encryptionAPI(parsedError, 1);
+                return res.status(200).json({
+                    data: {
+                        statusCode: 400,
+                        Message: parsedError.error.message,
+                        responseData: encryptData,
+                        isEnType: true
+                    }
+                });
+            }
+
+        } catch (e) {
+        }
+        console.log("Error in Despatch controller(generateEwayBill)", error);
+        errorHandler(error, req, res, "Error in Despatch controller(generateEwayBill)");
+    }
+}
+
+const cancelEInvoiceById = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let apiData = req.body.data
+        let data = getRequestData(apiData, 'PostApi')
+
+        const invoiceId = new mongoose.Types.ObjectId(data.id);
+
+        let gifgModel = await gstInvoiceFinishGoodsModel(dbYear);
+
+        let invoice = await gifgModel.findOne({
+            _id: invoiceId,
+            isDeleted: false
+        });
+
+        if (!invoice) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 404,
+                    Message: "Invoice not found",
+                    responseData: null,
+                    isEnType: true
+                }
+            });
+        }
+
+        if (!invoice.irn) {
+            return res.status(200).json({
+                data: {
+                    statusCode: 400,
+                    Message: "IRN not generated",
+                    responseData: null,
+                    isEnType: true
+                }
+            });
+        }
+
+        if (invoice.einvoiceStatus === "Cancelled") {
+            return res.status(200).json({
+                data: {
+                    statusCode: 400,
+                    Message: "E-Invoice already cancelled",
+                    responseData: null,
+                    isEnType: true
+                }
+            });
+        }
+
+        let companyModel = await companyGroupModel(dbYear);
+        let companyDetails = await companyModel.findOne();
+        const gstnNo = companyDetails.gstnNo;
+
+        const authToken = await getValidTaxProToken(
+            gstnNo,
+            "einvoice",
+            getTaxProEwayAuthToken
+        );
+
+        const cancelPayload = {
+            irn: invoice.irn,
+            cancelReason: String(data.cancelReason),
+            cancelRemark: data.cancelRemark
+        };
+        console.log("cancelPayload", cancelPayload)
+        const cancelResponse = await cancelIRN(authToken, cancelPayload, gstnNo);
+
+        console.log("Cancel IRN Response:", cancelResponse);
+
+        if (cancelResponse?.Status === 1 || cancelResponse?.Status === '1') {
+
+            await gifgModel.updateOne(
+                { _id: invoiceId },
+                {
+                    $set: {
+                        einvoiceStatus: "Cancelled",
+                        cancelReason: data.cancelReason,
+                        cancelRemark: data.cancelRemark,
+                        einvoiceCancelDate: new Date()
+                    }
+                }
+            );
+
+            if (invoice.ewbNo) {
+
+                const ewbAuthToken = await getValidTaxProToken(
+                    gstnNo,
+                    "ewaybill",
+                    getTaxProEwayAuthToken
+                );
+
+                const ewbCancelPayload = {
+                    ewbNo: invoice.ewbNo,
+                    cancelReason: String(data.cancelReason),
+                    cancelRemark: data.cancelRemark
+                };
+
+                const ewbCancelResponse = await cancelEWayBill(
+                    ewbAuthToken,
+                    ewbCancelPayload,
+                    gstnNo
+                );
+
+                console.log("EWB Cancel Response:", ewbCancelResponse);
+
+                if (ewbCancelResponse?.ewayBillNo && ewbCancelResponse?.cancelDate) {
+                    await gifgModel.updateOne(
+                        { _id: invoiceId },
+                        {
+                            $set: {
+                                ewbStatus: "Cancelled",
+                                ewbCancelDate: new Date()
+                            }
+                        }
+                    );
+                } else {
+                    console.log("EWB Cancel Failed:", ewbCancelResponse);
+                }
+            }
+
+            return res.status(200).json({
+                data: {
+                    statusCode: 200,
+                    Message: "E-Invoice cancelled successfully",
+                    responseData: null,
+                    isEnType: true
+                }
+            });
+
+        } else {
+            return res.status(200).json({
+                data: {
+                    statusCode: 400,
+                    Message: cancelResponse?.ErrorDetails?.[0]?.ErrorMessage || "Cancel failed",
+                    responseData: null,
+                    isEnType: true
+                }
+            });
+        }
+
+    } catch (error) {
+        console.log("Error in cancelEInvoiceById", error);
+        errorHandler(error, req, res, "Error in cancelEInvoiceById");
+    }
+};
+
 // Common helper functions
 const buildAddress = (parts, includeHyphen = true) => {
     const cleanParts = parts.filter(p => p && p !== '');
@@ -503,7 +980,13 @@ const buildAddress = (parts, includeHyphen = true) => {
 
 const getShippedToAddress = (invoiceDetails) => {
     if (invoiceDetails.changeShippedAdd === true) {
-        return invoiceDetails.addressLine1 || '';
+        return buildAddress([
+            invoiceDetails.addressLine1,
+            invoiceDetails.addressLine2,
+            invoiceDetails.addressLine3,
+            invoiceDetails.addressLine4,
+            invoiceDetails.pincode
+        ], false);
     }
 
     const party = invoiceDetails.partyId;
@@ -513,7 +996,7 @@ const getShippedToAddress = (invoiceDetails) => {
         party.corrspAddress3 || party.address3,
         party.corrspAddress4 || party.address4,
         party.pinCode
-    ]);
+    ], false);
 };
 
 const calculateItemTotals = (itemListing) => {
@@ -551,6 +1034,7 @@ const generateItemListingRows = (itemListing) => {
                 <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${item.free}</td>
                 <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${Number(item.rate).toFixed(2)}</td>
                 <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${Number(item.amount).toFixed(2)}</td>
+                <td class="border border-x border-y-0 border-t-[0px] px-[4px] py-[2px] text-start">${Number(item.discAmount).toFixed(2)}</td>
                 <td class="border border-x border-y-0 border-r-0 border-t-[0px] px-[4px] py-[2px] text-right">${Number(item.taxableAmount).toFixed(2)}</td>
             </tr>
         `).join('')
@@ -560,9 +1044,9 @@ const generateItemListingRows = (itemListing) => {
 const generateDeliveryChallanRows = (itemListing) => {
     return itemListing && itemListing.length > 0
         ? itemListing.map(item => `
-            <tr>
+            <tr class="border-b border-gray-300">
                 <td class="text-start px-[5px] py-[2px]">${item.itemName}</td>
-                <td class="text-center px-[5px] py-[2px]">${item.packing || '-'}</td>
+                <td class="text-center px-[5px] py-[2px]">${item.packing || ''}</td>
                 <td class="text-center px-[5px] py-[2px]">${item.batchNo || ''}</td>
                 <td class="text-center px-[5px] py-[2px]">${item.mfgDate ? dayjs(item.mfgDate).format('MM-YYYY') : ''}</td>
                 <td class="text-center px-[5px] py-[2px]">${item.expDate ? dayjs(item.expDate).format('MM-YYYY') : ''}</td>
@@ -576,7 +1060,7 @@ const generateHSNCodeRows = (hsnCodeList) => {
     return hsnCodeList && hsnCodeList.length > 0
         ? hsnCodeList.map(item => `
             <tr>
-                <td class="px-[3px] border-gray-400 border border-y-0 border-x border-l-0">${item.HSNCode}</td>
+                <td class="px-[3px] border-gray-400 border border-y-0 border-x border-l-0">${item.hsnCodeName}</td>
                 <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.taxableAmount}</td>
                 <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.SGST}%</td>
                 <td class="px-[3px] border-gray-400 border border-y-0 border-x">${item.sgstAmount}</td>
@@ -635,7 +1119,7 @@ const processInvoiceData = (companyDetails, invoiceDetails, itemListing, hsnCode
         party.address3,
         party.address4,
         party.pinCode
-    ]);
+    ], false);
 
     const shippedToAddress = getShippedToAddress(invoiceDetails);
 
@@ -698,7 +1182,7 @@ const generateInvoicePage = (template, copyType, companyDetails, invoiceDetails,
         .replace('#DueDate', dayjs(dueDate).format("DD-MM-YYYY"))
         .replace('#ItemListingRows', itemListingRows)
         .replace('#SubTotalAmount', invoiceDetails.subTotal || 0)
-        .replace('#DisCountAmount', invoiceDetails.discount || 0)
+        .replaceAll('#DisCountAmount', invoiceDetails.discount || 0)
         .replace('#SGSTAmount', invoiceDetails.sgst || 0)
         .replace('#CGSTAmount', invoiceDetails.cgst || 0)
         .replace('#IGSTAmount', invoiceDetails.igst || 0)
@@ -776,6 +1260,7 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
         const { companyDetails, invoiceDetails, itemListing, hsnCodeList } =
             await fetchInvoiceData(dbYear, reqId);
 
+
         // Process data
         const processedData = processInvoiceData(
             companyDetails,
@@ -794,6 +1279,74 @@ const generateGSTInvoiceForFinishGoodsById = async (req, res) => {
             path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "deliveryChallanTemplate.html"),
             "utf8"
         );
+
+        let qrCodeBase64 = "";
+
+        if (invoiceDetails?.qrCode) {
+            qrCodeBase64 = await QRCode.toDataURL(invoiceDetails.qrCode);
+        }
+
+        let eInvoiceSection = "";
+
+        if (invoiceDetails?.einvoiceStatus === "Generated") {
+
+            eInvoiceSection = `
+    <div class="invoice-details flex border border-t-0 text-[12px]">
+
+        <div class="left w-[70%] border-r px-[5px]">
+            <p><b>IRN :</b> ${invoiceDetails.irn}</p>
+            <p><b>Ack No :</b> ${invoiceDetails.ackNo}</p>
+            <p><b>Ack Date :</b> ${dayjs(invoiceDetails.ackDate).format("DD-MM-YYYY HH:mm")}</p>
+
+            <p>
+                <b>E-Invoice Status :</b>
+                <span class="font-bold text-green-700">${invoiceDetails.einvoiceStatus}</span>
+            </p>
+        </div>
+
+        <div class="right w-[30%] flex justify-center items-center p-[5px] qr-box">
+            <img src="${qrCodeBase64}" width="120" height="120"/>
+        </div>
+
+    </div>
+    `;
+        }
+
+        let eWayBillSection = "";
+
+        if (invoiceDetails?.ewbStatus === "Generated") {
+
+            eWayBillSection = `
+    <div class="invoice-details flex border border-t-0 text-[12px]">
+
+        <div class="left w-[100%] px-[5px] grid grid-cols-2 gap-x-[20px]">
+
+            <p><b>E-Way Bill No :</b> ${invoiceDetails.ewbNo}</p>
+            <p><b>E-Way Bill Date :</b> ${dayjs(invoiceDetails.ewbNo).format("DD-MM-YYYY HH:mm")}</p>
+
+            <p><b>Valid Upto :</b> ${dayjs(invoiceDetails.ewbValidTill).format("DD-MM-YYYY HH:mm")}</p>
+            <p><b>Vehicle No :</b> ${invoiceDetails.vehicleNo || "-"}</p>
+
+            <p><b>Transport Mode :</b> ${invoiceDetails.transportMode === "1"
+                    ? "Road"
+                    : invoiceDetails.transportMode === "2"
+                        ? "Rail"
+                        : invoiceDetails.transportMode === "3"
+                            ? "Air"
+                            : invoiceDetails.transportMode === "4"
+                                ? "Ship"
+                                : "-"}</p>
+            <p><b>Vehicle  Type :</b> ${invoiceDetails.vehicleType === "R" ? "Regular vehicles" : "Over Dimensional"}</p>
+            <p><b>Distance :</b> ${invoiceDetails.distance || 0} KM</p>
+
+        </div>
+
+    </div>
+    `;
+        }
+
+        invoiceTemplate = invoiceTemplate.replace("#EInvoiceSection", eInvoiceSection);
+        invoiceTemplate = invoiceTemplate.replace("#EWayBillSection", eWayBillSection);
 
         // Add page styling
         invoiceTemplate += `
@@ -5341,6 +5894,7 @@ const getAllInwardOutwardRegister = async (req, res) => {
 };
 
 
+
 export {
     getProductionStockByProductId,
     getGSTInvoiceFinishGoodsInvoiceNo,
@@ -5408,5 +5962,8 @@ export {
     getOtherDeliveryChallanDetailsById,
     deleteItemDeliveryChallanById,
     deleteOtherDeliveryChallanById,
-    printOtherDeliveryChallanById
+    printOtherDeliveryChallanById,
+    generateEInvoiceById,
+    generateEwayBill,
+    cancelEInvoiceById
 };

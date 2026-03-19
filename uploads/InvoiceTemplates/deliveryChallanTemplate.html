@@ -8,83 +8,75 @@
     <title>Delivery Challan</title>
 </head>
 
-<body class="aspect-[210/297] w-full">
-    <div class="delivery-challan p-[20px] w-full h-full">
-        <div class="delivery-challan-inner flex flex-col h-full">
-            <header class="flex items-center justify-between h-fit shrink-0 mb-[5px]">
-                <div class="header-left text-start">
-                    <p class="text-[20px] font-bold">Delivery Challan</p>
-                </div>
-                <div class="header-right text-end text-[16px]">
-                    <p class="text-[24px] font-bold">#AdminCompanyName</p>
-                    <p>#AdminAddress</br>
-                        Mobile : #AdminMobile E-Mail : #AdminEmail</p>
-                </div>
-            </header>
-            <div class="challan-details border flex h-fit shrink-0">
-                <div class="details-left w-1/2 text-[16px] border-r p-2.5">
-                    <p>To,</p>
-                    <p>#AdminCompanyName</p>
-                    <p>#CompanyLocation</p>
-                </div>
-                <div class="details-right w-1/2 text-[16px] p-2.5">
-                    <p><span>Del. Cln. No.:</span> #InvoiceNo</p>
-                    <p><span>Date:</span> #InvoiceDate</p>
-                </div>
+<body class="bg-white">
+
+    <div class="w-full max-w-[210mm] min-h-[297mm] mx-auto p-5 flex flex-col">
+
+        <!-- HEADER -->
+        <header class="flex justify-between items-start border-b-2 border-black pb-2 mb-2">
+            <div>
+                <p class="text-[22px] font-bold">Delivery Challan</p>
             </div>
-            <div class="challan-table grow-5 border border-t-0">
-                <table class="w-full h-auto">
-                    <thead class="text-[16px] border-b">
-                        <tr>
-                            <th class="w-[30%] text-start px-[5px] py-[2px]">Item Name</th>
-                            <th class="w-[14%] text-center px-[5px] py-[2px]">Packing</th>
-                            <th class="w-[14%] text-center px-[5px] py-[2px]">Batch No</th>
-                            <th class="w-[14%] text-center px-[5px] py-[2px]">Mfg. Date</th>
-                            <th class="w-[14%] text-center px-[5px] py-[2px]">Exp. Date</th>
-                            <th class="w-[14%] text-end px-[5px] py-[2px]">Quantity</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-[16px]">
-                        #DeliveryChallanRowLsting
-                        <!-- <tr class="border-b border-gray-300">
-                            <td class="text-start px-[5px] py-[2px]">AKUFOL-D TABLET</td>
-                            <td class="text-center px-[5px] py-[2px]">10 TABLET</td>
-                            <td class="text-center px-[5px] py-[2px]">ST24026</td>
-                            <td class="text-center px-[5px] py-[2px]">10-2024</td>
-                            <td class="text-center px-[5px] py-[2px]">10-2025</td>
-                            <td class="text-end px-[5px] py-[2px]">2500</td>
-                        </tr>
-                        <tr class="border-b border-gray-300">
-                            <td class="text-start px-[5px] py-[2px]">ZYCOFER TABLET</td>
-                            <td class="text-center px-[5px] py-[2px]">10 TABLET</td>
-                            <td class="text-center px-[5px] py-[2px]">ST24027</td>
-                            <td class="text-center px-[5px] py-[2px]">10-2024</td>
-                            <td class="text-center px-[5px] py-[2px]">10-2025</td>
-                            <td class="text-end px-[5px] py-[2px]">3000</td>
-                        </tr>
-                        <tr>
-                            <td class="text-start px-[5px] py-[2px]">ZYCOFER-M TABLET</td>
-                            <td class="text-center px-[5px] py-[2px]">10 TABLET</td>
-                            <td class="text-center px-[5px] py-[2px]">ST24028</td>
-                            <td class="text-center px-[5px] py-[2px]">10-2024</td>
-                            <td class="text-center px-[5px] py-[2px]">10-2025</td>
-                            <td class="text-end px-[5px] py-[2px]">2500</td>
-                        </tr> -->
-                    </tbody>
-                </table>
+
+            <div class="text-right text-[14px] leading-tight">
+                <p class="text-[20px] font-bold">#AdminCompanyName</p>
+                <p>#AdminAddress</p>
+                <p>Mobile: #AdminMobile | Email: #AdminEmail</p>
             </div>
-            <div class="challan-blank border-x grow-2"></div>
-            <footer class="flex border h-fit shrink-0">
-                <div class="stamp w-1/2 p-[5px]">
-                    <p>Receiver's signature with stemp</p>
-                </div>
-                <div class="signature w-1/2 text-[16px] p-[5px]">
-                    <p class="text-[16px] font-bold">FOR, #AdminCompanyName</p>
-                    <p class="mt-[100px]">Authorised signatory</p>
-                </div>
-            </footer>
+        </header>
+
+        <!-- DETAILS -->
+        <div class="flex border border-black text-[14px]">
+            <div class="w-1/2 border-r border-black p-2">
+                <p>To,</p>
+                <p class="font-semibold">#AdminCompanyName</p>
+                <p>#CompanyLocation</p>
+            </div>
+
+            <div class="w-1/2 p-2">
+                <p><span class="font-semibold">Del. Cln. No:</span> #InvoiceNo</p>
+                <p><span class="font-semibold">Date:</span> #InvoiceDate</p>
+            </div>
         </div>
+
+        <!-- TABLE -->
+        <div class="border border-t-0 border-black flex-grow">
+            <table class="w-full border-collapse text-[13px]">
+                <thead>
+                    <tr class="border-b border-black bg-gray-100">
+                        <th class="w-[30%] text-left px-2 py-1">Item Name</th>
+                        <th class="w-[14%] text-center px-2 py-1">Packing</th>
+                        <th class="w-[14%] text-center px-2 py-1">Batch No</th>
+                        <th class="w-[14%] text-center px-2 py-1">Mfg. Date</th>
+                        <th class="w-[14%] text-center px-2 py-1">Exp. Date</th>
+                        <th class="w-[14%] text-right px-2 py-1">Quantity</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    #DeliveryChallanRowLsting
+                </tbody>
+            </table>
+        </div>
+
+        <!-- BLANK SPACE -->
+        <div class="border-x border-black flex-grow"></div>
+
+        <!-- FOOTER -->
+        <footer class="flex border border-black text-[14px]">
+            <div class="w-1/2 p-2">
+                <p>Receiver's Signature with Stamp</p>
+            </div>
+
+            <div class="w-1/2 p-2 text-right">
+                <p class="font-bold">FOR, #AdminCompanyName</p>
+                <div class="h-[80px]"></div>
+                <p>Authorised Signatory</p>
+            </div>
+        </footer>
+
     </div>
+
 </body>
 
 </html>

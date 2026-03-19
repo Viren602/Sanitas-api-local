@@ -7,7 +7,7 @@ const stateSchema = mongoose.Schema({
     stateName: { type: String, default: '' },
     code: { type: String, default: '' },
     stateid: { type: String, default: '' },
-    stateCode: { type: String, default: '' },
+    stateCode: { type: Number, default: "" },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 
