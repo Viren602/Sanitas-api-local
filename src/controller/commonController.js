@@ -1,7 +1,6 @@
 import { encryptionAPI, getRequestData } from "../middleware/encryption.js";
 import accountGroupModel from "../model/accountGroupModel.js";
 import colorModel from "../model/colorModel.js";
-import companyGroupModel from "../model/companyGroup.js";
 import companyItems from "../model/companyItems.js";
 import daybookMasterModel from "../model/daybookMasterModel.js";
 import HNSCodesScHema from "../model/hnsCode.js";
@@ -416,27 +415,7 @@ const getAllPartyDropdown = async (req, res) => {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let queryObject = { isDeleted: false }
         let pModel = await partyModel(dbYear)
-        let partyDetials = await pModel.find(queryObject).select("partyName email transporterName maintainAc gstnNo state stateCode address1 address2 address3 address4 city pinCode").sort("partyName");
-
-        let cModel = await companyGroupModel(dbYear)
-        let companyGroupResponse = await cModel.findOne().select("stateCode")
-
-        let response = partyDetials.map(party => ({
-            _id: party._id,
-            partyName: party.partyName,
-            email: party.email,
-            transporterName: party.transporterName,
-            maintainAc: party.maintainAc,
-            gstnNo: party.gstnNo,
-            state: party.state,
-            address1: party.address1,
-            address2: party.address2,
-            address3: party.address3,
-            address4: party.address4,
-            pincode: party.pinCode,
-            city: party.city,
-            isHsn: (Number(companyGroupResponse?.stateCode) === Number(party?.stateCode)) ? 0 : 1 // 0 = sgst /cgst , 1 = igst
-        }))
+        let response = await pModel.find(queryObject).select("partyName email transporterName maintainAc gstnNo state address1 address2 address3 address4").sort("partyName");
 
         let encryptData = encryptionAPI(response, 1)
 

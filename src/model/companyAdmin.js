@@ -20,7 +20,6 @@ const admins = mongoose.Schema({
     roles: [{ type: mongoose.Schema.Types.ObjectId, ref: 'adminroles' }],
     isTradingAccount: { type: Boolean, default: false },
     isPharmaSoftware: { type: Boolean, default: false },
-    isEwayBillEInvoice: { type: Boolean, default: false },
     companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })

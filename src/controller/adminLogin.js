@@ -112,10 +112,10 @@ const userAuthentication = async (req, res) => {
         let apiData = req.body.data
         let data = getRequestData(apiData, 'PostApi')
 
-
+        
         let comModel = await companyAdminModel();
         let user = await comModel.findOne({ email: data.email, isTradingAccount: false, isDeleted: false });
-        console.log("user", user)
+
         if (user !== null) {
             const isPasswordValid = await bcrypt.compare(data.password, user.hashPassword);
             if (!isPasswordValid) {
@@ -145,8 +145,7 @@ const userAuthentication = async (req, res) => {
                     companyId: user.companyId,
                     email: user.email,
                     isTradingAccount: user.isTradingAccount,
-                    isPharmaSoftware: user.isPharmaSoftware,
-                    isEwayBillEInvoice: user.isEwayBillEInvoice
+                    isPharmaSoftware: user.isPharmaSoftware
                 }
 
                 const currentDevice = req?.headers['user-agent'];

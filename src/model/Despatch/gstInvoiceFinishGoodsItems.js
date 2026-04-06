@@ -18,7 +18,6 @@ const gstInvoiceFinishGoodsItemsSchema = mongoose.Schema({
     expDate: { type: Date, default: '' },
     mrp: { type: Number, default: 0 },
     qty: { type: Number, default: 0 },
-    uom: { type: String, default: '' },
     stockTotalqty: { type: Number, default: 0 },
     free: { type: Number, default: 0 },
     rate: { type: Number, default: 0 },
