@@ -492,7 +492,7 @@ const getPaymentEntryVoucherNo = async (req, res) => {
         let response = {}
         let prEntryModel = await paymentReceiptEntryModel(dbYear);
         let voucherNoRecord = await prEntryModel
-            .findOne({ isDeleted: false, voucherNo: /^P\d+$/ })
+            .findOne({ isDeleted: false, voucherNo: /^P\d+$/, from: 'PaymentEntry' })
             .sort({ _id: -1 })
             .select('voucherNo');
 
@@ -1525,7 +1525,8 @@ const getLastPurchaseRawmaterialRate = async (req, res) => {
 
         let gpitemListRMPMModel = await gstPurchaseItemListRMPMModel(dbYear);
         let lastPurchasedRecord = await gpitemListRMPMModel
-            .findOne(queryObject);
+            .findOne(queryObject)
+            .sort({ _id: -1 });
         let response = {
             lastPurchasedRecord: lastPurchasedRecord
         }
@@ -3449,10 +3450,10 @@ const getAllGroupWiseAccountSummary = async (req, res) => {
             // partyName : 'ZYDEN IT SOLUTION'
         }
 
-        if (data.group && data.group.trim() !== '') {
+        if (data.group && data.group.trim() !== '' && data.group !== 'all') {
             queryObject.acGroupCode = data.group
         }
-
+        
         let pModel = await partyModel(dbYear)
         let partyList = await pModel.find(queryObject).select("partyName openBalance openBalanceDRCR acGroupCode").sort("partyName");
 

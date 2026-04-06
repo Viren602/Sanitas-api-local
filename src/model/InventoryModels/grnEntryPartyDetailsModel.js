@@ -7,7 +7,7 @@ import partyModel from "../partiesModel.js";
 const grnEntryPartyDetailsSchema = mongoose.Schema({
     partyId: { type: mongoose.Schema.Types.ObjectId, ref: "AccountMasters" },
     grnNo: { type: String, default: '' },
-    grnDate: { type: Date, default: new Date() },
+    grnDate: { type: Date, default: Date.now },
     invoiceNo: { type: String, default: '' },
     invoiceDate: { type: Date, default: '' },
     grnEntryType: { type: String, default: '' },

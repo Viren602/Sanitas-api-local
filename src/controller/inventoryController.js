@@ -21,6 +21,42 @@ import packingMaterialSchema from "../model/packingMaterialModel.js";
 import companyGroupModel from "../model/companyGroup.js";
 import { calculateStock, fetchAllRecords } from "../utils/fetchRMPMStock.js";
 
+const getGRNNo = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        let response = {}
+        let nextGRNNO = 'G001';
+
+        let gepdModel = await grnEntryPartyDetailsModel(dbYear);
+        const lastRecord = await gepdModel
+            .findOne({ isDeleted: false })
+            .sort({ grnNo: -1 })
+            .select('grnNo')
+            .exec();
+
+        if (lastRecord && lastRecord.grnNo) {
+            const lastNumber = parseInt(lastRecord.grnNo.slice(1), 10);
+            nextGRNNO = `G${String(lastNumber + 1).padStart(3, '0')}`;
+        }
+
+        response.grnNo = nextGRNNO;
+
+        let encryptData = encryptionAPI(response, 1);
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Data fetched successfully",
+                responseData: encryptData,
+                isEnType: true,
+            },
+        });
+    } catch (error) {
+        console.log("Error in Admin Inventory controller", error);
+        errorHandler(error, req, res, "Error in Admin Inventory controller")
+    }
+};
+
 const addEditGRNEntryMaterialMapping = async (req, res) => {
     try {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
@@ -41,7 +77,7 @@ const addEditGRNEntryMaterialMapping = async (req, res) => {
 
             let gepdModel = await grnEntryPartyDetailsModel(dbYear);
             const lastRecord = await gepdModel
-                .findOne()
+                .findOne({ isDeleted: false })
                 .sort({ grnNo: -1 })
                 .select('grnNo')
                 .exec();
@@ -1788,6 +1824,7 @@ const getAllPurchaseOrderRegister = async (req, res) => {
 };
 
 export {
+    getGRNNo,
     addEditGRNEntryMaterialMapping,
     getAllPartyListForGRNEntry,
     getAllgrnEntryMaterialDetailsById,
