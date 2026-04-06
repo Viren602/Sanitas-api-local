@@ -3453,7 +3453,7 @@ const getAllGroupWiseAccountSummary = async (req, res) => {
         if (data.group && data.group.trim() !== '' && data.group !== 'all') {
             queryObject.acGroupCode = data.group
         }
-        
+
         let pModel = await partyModel(dbYear)
         let partyList = await pModel.find(queryObject).select("partyName openBalance openBalanceDRCR acGroupCode").sort("partyName");
 
@@ -3502,7 +3502,7 @@ const getAllGroupWiseAccountSummary = async (req, res) => {
                 };
             })
         );
-
+        partyList = partyList.filter(x => x.closingBalance > 0);
         let encryptData = encryptionAPI(partyList, 1)
 
         res.status(200).json({
