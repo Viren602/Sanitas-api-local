@@ -436,6 +436,35 @@ const getAllPartyDropdown = async (req, res) => {
 };
 
 
+const getPartyCorrspAddressById = async (req, res) => {
+    try {
+        let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+
+        let reqId = getRequestData(id)
+
+        let pModel = await partyModel(dbYear)
+        let response = await pModel
+            .findOne({ _id: reqId, isDeleted: false })
+            .select("corrspAddress1 corrspAddress2 corrspAddress3 corrspAddress4");
+
+        let encryptData = encryptionAPI(response, 1)
+
+        res.status(200).json({
+            data: {
+                statusCode: 200,
+                Message: "Address details fetched successfully",
+                responseData: encryptData,
+                isEnType: true
+            },
+        });
+
+    } catch (error) {
+        console.log("Error in Common controller", error);
+        errorHandler(error, req, res, "Error in Common controller")
+    }
+};
+
 const getAllItem = async (req, res) => {
     try {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
@@ -577,6 +606,7 @@ export {
     getAllTransportCourier,
     getAllDaybooks,
     getAllPartyDropdown,
+    getPartyCorrspAddressById,
     getAllItem,
     getAllProductDropdown,
     getAllRMDropdown,

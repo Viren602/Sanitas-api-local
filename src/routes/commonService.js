@@ -1,5 +1,5 @@
 import express from "express";
-import { getAllAccountGroups, getAllColors, getAllDaybooks, getAllHSNCode, getAllItem, getAllItemCategory, getAllLabelClaims, getAllMfgLicMaster, getAllPackingMaterialDropdown, getAllPackingMaterialSize, getAllPartyDropdown, getAllPMCategory, getAllProductDropdown, getAllProductionStageMaster, getAllPunchSizes, getAllRMCategory, getAllRMDropdown, getAllStates, getAllStereoData, getAllStorageConditions, getAllTransportCourier, getCompanyDetails } from "../controller/commonController.js";
+import { getAllAccountGroups, getAllColors, getAllDaybooks, getAllHSNCode, getAllItem, getAllItemCategory, getAllLabelClaims, getAllMfgLicMaster, getAllPackingMaterialDropdown, getAllPackingMaterialSize, getAllPartyDropdown, getAllPMCategory, getAllProductDropdown, getAllProductionStageMaster, getAllPunchSizes, getAllRMCategory, getAllRMDropdown, getAllStates, getAllStereoData, getAllStorageConditions, getAllTransportCourier, getCompanyDetails, getPartyCorrspAddressById } from "../controller/commonController.js";
 import checkAuth from "../middleware/checkAuth.js";
 
 const commonServices = express.Router();
@@ -21,6 +21,7 @@ commonServices.get("/common/GetAllAccountGroups", checkAuth, getAllAccountGroups
 commonServices.get("/common/GetAllTransportCourier", checkAuth, getAllTransportCourier);
 commonServices.get("/common/GetAllDaybooks", checkAuth, getAllDaybooks);
 commonServices.get("/common/GetAllPartyDropdown", checkAuth, getAllPartyDropdown);
+commonServices.get("/common/GetPartyCorrspAddressById", checkAuth, getPartyCorrspAddressById);
 commonServices.get("/common/GetAllItem", checkAuth, getAllItem);
 commonServices.get("/common/GetAllProductDropdown", checkAuth, getAllProductDropdown);
 commonServices.get("/common/GetAllRMDropdown", checkAuth, getAllRMDropdown);
