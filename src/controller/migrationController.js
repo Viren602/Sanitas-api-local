@@ -293,9 +293,10 @@ const partyOpeningBalance = async (req, res) => {
                 for (let x = 0; x < response.length; x++) {
 
                     let pModel = await partyModel(dbYear)
-                    const party = await pModel.findOne({ partyName: response[x].partyName });
+                    const partyId = response[x].partyId;
+                    const party = await pModel.findOne({ _id: partyId });
                     if (party) {
-                        let DRCR = response[x].closingBalanceDRCR === 'D' ? 'DR' : response[x].closingBalanceDRCR === 'C' ? 'CR' : ''
+                        let DRCR = response[x].closingBalanceDRCR === 'Dr' ? 'DR' : response[x].closingBalanceDRCR === 'Cr' ? 'CR' : ''
                         await pModel.findOneAndUpdate(
                             { partyName: party.partyName },
                             { openBalance: response[x].closingBalance, openBalanceDRCR: DRCR },
