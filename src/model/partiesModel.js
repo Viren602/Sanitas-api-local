@@ -58,6 +58,7 @@ const partySchema = mongoose.Schema({
     actype: { type: String, default: '' },
     invType: { type: String, default: '' },
     courier: { type: String, default: '' },
+    destination: { type: String, default: '' },
     remark: { type: String, default: '' },
     salesManComm: { type: Number, default: 0 },
     openBalance: { type: Number, default: 0 },

@@ -600,7 +600,7 @@ const fetchInvoiceData = async (dbYear, reqId) => {
         .findOne({ _id: reqId, isDeleted: false })
         .populate({
             path: 'partyId',
-            select: 'email partyName address1 address2 address3 address4 corrspAddress1 corrspAddress2 corrspAddress3 corrspAddress4 state pinCode gstnNo mobileNo1 mobileNo2 crdays person dlNo1 dlNo2 fssaiNo bankName city',
+            select: 'email partyName address1 address2 address3 address4 corrspAddress1 corrspAddress2 corrspAddress3 corrspAddress4 state pinCode gstnNo mobileNo1 mobileNo2 crdays person dlNo1 dlNo2 fssaiNo bankName city destination',
         })
         .populate({
             path: 'transportId',
@@ -688,7 +688,7 @@ const generateInvoicePage = (template, copyType, companyDetails, invoiceDetails,
         .replace('#MobielNo', mobileNo)
         .replace('#TransportName', invoiceDetails.transportId.transportName)
         .replace('#Cases', invoiceDetails.cases)
-        .replace('#Destination', party.city)
+        .replace('#Destination', party.destination || party.city)
         .replace('#Weight', invoiceDetails.weight)
         .replace('#LRNo', invoiceDetails.lRNo)
         .replace('#LRDate', invoiceDetails.lRDate ? dayjs(invoiceDetails.lRDate).format("DD-MM-YYYY") : '')
