@@ -3320,9 +3320,16 @@ const addEditSalesGoodsReturnEntry = async (req, res) => {
             try {
                 await Promise.all(data.itemListing.map(async (item) => {
                     if (item.stockUpgrade === 'yes' || item.stockUpgrade === 'Yes') {
+                        // Safety guard: skip stock update when the stock link is missing/invalid,
+                        // otherwise findByIdAndUpdate("") throws a CastError and fails the whole save.
+                        if (!item.stockId || !mongoose.Types.ObjectId.isValid(item.stockId)) {
+                            return;
+                        }
                         const totalReduceQty = (Number(item.qty) || 0) + (Number(item.free) || 0);
                         let sgrItemsModel = await salesGoodsReturnItemsModel(dbYear)
-                        const existingItemDetails = await sgrItemsModel.findOne({ _id: item._id, isDeleted: false });
+                        const existingItemDetails = (item._id && mongoose.Types.ObjectId.isValid(item._id))
+                            ? await sgrItemsModel.findOne({ _id: item._id, isDeleted: false })
+                            : null;
 
                         if (existingItemDetails) {
                             const existingQty = (Number(existingItemDetails.qty) || 0) + (Number(existingItemDetails.free) || 0);
@@ -3406,6 +3413,11 @@ const addEditSalesGoodsReturnEntry = async (req, res) => {
             // Stock Updating
             for (let item of data.itemListing) {
                 if (item.stockUpgrade === 'yes' || item.stockUpgrade === 'Yes') {
+                    // Safety guard: skip stock update when the stock link is missing/invalid,
+                    // otherwise findByIdAndUpdate("") throws a CastError.
+                    if (!item.stockId || !mongoose.Types.ObjectId.isValid(item.stockId)) {
+                        continue;
+                    }
                     let totalReduceQty = (Number(item.qty) || 0) + (Number(item.free) || 0)
                     let batchwiseProdStkModel = await batchWiseProductStockModel(dbYear)
                     await batchwiseProdStkModel.findByIdAndUpdate(
@@ -4804,6 +4816,20 @@ const getAllStockLedgerReport = async (req, res) => {
                 },
             });
 
+        // Sales Goods Return Products (only those that actually added stock back)
+        let sgrItemsModel = await salesGoodsReturnItemsModel(dbYear)
+        let salesGoodsReturnEntry = await sgrItemsModel
+            .find({ itemId: data.itemId, isDeleted: false, stockUpgrade: { $in: ['yes', 'Yes'] } })
+            .select('qty batchNo salesGoodsReturnId free updatedAt')
+            .populate({
+                path: "salesGoodsReturnId",
+                select: "partyId serialNo returnDate",
+                populate: {
+                    path: 'partyId',
+                    select: 'partyName _id',
+                },
+            });
+
         const newArray = [
             ...productionStock.map(item => ({
                 productionStockId: item._id,
@@ -4844,6 +4870,22 @@ const getAllStockLedgerReport = async (req, res) => {
                 refDate: item?.otherDeliveryChallanId?.returnDate,
                 issuedQty: item.qty,
                 produceedQty: null,
+                updatedAt: item.updatedAt,
+                isFreeQty: null
+            })),
+            ...salesGoodsReturnEntry.map(item => ({
+                productionStockId: null,
+                issuedStockId: null,
+                otherDeliveryChallanId: null,
+                salesGoodsReturnEntryId: item._id,
+                partyName: item?.salesGoodsReturnId?.partyId?.partyName,
+                partyId: item?.salesGoodsReturnId?.partyId?._id,
+                refNo: item?.salesGoodsReturnId?.serialNo,
+                batchNo: item.batchNo,
+                refDate: item?.salesGoodsReturnId?.returnDate,
+                // A return adds stock back, so it counts as a Receipt (qty + free)
+                produceedQty: (Number(item.qty) || 0) + (Number(item.free) || 0),
+                issuedQty: null,
                 updatedAt: item.updatedAt,
                 isFreeQty: null
             }))
