@@ -7,6 +7,7 @@ import orderDetailsSalesOrderEntryModel from "./orderDetailsSalesOrderEntryModel
 const orderDetailsSalesOrderItemMappingSchema = mongoose.Schema({
     salesOrderId: { type: mongoose.Schema.Types.ObjectId, ref: "SalesOrderDetails" },
     itemId: { type: mongoose.Schema.Types.ObjectId, ref: "CompanyItem" },
+    hsnCodeId: { type: mongoose.Schema.Types.ObjectId, ref: "HSNCodes", default: null },
     quantity: { type: Number, default: '' },
     free: { type: Number, default: '' },
     mrp: { type: Number, default: 0 },

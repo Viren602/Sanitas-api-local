@@ -470,7 +470,7 @@ const getAllItem = async (req, res) => {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
         let queryObject = { IsDeleted: false }
         let cIModel = await companyItems(dbYear)
-        let response = await cIModel.find(queryObject).select("ItemName Packing UnitQuantity JobCharge TestingCharge ProdLoss BasicRate UOM NonInventoryItem").sort("ItemName");
+        let response = await cIModel.find(queryObject).select("ItemName Packing UnitQuantity JobCharge TestingCharge ProdLoss BasicRate UOM NonInventoryItem HSNCode").sort("ItemName");
 
         let encryptData = encryptionAPI(response, 1)
 

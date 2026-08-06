@@ -1,0 +1,190 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Proforma Invoice</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        .pi-box {
+            border: 1px solid #000;
+        }
+
+        .proforma p {
+            line-height: 1.25;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="proforma px-[18px] pt-[12px] text-[12px] text-black">
+        <p class="text-center font-semibold text-[14px] mb-[5px]">Proforma Invoice</p>
+
+        <!-- Seller / Company header -->
+        <div class="pi-box p-[6px] text-center">
+            <h1 class="text-[18px] leading-5 font-bold">{{CompanyName}}</h1>
+            <p>{{CompanyAddress}}</p>
+            <p>Phone no.: {{CompanyMobile}} &nbsp; Email: {{CompanyEmail}}</p>
+            <p>GSTIN: {{CompanyGSTIN}} &nbsp; State: {{CompanyState}}</p>
+            <div class="flex justify-center gap-[24px]">
+                <p>FSSAI No: {{CompanyFSSAI}}</p>
+                <p>MSME No: {{CompanyMSME}}</p>
+            </div>
+        </div>
+
+        <!-- Order From / Ship To / Transport / Order Details -->
+        <div class="grid grid-cols-4 border-l border-r border-b border-black">
+            <div class="border-r border-black">
+                <p class="font-semibold border-b border-black pb-[3px] mb-[3px] px-[8px]">Order From</p>
+                <p class="font-semibold px-[8px]">{{PartyName}}</p>
+                <p class="px-[8px]">{{PartyAddress}}</p>
+                <p class="px-[8px]">Contact No. : {{PartyContact}}</p>
+                <p class="px-[8px]">GSTIN : {{PartyGSTIN}}</p>
+                <p class="px-[8px]">State: {{PartyState}}</p>
+            </div>
+            <div class="border-r border-black">
+                <p class="font-semibold border-b border-black pb-[3px] mb-[3px] px-[8px]">Ship To</p>
+                <p class="font-semibold px-[8px]">{{ShipToName}}</p>
+                <p class="px-[8px]">{{ShipToAddress}}</p>
+                <p class="px-[8px]">(M)- {{ShipToContact}}</p>
+            </div>
+            <div class="border-r border-black">
+                <p class="font-semibold border-b border-black pb-[3px] mb-[3px] px-[8px]">Transportation Details</p>
+                <p class="px-[8px]">Transport Name: {{TransportName}}</p>
+                <p class="px-[8px]">Vehicle Number: {{VehicleNo}}</p>
+                <p class="px-[8px]">Delivery Date: {{DeliveryDate}}</p>
+                <p class="px-[8px]">Delivery Location: {{DeliveryLocation}}</p>
+            </div>
+            <div class="">
+                <p class="font-semibold border-b border-black pb-[3px] mb-[3px] px-[8px]">Order Details</p>
+                <p class="px-[8px]">Order No. : {{OrderNo}}</p>
+                <p class="px-[8px]">Date : {{OrderDate}}</p>
+                <p class="px-[8px]">Place of supply: {{PlaceOfSupply}}</p>
+                <p class="px-[8px]">Due Date : {{DueDate}}</p>
+            </div>
+        </div>
+
+        <!-- Item table -->
+        <table class="w-full border-l border-r border-b border-black">
+            <thead>
+                <tr class="border-b border-black text-left">
+                    <th class="border-r border-black px-[4px] py-[3px] w-[4%]">#</th>
+                    <th class="border-r border-black px-[4px] py-[3px] w-[34%]">Item name</th>
+                    <th class="border-r border-black px-[4px] py-[3px] w-[12%]">HSN/ SAC</th>
+                    <th class="border-r border-black px-[4px] py-[3px] w-[10%] text-right">Quantity</th>
+                    <th class="border-r border-black px-[4px] py-[3px] w-[8%]">Unit</th>
+                    <th class="border-r border-black px-[4px] py-[3px] w-[12%] text-right">Price/ Unit</th>
+                    <th class="border-r border-black px-[4px] py-[3px] w-[10%] text-right">GST</th>
+                    <th class="px-[4px] py-[3px] w-[12%] text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ItemRows}}
+                <tr class="border-t border-black font-semibold">
+                    <td class="border-r border-black px-[4px] py-[3px]"></td>
+                    <td class="border-r border-black px-[4px] py-[3px]">Total</td>
+                    <td class="border-r border-black px-[4px] py-[3px]"></td>
+                    <td class="border-r border-black px-[4px] py-[3px] text-right">{{TotalQty}}</td>
+                    <td class="border-r border-black px-[4px] py-[3px]"></td>
+                    <td class="border-r border-black px-[4px] py-[3px]"></td>
+                    <td class="border-r border-black px-[4px] py-[3px] text-right">{{TotalGstAmount}}</td>
+                    <td class="px-[4px] py-[3px] text-right">{{TotalAmount}}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Tax breakup + Amounts -->
+        <div class="grid grid-cols-2 border-l border-r border-b border-black">
+            <div class="border-r border-black">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-black text-left">
+                            <th class="px-[4px] py-[3px]">Tax type</th>
+                            <th class="px-[4px] py-[3px] text-right">Taxable amount</th>
+                            <th class="px-[4px] py-[3px] text-right">Rate</th>
+                            <th class="px-[4px] py-[3px] text-right">Tax amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{TaxRows}}
+                    </tbody>
+                </table>
+            </div>
+            <div>
+                <table class="w-full">
+                    <tbody>
+                        <tr class="border-b border-black">
+                            <td class="px-[4px] py-[3px]">Sub Total</td>
+                            <td class="px-[4px] py-[3px] text-right">{{SubTotal}}</td>
+                        </tr>
+                        <tr class="border-b border-black">
+                            <td class="px-[4px] py-[3px]">{{FreightLabel}}</td>
+                            <td class="px-[4px] py-[3px] text-right">{{FreightAmount}}</td>
+                        </tr>
+                        <tr class="border-b border-black">
+                            <td class="px-[4px] py-[3px]">Round off</td>
+                            <td class="px-[4px] py-[3px] text-right">{{RoundOff}}</td>
+                        </tr>
+                        <tr class="border-b border-black font-semibold">
+                            <td class="px-[4px] py-[3px]">Total</td>
+                            <td class="px-[4px] py-[3px] text-right">{{GrandTotal}}</td>
+                        </tr>
+                        <tr class="border-b border-black">
+                            <td class="px-[4px] py-[3px]">Advance</td>
+                            <td class="px-[4px] py-[3px] text-right">{{Advance}}</td>
+                        </tr>
+                        <tr class="font-semibold">
+                            <td class="px-[4px] py-[3px]">Balance</td>
+                            <td class="px-[4px] py-[3px] text-right">{{Balance}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Amount in words -->
+        <div class="border-l border-r border-b border-black px-[6px] py-[4px]">
+            <span class="font-semibold">Order Amount In Words: </span>{{AmountInWords}}
+        </div>
+
+        <!-- Bank + Terms + Signatory -->
+        <div class="grid grid-cols-3 border-l border-r border-b border-black">
+            <div class="border-r border-black p-[6px]">
+                <p class="font-semibold">Bank Details</p>
+                <p>Name : {{BankName}}</p>
+                <p>Account No. : {{BankAcNo}}</p>
+                <p>IFSC code : {{BankIFSC}}</p>
+                <p>Account holder's name : {{BankAcHolder}}</p>
+                <p>Branch : {{BankBranch}}</p>
+            </div>
+            <div class="border-r border-black p-[6px]">
+                <p class="font-semibold">Terms and Conditions</p>
+                <p>{{Terms1}}</p>
+                <p>{{Terms2}}</p>
+                <p>{{Terms3}}</p>
+                <p>{{Terms4}}</p>
+            </div>
+            <div class="p-[6px] flex flex-col justify-between text-center">
+                <p class="text-left">For : {{CompanyName}}</p>
+                <p class="font-semibold mt-[24px]">Authorized Signatory</p>
+            </div>
+        </div>
+
+        <p class="text-center text-[11px] italic mt-[6px]">
+            This is a Proforma Invoice, not a Tax Invoice. It is not valid for Input Tax Credit and creates no GST
+            liability.
+        </p>
+    </div>
+</body>
+
+</html>

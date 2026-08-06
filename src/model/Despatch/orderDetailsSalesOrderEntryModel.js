@@ -8,6 +8,13 @@ const orderDetailsSalesOrderEntrySchema = mongoose.Schema({
     orderNo: { type: String, default: '' },
     orderDate: { type: String, default: '' },
     remarks: { type: String, default: 0 },
+    // Proforma-invoice details (entered on the sales order, used for the advance-payment document)
+    transportName: { type: String, default: '' },
+    deliveryDate: { type: String, default: '' },
+    dueDate: { type: String, default: '' },
+    freight: { type: Number, default: 0 },
+    discount: { type: Number, default: 0 },
+    advance: { type: Number, default: 0 },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true })
 

@@ -3037,6 +3037,37 @@ const addEditSalesOrderEntry = async (req, res) => {
     }
 };
 
+// Persist the proforma charge fields on a sales order (transport/freight/discount/advance/dates).
+const updateSalesOrderProforma = async (req, res) => {
+    try {
+        const dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const data = getRequestData(req.body.data, 'PostApi');
+        const { salesOrderId, transportName, deliveryDate, dueDate, freight, discount, advance } = data;
+
+        if (!salesOrderId) {
+            return res.status(400).json({ data: { statusCode: 400, Message: "Sales order id is required" } });
+        }
+
+        const odsoEntryModel = await orderDetailsSalesOrderEntryModel(dbYear);
+        await odsoEntryModel.findByIdAndUpdate(salesOrderId, {
+            transportName: transportName || '',
+            deliveryDate: deliveryDate || '',
+            dueDate: dueDate || '',
+            freight: Number(freight) || 0,
+            discount: Number(discount) || 0,
+            advance: Number(advance) || 0,
+        });
+
+        const encryptData = encryptionAPI({ salesOrderId }, 1);
+        res.status(200).json({
+            data: { statusCode: 200, Message: "Proforma details saved", responseData: encryptData, isEnType: true },
+        });
+    } catch (error) {
+        console.log("Error in Despatch controller", error);
+        errorHandler(error, req, res, "Error in Despatch controller");
+    }
+};
+
 const getAllOrderDetailsItemMappingById = async (req, res) => {
     try {
         let dbYear = req.cookies["dbyear"] || req.headers.dbyear;
@@ -5383,6 +5414,254 @@ const getAllInwardOutwardRegister = async (req, res) => {
 };
 
 
+// ----------------------------------------------------------------------------
+// Proforma Invoice (advance-payment document) — generated from a Sales Order.
+// IMPORTANT: this renders a PDF and writes NOTHING to the database. It does not
+// touch stock, accounting, GST returns, e-invoice or e-way. It is intentionally
+// a preview document with no tax liability (as a proforma legally must be).
+// ----------------------------------------------------------------------------
+
+// Indian-format currency, e.g. 1,00,000.00
+const formatINRAmount = (num) => {
+    const n = Number(num || 0);
+    const neg = n < 0;
+    const [intPart, decPart] = Math.abs(n).toFixed(2).split('.');
+    let lastThree = intPart.slice(-3);
+    const other = intPart.slice(0, -3);
+    if (other) lastThree = ',' + lastThree;
+    const grouped = other.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + lastThree;
+    return '₹ ' + (neg ? '-' : '') + grouped + '.' + decPart;
+};
+
+// Whole-rupee amount in words (Indian numbering)
+const amountInIndianWords = (amount) => {
+    const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    const twoDigits = (n) => n < 20 ? a[n] : (b[Math.floor(n / 10)] + (n % 10 ? ' ' + a[n % 10] : ''));
+    const threeDigits = (n) => {
+        const h = Math.floor(n / 100), r = n % 100;
+        return (h ? a[h] + ' Hundred' + (r ? ' ' : '') : '') + (r ? twoDigits(r) : '');
+    };
+    const num = Math.floor(Math.abs(Number(amount) || 0));
+    if (num === 0) return 'Zero Rupees only';
+    const crore = Math.floor(num / 10000000);
+    const lakh = Math.floor((num % 10000000) / 100000);
+    const thousand = Math.floor((num % 100000) / 1000);
+    const hundred = num % 1000;
+    let words = '';
+    if (crore) words += threeDigits(crore) + ' Crore ';
+    if (lakh) words += twoDigits(lakh) + ' Lakh ';
+    if (thousand) words += twoDigits(thousand) + ' Thousand ';
+    if (hundred) words += threeDigits(hundred);
+    return words.trim() + ' Rupees only';
+};
+
+const generateProformaInvoice = async (req, res) => {
+    try {
+        const dbYear = req.cookies["dbyear"] || req.headers.dbyear;
+        const { id } = req.query;
+
+        // Encrypted payload: { salesOrderId, transportName, freight, discount, advance, deliveryDate, dueDate, vehicleNo }
+        const payload = getRequestData(id, 'PostApi') || {};
+        const salesOrderId = payload.salesOrderId;
+        if (!salesOrderId) {
+            return res.status(400).json({ data: { statusCode: 400, Message: "Sales order id is required" } });
+        }
+
+        const freight = Number(payload.freight) || 0;
+        const discount = Number(payload.discount) || 0;
+        const advance = Number(payload.advance) || 0;
+
+        // --- Fetch data (read-only) ---
+        const cgModel = await companyGroupModel(dbYear);
+        const companyDetails = await cgModel.findOne({});
+
+        const odsoEntryModel = await orderDetailsSalesOrderEntryModel(dbYear);
+        const orderDetails = await odsoEntryModel
+            .findOne({ _id: salesOrderId, isDeleted: false })
+            .populate({
+                path: 'partyId',
+                select: 'email partyName address1 address2 address3 address4 corrspAddress1 corrspAddress2 corrspAddress3 corrspAddress4 state pinCode gstnNo mobileNo1 mobileNo2 crdays person dlNo1 dlNo2 fssaiNo city destination',
+            });
+
+        if (!orderDetails || !orderDetails.partyId) {
+            return res.status(404).json({ data: { statusCode: 404, Message: "Sales order not found" } });
+        }
+
+        const odsoimModel = await orderDetailsSalesOrderItemMappingModel(dbYear);
+        const orderItems = await odsoimModel
+            .find({ salesOrderId, isDeleted: false })
+            .populate({ path: 'itemId', select: 'ItemName HSNCode UOM Packing' });
+
+        const hcModel = await HNSCodesScHema(dbYear);
+        const hsnCodeList = await hcModel.find({});
+
+        const party = orderDetails.partyId;
+        // Same intra/inter rule the tax invoice uses (company state = GUJARAT).
+        const isInterState = party.state !== 'GUJARAT';
+
+        // --- Build item listing with taxable amount + hsn linkage ---
+        const rawSubTotal = orderItems.reduce(
+            (s, it) => s + (Number(it.amount) || (Number(it.quantity) * Number(it.rate))), 0
+        );
+
+        const itemListing = orderItems.map((it) => {
+            const itemAmount = Number(it.amount) || (Number(it.quantity) * Number(it.rate));
+            const itemDiscount = rawSubTotal > 0 ? (itemAmount / rawSubTotal) * discount : 0;
+            const taxableAmount = Number((itemAmount - itemDiscount).toFixed(2));
+            // Prefer the HSN the user chose on the order item; fall back to the item master HSN.
+            const hsnMaster = (it.hsnCodeId
+                ? hsnCodeList.find(h => String(h._id) === String(it.hsnCodeId))
+                : hsnCodeList.find(h => String(h.HSNCode) === String(it.itemId?.HSNCode))) || {};
+            const gstRate = isInterState
+                ? (Number(hsnMaster.IGST) || 0)
+                : ((Number(hsnMaster.CGST) || 0) + (Number(hsnMaster.SGST) || 0));
+            const gstAmount = Number((taxableAmount * gstRate / 100).toFixed(2));
+            return {
+                itemName: it.itemId?.ItemName || '',
+                hsnCodeName: hsnMaster.HSNCode || it.itemId?.HSNCode || '-',
+                hsnCodeId: hsnMaster._id ? String(hsnMaster._id) : null,
+                unit: it.itemId?.UOM || '',
+                qty: Number(it.quantity) || 0,
+                free: Number(it.free) || 0,
+                rate: Number(it.rate) || 0,
+                taxableAmount,
+                gstRate,
+                gstAmount,
+                lineTotal: Number((taxableAmount + gstAmount).toFixed(2)),
+            };
+        });
+
+        // HSN-grouped tax breakup (reuses the exact tax-invoice logic).
+        const hsnCodeListForTable = showHSNCodes(itemListing, hsnCodeList, party.state);
+        const hsnTotals = calculateHSNTotals(hsnCodeListForTable);
+
+        // --- Totals ---
+        const subTotalTaxable = itemListing.reduce((s, it) => s + it.taxableAmount, 0);
+        const itemGstTotal = Number(hsnTotals.totalAmount) || 0;
+        const subTotalInclGst = Number((subTotalTaxable + itemGstTotal).toFixed(2));
+
+        // Freight is a plain charge — NO GST is applied on it.
+        const freightInclGst = Number(freight.toFixed(2));
+
+        const preRound = subTotalInclGst + freightInclGst;
+        const grandTotal = Math.round(preRound);
+        const roundOff = Number((grandTotal - preRound).toFixed(2));
+        const balance = Number((grandTotal - advance).toFixed(2));
+
+        const totalQty = itemListing.reduce((s, it) => s + it.qty, 0);
+
+        // --- Rows ---
+        const itemRows = itemListing.map((it, i) => `
+            <tr class="border-b border-black">
+                <td class="border-r border-black px-[4px] py-[3px]">${i + 1}</td>
+                <td class="border-r border-black px-[4px] py-[3px]">${it.itemName}</td>
+                <td class="border-r border-black px-[4px] py-[3px]">${it.hsnCodeName}</td>
+                <td class="border-r border-black px-[4px] py-[3px] text-right">${it.qty}${it.free ? ' + ' + it.free + ' free' : ''}</td>
+                <td class="border-r border-black px-[4px] py-[3px]">${it.unit}</td>
+                <td class="border-r border-black px-[4px] py-[3px] text-right">${formatINRAmount(it.rate)}</td>
+                <td class="border-r border-black px-[4px] py-[3px] text-right">${formatINRAmount(it.gstAmount)} (${it.gstRate}%)</td>
+                <td class="px-[4px] py-[3px] text-right">${formatINRAmount(it.lineTotal)}</td>
+            </tr>
+        `).join('');
+
+        let taxRows = hsnCodeListForTable.map((h) => {
+            if (Number(h.igstAmount) > 0) {
+                return `<tr><td class="px-[4px] py-[3px]">IGST</td><td class="px-[4px] py-[3px] text-right">${formatINRAmount(h.taxableAmount)}</td><td class="px-[4px] py-[3px] text-right">${h.IGST}%</td><td class="px-[4px] py-[3px] text-right">${formatINRAmount(h.igstAmount)}</td></tr>`;
+            }
+            let rows = '';
+            if (Number(h.cgstAmount) > 0) rows += `<tr><td class="px-[4px] py-[3px]">CGST</td><td class="px-[4px] py-[3px] text-right">${formatINRAmount(h.taxableAmount)}</td><td class="px-[4px] py-[3px] text-right">${h.CGST}%</td><td class="px-[4px] py-[3px] text-right">${formatINRAmount(h.cgstAmount)}</td></tr>`;
+            if (Number(h.sgstAmount) > 0) rows += `<tr><td class="px-[4px] py-[3px]">SGST</td><td class="px-[4px] py-[3px] text-right">${formatINRAmount(h.taxableAmount)}</td><td class="px-[4px] py-[3px] text-right">${h.SGST}%</td><td class="px-[4px] py-[3px] text-right">${formatINRAmount(h.sgstAmount)}</td></tr>`;
+            return rows;
+        }).join('');
+
+        // --- Address / display helpers (reuse the same builder as the tax invoice) ---
+        const companyAddress = buildAddress([
+            companyDetails.addressLine1,
+            companyDetails.addressLine2,
+            companyDetails.addressLine3,
+            `${companyDetails.pinCode}(${companyDetails.state})`
+        ], false);
+
+        const partyAddress = buildAddress([
+            party.address1, party.address2, party.address3, party.address4, party.pinCode
+        ]);
+        const partyContact = (party.mobileNo1 || '') + (party.mobileNo2 ? `,${party.mobileNo2}` : '');
+
+        const dueDate = payload.dueDate
+            ? dayjs(payload.dueDate).format('DD-MM-YYYY')
+            : (orderDetails.orderDate ? dayjs(orderDetails.orderDate).format('DD-MM-YYYY') : '');
+
+        const tokenMap = {
+            CompanyName: companyDetails.CompanyName || '',
+            CompanyAddress: companyAddress,
+            CompanyEmail: companyDetails.email || '',
+            CompanyMobile: companyDetails.mobile || '',
+            CompanyGSTIN: companyDetails.gstnNo || '',
+            CompanyState: companyDetails.state || '',
+            CompanyFSSAI: companyDetails.fssaiNo || '-',
+            CompanyMSME: companyDetails.msmeNo || '-',
+            PartyName: party.partyName || '',
+            PartyAddress: partyAddress,
+            PartyContact: partyContact,
+            PartyGSTIN: party.gstnNo || '-',
+            PartyState: party.state || '',
+            ShipToName: party.partyName || '',
+            ShipToAddress: partyAddress,
+            ShipToContact: partyContact,
+            TransportName: payload.transportName || '-',
+            VehicleNo: payload.vehicleNo || '-',
+            DeliveryDate: payload.deliveryDate ? dayjs(payload.deliveryDate).format('DD-MM-YYYY') : '-',
+            DeliveryLocation: party.destination || party.city || party.partyName || '-',
+            OrderNo: orderDetails.orderNo || '',
+            OrderDate: orderDetails.orderDate ? dayjs(orderDetails.orderDate).format('DD-MM-YYYY') : '',
+            PlaceOfSupply: party.state || '',
+            DueDate: dueDate,
+            ItemRows: itemRows,
+            TotalQty: String(totalQty),
+            TotalGstAmount: formatINRAmount(itemGstTotal),
+            TotalAmount: formatINRAmount(subTotalInclGst),
+            TaxRows: taxRows,
+            SubTotal: formatINRAmount(subTotalInclGst),
+            FreightLabel: 'Freight',
+            FreightAmount: formatINRAmount(freightInclGst),
+            RoundOff: formatINRAmount(roundOff),
+            GrandTotal: formatINRAmount(grandTotal),
+            Advance: formatINRAmount(advance),
+            Balance: formatINRAmount(balance),
+            AmountInWords: amountInIndianWords(grandTotal),
+            BankName: companyDetails.bankName || '',
+            BankAcNo: companyDetails.acNo || '',
+            BankIFSC: companyDetails.ifscCode || '',
+            BankAcHolder: companyDetails.CompanyName || '',
+            BankBranch: companyDetails.branch || '',
+            Terms1: companyDetails.termsConditionLine1 || '',
+            Terms2: companyDetails.termsConditionLine2 || '',
+            Terms3: companyDetails.termsConditionLine3 || '',
+            Terms4: companyDetails.termsConditionLine4 || '',
+        };
+
+        let template = fs.readFileSync(
+            path.join(__dirname, "..", "..", "uploads", "InvoiceTemplates", "proformaInvoiceTemplate.html"),
+            "utf8"
+        );
+        const htmlContent = template.replace(/{{(\w+)}}/g, (m, key) =>
+            Object.prototype.hasOwnProperty.call(tokenMap, key) ? tokenMap[key] : ''
+        );
+
+        const pdfBuffer = await generatePDF(htmlContent);
+
+        res.setHeader("Content-Disposition", 'inline; filename="proforma-invoice.pdf"');
+        res.setHeader("Content-Type", "application/pdf");
+        res.end(pdfBuffer);
+
+    } catch (error) {
+        console.log("Error in Proforma Invoice generation", error);
+        errorHandler(error, req, res, "Error in Proforma Invoice generation");
+    }
+};
+
+
 export {
     getProductionStockByProductId,
     getGSTInvoiceFinishGoodsInvoiceNo,
@@ -5413,6 +5692,8 @@ export {
     addEditSalesOrderEntry,
     getAllOrderDetailsItemMappingById,
     getAllSalesOrderEntry,
+    updateSalesOrderProforma,
+    generateProformaInvoice,
     deleteSalesOrderById,
     deleteSalesOrderItemByItemId,
     getAllBatchesForItemByItemId,
