@@ -704,7 +704,7 @@ const generateInvoicePage = (template, copyType, companyDetails, invoiceDetails,
         .replace('#IGSTAmount', invoiceDetails.igst || 0)
         .replace('#CRDRNote', invoiceDetails.crDrNote || 0)
         .replace('#Freight', (invoiceDetails.freight && invoiceDetails.freight > 0) ? invoiceDetails.freight : 0)
-        .replace('#OtherCharges', (invoiceDetails.other && invoiceDetails.other > 0) ? invoiceDetails.other : 0)
+        .replace('#OtherCharges', invoiceDetails.other || 0)
         .replace('#RoundOffAmount', invoiceDetails.roundOff || 0)
         .replace('#GrandTotal', invoiceDetails.grandTotal || 0)
         .replace('#HSNCodeTableRows', hsnCodeTableRows)
